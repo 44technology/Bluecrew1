@@ -1,0 +1,94 @@
+# Dependencies
+node_modules/
+.expo/
+dist/
+web-build/
+
+# Build outputs
+*.log
+*.tsbuildinfo
+
+# Environment files
+.env*.local
+.env
+
+# OS files
+.DS_Store
+*.pem
+*.orig.*
+*.jks
+*.p8
+*.p12
+*.key
+*.mobileprovision
+
+# Windows system files - ALL AppData patterns
+AppData/
+AppData/**
+**/AppData/**
+**/AppData/Local/**
+**/AppData/LocalLow/**
+**/AppData/Roaming/**
+
+# Chrome cache - all patterns
+**/Chrome/**
+**/Google/Chrome/**
+**/Chrome/**/Cache/**
+**/Chrome/**/Code Cache/**
+**/Chrome/**/Local Storage/**
+**/Chrome/**/Service Worker/**
+
+# OneDrive - all patterns
+**/OneDrive/**
+**/OneDrive/logs/**
+**/OneDrive/Cache/**
+
+# Microsoft cache - ALL patterns including CryptnetUrlCache
+**/Microsoft/**
+**/Microsoft/OneDrive/**
+**/Microsoft/TokenBroker/**
+**/Microsoft/Windows/**
+**/Microsoft/Windows/INetCache/**
+**/Microsoft/Windows/SharedWebView/**
+**/Microsoft/Windows/WebCache/**
+**/Microsoft/CryptnetUrlCache/**
+**/Microsoft.StartExperiencesApp/**
+
+# Temp and cache files - all patterns
+*.tmp
+*.odl
+*.tbres
+*.ldb
+**/Temp/**
+**/Local/Temp/**
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Cursor/Editor files
+**/Cursor/**
+**/Roaming/Cursor/**
+*.otc-shm
+*.otc-wal
+
+# Git
+.git/
+.gitignore
+
+# Vercel
+.vercel
+
+# Firebase config (uncomment if needed)
+# google-services.json
+# GoogleService-Info.plist
+
+
+
+
+
+
+
+
