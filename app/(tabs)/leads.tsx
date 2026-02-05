@@ -102,7 +102,7 @@ export default function LeadsScreen() {
 
   const onRefresh = async () => {
     if (Platform.OS !== 'web') {
-      const { Haptics } = await import('expo-haptics');
+      const Haptics = (await import('expo-haptics')).default;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setRefreshing(true);
@@ -433,7 +433,7 @@ export default function LeadsScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/sales')} style={styles.backButton}>
-            <ArrowLeft size={24} color="#ffffff" />
+            <ArrowLeft size={24} color="#000000" />
           </TouchableOpacity>
           <View style={styles.headerTop}>
             <View style={styles.headerContent}>
@@ -1040,12 +1040,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
     gap: 12,
   },
   backButton: {
@@ -1053,21 +1054,24 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
+    minWidth: 0,
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+    flex: 1,
+    minWidth: 0,
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#f5f5f5',
+    color: '#6b7280',
   },
   addButton: {
     flexDirection: 'row',
@@ -1077,16 +1081,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     borderRadius: 8,
     gap: 8,
+    marginRight: 8,
   },
   addButtonText: {
-    color: '#1f2937',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
   searchContainer: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
   },
   searchInput: {
     backgroundColor: '#ffffff',

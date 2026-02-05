@@ -281,7 +281,7 @@ export default function ReportsScreen() {
 
   const onRefresh = async () => {
     if (Platform.OS !== 'web') {
-      const Haptics = await import('expo-haptics');
+      const Haptics = (await import('expo-haptics')).default;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setRefreshing(true);
@@ -654,12 +654,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
-    backgroundColor: '#f5f5f5', // Darker blue header like other pages
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff', // Yellow border like other pages
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
   },
   headerTop: {
     flexDirection: 'row',
@@ -678,7 +679,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   loadingText: {
-    color: '#ffffff',
+    color: '#6b7280',
     fontSize: 16,
     marginTop: 12,
   },
@@ -686,14 +687,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 28, // Increased font size like other pages
+    fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff', // Yellow text like other pages
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#f5f5f5', // Light yellow like other pages
+    color: '#6b7280',
   },
   content: {
     flex: 1,

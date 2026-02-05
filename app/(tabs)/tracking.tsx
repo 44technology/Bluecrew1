@@ -115,7 +115,7 @@ export default function TrackingScreen() {
 
   const onRefresh = async () => {
     if (Platform.OS !== 'web') {
-      const { Haptics } = await import('expo-haptics');
+      const Haptics = (await import('expo-haptics')).default;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setRefreshing(true);

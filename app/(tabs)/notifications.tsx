@@ -219,7 +219,7 @@ export default function NotificationsScreen() {
         }>
         {notifications.length === 0 ? (
           <View style={styles.emptyContainer}>
-            <Bell size={64} color="#ffffff" />
+            <Bell size={64} color="#d1d5db" />
             <Text style={styles.emptyText}>No notifications</Text>
             <Text style={styles.emptySubtext}>You're all caught up!</Text>
           </View>
@@ -293,27 +293,27 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff', // Blue background like other pages
+    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#ffffff', // Blue background like other pages
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#6b7280',
   },
   header: {
-    backgroundColor: '#f5f5f5', // Darker blue header like other pages
+    backgroundColor: '#ffffff',
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff', // Yellow border like other pages
-    paddingRight: 80, // Add padding to avoid hamburger menu overlap
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
   },
   headerTop: {
     flexDirection: 'row',
@@ -324,24 +324,24 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff', // Yellow text like other pages
+    color: '#000000',
     flex: 1,
   },
   markAllButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
     marginLeft: 12,
   },
   markAllText: {
     fontSize: 14,
-    color: '#ffffff',
+    color: '#000000',
     fontWeight: '600',
   },
   unreadCount: {
     fontSize: 14,
-    color: '#f5f5f5', // Light yellow like other pages
+    color: '#6b7280',
   },
   content: {
     flex: 1,
@@ -359,12 +359,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 20,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue background
+    color: '#111827',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#f5f5f5', // Light yellow like other pages
+    color: '#6b7280',
     marginTop: 8,
   },
   section: {
@@ -373,7 +373,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue background
+    color: '#374151',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     paddingHorizontal: 0,
@@ -436,7 +436,7 @@ const styles = StyleSheet.create({
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     marginTop: 6,
   },
 });

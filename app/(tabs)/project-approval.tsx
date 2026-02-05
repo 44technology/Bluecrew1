@@ -783,7 +783,7 @@ export default function ProjectApprovalScreen() {
           <View style={styles.header}>
             <View style={styles.headerContent}>
               <Text style={styles.title}>Approval</Text>
-              <Text style={styles.subtitle}>Choose category</Text>
+              <Text style={styles.subtitle}>Choose category: Project or Sales</Text>
             </View>
           </View>
           <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
@@ -824,7 +824,7 @@ export default function ProjectApprovalScreen() {
           <View style={styles.header}>
             <BackButton 
               onPress={() => setViewMode('select')}
-              color="#ffffff" 
+              color="#000000" 
             />
             <View style={styles.headerContent}>
               <Text style={styles.title}>Sales Approval</Text>
@@ -863,7 +863,7 @@ export default function ProjectApprovalScreen() {
                 setViewMode('sales');
               }
             }}
-            color="#ffffff" 
+            color="#000000" 
           />
           <View style={styles.headerContent}>
             <Text style={styles.title}>
@@ -2374,12 +2374,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   header: {
-    backgroundColor: '#f5f5f5', // Darker blue header
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
   },
   headerContent: {
     flex: 1,
@@ -2468,11 +2469,11 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f5f5f5', // Darker blue like team tabs
+    backgroundColor: '#ffffff',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: '#e5e7eb',
     gap: 8,
   },
   tab: {
@@ -2484,9 +2485,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     gap: 6,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f9fafb',
     borderWidth: 1,
-    borderColor: '#b0b0b0',
+    borderColor: '#e5e7eb',
   },
   activeTab: {
     backgroundColor: '#000000',
@@ -2519,12 +2520,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#000000',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#6b7280',
     fontWeight: '500',
   },
   accessDenied: {
@@ -2535,7 +2536,7 @@ const styles = StyleSheet.create({
   },
   accessDeniedText: {
     fontSize: 18,
-    color: '#ffffff', // White text on blue background
+    color: '#1f2937',
     textAlign: 'center',
   },
   emptyState: {
@@ -2546,7 +2547,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#6b7280',
     textAlign: 'center',
   },
   approvalCard: {
@@ -2636,7 +2637,7 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#1f2937',
     textTransform: 'uppercase',
   },
   statusBadgeApproved: {

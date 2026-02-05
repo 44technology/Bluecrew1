@@ -108,7 +108,7 @@ export default function ClientsScreen() {
 
   const onRefresh = async () => {
     if (Platform.OS !== 'web') {
-      const { Haptics } = await import('expo-haptics');
+      const Haptics = (await import('expo-haptics')).default;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setRefreshing(true);
@@ -637,7 +637,7 @@ export default function ClientsScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/sales')} style={styles.backButton}>
-            <ArrowLeft size={24} color="#ffffff" />
+            <ArrowLeft size={24} color="#000000" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.title}>Clients</Text>
@@ -1208,12 +1208,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
     gap: 12,
   },
   backButton: {
@@ -1225,11 +1226,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#000000',
   },
   subtitle: {
     fontSize: 14,
-    color: '#f5f5f5',
+    color: '#6b7280',
     marginTop: 4,
   },
   content: {
@@ -1245,7 +1246,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue background like teams
+    color: '#6b7280',
     marginTop: 16,
   },
   emptySubtext: {

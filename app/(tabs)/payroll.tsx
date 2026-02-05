@@ -23,7 +23,8 @@ import {
   ChevronRight,
   Save,
   Eye,
-  Plus
+  Plus,
+  Edit
 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -682,7 +683,7 @@ export default function PayrollScreen() {
               {userRole === 'admin' && (
                 <View style={styles.modalActions}>
                   <TouchableOpacity
-                    style={[styles.actionButton, styles.editButton]}
+                    style={styles.actionButton}
                     onPress={() => {
                       setEditingEntry({ ...selectedEntry });
                       setShowDetailModal(false);

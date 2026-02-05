@@ -417,12 +417,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   header: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
   },
   headerTop: {
     flexDirection: 'row',
@@ -595,7 +596,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   statusFilterButtonTextActive: {
-    color: '#ffffff',
+    color: '#000000',
   },
   clearFiltersButton: {
     flexDirection: 'row',
@@ -774,7 +775,7 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   activeMenuText: {
-    color: '#8b5cf6',
+    color: '#000000',
     fontWeight: '700',
   },
 });

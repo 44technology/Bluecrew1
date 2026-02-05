@@ -55,7 +55,6 @@ export default function InvoicesScreen() {
   const [payAmount, setPayAmount] = useState('');
   const [invoiceToPay, setInvoiceToPay] = useState<Invoice | null>(null);
   const [selectedInvoice, setSelectedInvoice] = useState<Invoice | null>(null);
-  const [showPaymentDetailModal, setShowPaymentDetailModal] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState<ExpensePayment | null>(null);
   const [paymentDocuments, setPaymentDocuments] = useState<ExpenseDocument[]>([]);
   const [uploadingPaymentDocument, setUploadingPaymentDocument] = useState(false);
@@ -174,7 +173,7 @@ export default function InvoicesScreen() {
 
   const onRefresh = async () => {
     if (Platform.OS !== 'web') {
-      const { Haptics } = await import('expo-haptics');
+      const Haptics = (await import('expo-haptics')).default;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setRefreshing(true);
@@ -2224,10 +2223,7 @@ export default function InvoicesScreen() {
                                   <TouchableOpacity
                                     key={payment.id}
                                     style={styles.paymentHistoryItem}
-                                    onPress={() => {
-                                      setSelectedPayment(payment);
-                                      setShowPaymentDetailModal(true);
-                                    }}
+                                    onPress={() => setSelectedPayment(payment)}
                                   >
                                     <Text style={styles.paymentHistoryDate}>
                                       {new Date(payment.payment_date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -2253,6 +2249,84 @@ export default function InvoicesScreen() {
                               ${(selectedInvoice.total_paid || selectedInvoice.paid_amount || 0).toLocaleString()} / ${selectedInvoice.total_cost.toLocaleString()}
                             </Text>
                           </View>
+                          {/* Payment Details inline (avoids iOS second modal error) */}
+                          {selectedPayment && (
+                            <View style={[styles.paymentDetailModal, { marginTop: 16, marginHorizontal: 0 }]}>
+                              <View style={styles.modalHeader}>
+                                <Text style={styles.modalTitle}>Payment Details</Text>
+                                <TouchableOpacity onPress={() => setSelectedPayment(null)}>
+                                  <X size={24} color="#000000" />
+                                </TouchableOpacity>
+                              </View>
+                              <View style={styles.paymentDetailBody}>
+                                <View style={styles.detailRow}>
+                                  <Text style={styles.detailLabel}>Amount:</Text>
+                                  <Text style={[styles.detailValue, { color: '#10b981', fontWeight: 'bold', fontSize: 18 }]}>
+                                    ${selectedPayment.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                  </Text>
+                                </View>
+                                <View style={styles.detailRow}>
+                                  <Text style={styles.detailLabel}>Payment Date:</Text>
+                                  <Text style={styles.detailValue}>
+                                    {new Date(selectedPayment.payment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                  </Text>
+                                </View>
+                                <View style={styles.detailRow}>
+                                  <Text style={styles.detailLabel}>Payment Method:</Text>
+                                  <Text style={styles.detailValue}>
+                                    {selectedPayment.payment_method.toUpperCase().replace('_', ' ')}
+                                  </Text>
+                                </View>
+                                {selectedPayment.check_number && (
+                                  <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Check Number:</Text>
+                                    <Text style={styles.detailValue}>{selectedPayment.check_number}</Text>
+                                  </View>
+                                )}
+                                {selectedPayment.reference_number && (
+                                  <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Reference Number:</Text>
+                                    <Text style={styles.detailValue}>{selectedPayment.reference_number}</Text>
+                                  </View>
+                                )}
+                                <View style={styles.detailRow}>
+                                  <Text style={styles.detailLabel}>Paid By:</Text>
+                                  <Text style={styles.detailValue}>{selectedPayment.paid_by_name}</Text>
+                                </View>
+                                {selectedPayment.notes && (
+                                  <View style={styles.detailRow}>
+                                    <Text style={styles.detailLabel}>Notes:</Text>
+                                    <Text style={styles.detailValue}>{selectedPayment.notes}</Text>
+                                  </View>
+                                )}
+                                <View style={styles.detailRow}>
+                                  <Text style={styles.detailLabel}>Created At:</Text>
+                                  <Text style={styles.detailValue}>
+                                    {new Date(selectedPayment.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                  </Text>
+                                </View>
+                                {paymentDocuments.length > 0 && (
+                                  <View style={styles.documentsList}>
+                                    {paymentDocuments.map((doc) => (
+                                      <View key={doc.id} style={styles.documentItem}>
+                                        <FileText size={16} color="#000000" />
+                                        <Text style={styles.documentName} numberOfLines={1}>{doc.name}</Text>
+                                        <TouchableOpacity
+                                          onPress={() => doc.file_url && (Platform.OS === 'web' ? window.open(doc.file_url, '_blank') : null)}
+                                          style={styles.viewDocumentButton}
+                                        >
+                                          <Eye size={16} color="#000000" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity style={styles.removeDocumentButton} onPress={() => removePaymentDocument(doc.id)}>
+                                          <X size={16} color="#ef4444" />
+                                        </TouchableOpacity>
+                                      </View>
+                                    ))}
+                                  </View>
+                                )}
+                              </View>
+                            </View>
+                          )}
                         </View>
                       )}
                     </View>
@@ -2607,133 +2681,7 @@ export default function InvoicesScreen() {
           </View>
         </Modal>
 
-        {/* Payment Detail Modal - Small Popup */}
-        <Modal
-          visible={showPaymentDetailModal}
-          transparent={true}
-          animationType="fade"
-        >
-          <View style={styles.paymentDetailOverlay}>
-            <View style={styles.paymentDetailModal}>
-              <View style={styles.modalHeader}>
-                <Text style={styles.modalTitle}>Payment Details</Text>
-                <TouchableOpacity onPress={() => {
-                  setShowPaymentDetailModal(false);
-                  setSelectedPayment(null);
-                }}>
-                  <X size={24} color="#000000" />
-                </TouchableOpacity>
-              </View>
-              <ScrollView style={styles.paymentDetailBody}>
-                {selectedPayment && (
-                  <>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Amount:</Text>
-                      <Text style={[styles.detailValue, { color: '#10b981', fontWeight: 'bold', fontSize: 18 }]}>
-                        ${selectedPayment.amount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Payment Date:</Text>
-                      <Text style={styles.detailValue}>
-                        {new Date(selectedPayment.payment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                      </Text>
-                    </View>
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Payment Method:</Text>
-                      <Text style={styles.detailValue}>
-                        {selectedPayment.payment_method.toUpperCase().replace('_', ' ')}
-                      </Text>
-                    </View>
-                    {selectedPayment.check_number && (
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Check Number:</Text>
-                        <Text style={styles.detailValue}>{selectedPayment.check_number}</Text>
-                      </View>
-                    )}
-                    {selectedPayment.reference_number && (
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Reference Number:</Text>
-                        <Text style={styles.detailValue}>{selectedPayment.reference_number}</Text>
-                      </View>
-                    )}
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Paid By:</Text>
-                      <Text style={styles.detailValue}>{selectedPayment.paid_by_name}</Text>
-                    </View>
-                    {selectedPayment.notes && (
-                      <View style={styles.detailRow}>
-                        <Text style={styles.detailLabel}>Notes:</Text>
-                        <Text style={styles.detailValue}>{selectedPayment.notes}</Text>
-                      </View>
-                    )}
-                    <View style={styles.detailRow}>
-                      <Text style={styles.detailLabel}>Created At:</Text>
-                      <Text style={styles.detailValue}>
-                        {new Date(selectedPayment.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                      </Text>
-                    </View>
-
-                    {/* Payment Documents Section */}
-                    <View style={styles.inputGroup}>
-                      <Text style={styles.label}>Documents (Optional)</Text>
-                      <View style={styles.documentButtons}>
-                        <TouchableOpacity
-                          style={[styles.documentButton, uploadingPaymentDocument && styles.documentButtonDisabled]}
-                          onPress={handlePickPaymentImage}
-                          disabled={uploadingPaymentDocument}
-                        >
-                          <Paperclip size={18} color="#000000" />
-                          <Text style={styles.documentButtonText}>Add Image</Text>
-                        </TouchableOpacity>
-                        <TouchableOpacity
-                          style={[styles.documentButton, uploadingPaymentDocument && styles.documentButtonDisabled]}
-                          onPress={handlePickPaymentDocument}
-                          disabled={uploadingPaymentDocument}
-                        >
-                          <FileText size={18} color="#000000" />
-                          <Text style={styles.documentButtonText}>Add Document</Text>
-                        </TouchableOpacity>
-                      </View>
-                      {uploadingPaymentDocument && (
-                        <View style={styles.uploadingContainer}>
-                          <ActivityIndicator size="small" color="#000000" />
-                          <Text style={styles.uploadingText}>Uploading...</Text>
-                        </View>
-                      )}
-                      {paymentDocuments.length > 0 && (
-                        <View style={styles.documentsList}>
-                          {paymentDocuments.map((doc) => (
-                            <View key={doc.id} style={styles.documentItem}>
-                              <FileText size={16} color="#000000" />
-                              <Text style={styles.documentName} numberOfLines={1}>{doc.name}</Text>
-                              <TouchableOpacity
-                                onPress={() => {
-                                  if (doc.file_url) {
-                                    window.open(doc.file_url, '_blank');
-                                  }
-                                }}
-                                style={styles.viewDocumentButton}
-                              >
-                                <Eye size={16} color="#000000" />
-                              </TouchableOpacity>
-                              <TouchableOpacity
-                                style={styles.removeDocumentButton}
-                                onPress={() => removePaymentDocument(doc.id)}
-                              >
-                                <X size={16} color="#ef4444" />
-                              </TouchableOpacity>
-                            </View>
-                          ))}
-                        </View>
-                      )}
-                    </View>
-                  </>
-                )}
-              </ScrollView>
-            </View>
-          </View>
-        </Modal>
+        {/* Payment Detail is now inline inside Invoice Detail modal - no second modal (fixes iOS "already presenting" error) */}
 
         {/* Work Title Selection Modal */}
         <Modal
@@ -2973,12 +2921,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
     gap: 12,
   },
   backButton: {
@@ -3259,29 +3208,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     color: '#000000',
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#000000',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 8,
-  },
-  addButtonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  content: {
-    flex: 1,
-    padding: 20,
-    paddingBottom: 20, // No extra padding for clients (no bottom menu)
-    ...(Platform.OS === 'web' ? {
-      minHeight: 0,
-      overflow: 'hidden' as any,
-    } : {}),
   },
   loadingContainer: {
     flex: 1,
@@ -4093,23 +4019,6 @@ const styles = StyleSheet.create({
     color: '#059669',
     marginTop: 4,
   },
-  helperText: {
-    fontSize: 12,
-    color: '#000000',
-    marginBottom: 16,
-    lineHeight: 18,
-  },
-  emptyState: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    padding: 40,
-  },
-  emptyText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#000000',
-    marginTop: 16,
-  },
   emptySubtext: {
     fontSize: 14,
     color: '#000000',
@@ -4425,16 +4334,6 @@ const styles = StyleSheet.create({
   selectedCategoryText: {
     color: '#000000',
     fontWeight: '600',
-  },
-  selectedIndicator: {
-    position: 'absolute',
-    right: 16,
-    top: '50%',
-    transform: [{ translateY: -8 }],
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    backgroundColor: '#ffffff',
   },
   inputText: {
     fontSize: 16,

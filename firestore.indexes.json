@@ -71,16 +71,6 @@
       ]
     },
     {
-      "collectionGroup": "time_clock",
-      "queryScope": "COLLECTION",
-      "fields": [
-        {
-          "fieldPath": "date",
-          "order": "ASCENDING"
-        }
-      ]
-    },
-    {
       "collectionGroup": "todos",
       "queryScope": "COLLECTION",
       "fields": [
@@ -143,10 +133,3 @@
   ],
   "fieldOverrides": []
 }
-
-
-
-
-
-
-

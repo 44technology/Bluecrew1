@@ -154,13 +154,14 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f5f5f5', // Darker blue header
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff',
+    borderBottomColor: '#e5e7eb',
     gap: 16,
+    paddingRight: 56,
   },
   backButton: {
     padding: 4,
@@ -168,7 +169,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff', // Yellow text
+    color: '#000000',
   },
   content: {
     flex: 1,

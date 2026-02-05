@@ -515,7 +515,7 @@ export default function HRScreen() {
             </View>
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffffff" />
+            <ActivityIndicator size="large" color="#000000" />
             <Text style={styles.loadingText}>Loading HR data...</Text>
           </View>
         </View>
@@ -783,12 +783,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
-    backgroundColor: '#f5f5f5', // Darker blue header like other pages
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffffff', // Yellow border like other pages
+    borderBottomColor: '#e5e7eb',
+    paddingRight: 56,
   },
   navButtons: {
     flexDirection: 'row',
@@ -829,14 +830,14 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   title: {
-    fontSize: 28, // Increased font size like other pages
+    fontSize: 28,
     fontWeight: '700',
-    color: '#ffffff', // Yellow text like other pages
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#f5f5f5', // Light yellow like other pages
+    color: '#6b7280',
   },
   headerTitle: {
     fontSize: 24,
@@ -870,11 +871,11 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
-    backgroundColor: '#ffffff', // Blue background like other pages
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#6b7280',
   },
   content: {
     flex: 1,
@@ -1072,21 +1073,6 @@ const styles = StyleSheet.create({
   // Web-specific styles
   headerLeft: {
     flex: 1,
-  },
-  backButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    backgroundColor: '#ffffff', // Yellow button like other pages
-    borderRadius: 6,
-    alignSelf: 'flex-start',
-  },
-  backButtonText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#1f2937', // Dark text on yellow
   },
   webToolbar: {
     flexDirection: 'row',

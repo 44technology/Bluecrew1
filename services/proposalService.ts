@@ -92,15 +92,31 @@ export const ProposalService = {
   },
 
   async getProposalsByClientName(clientName: string): Promise<Proposal[]> {
+    const proposalsCol = collection(db, PROPOSALS_COLLECTION);
     try {
-      const proposalsCol = collection(db, PROPOSALS_COLLECTION);
       const q = query(proposalsCol, where('client_name', '==', clientName), orderBy('created_at', 'desc'));
       const proposalSnapshot = await getDocs(q);
-      return proposalSnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
+      return proposalSnapshot.docs.map(d => ({
+        id: d.id,
+        ...d.data()
       })) as Proposal[];
-    } catch (error) {
+    } catch (error: unknown) {
+      const isIndexError = error && typeof error === 'object' && 'code' in error && (error as { code?: string }).code === 'failed-precondition';
+      if (isIndexError) {
+        try {
+          const qFallback = query(proposalsCol, where('client_name', '==', clientName));
+          const snapshot = await getDocs(qFallback);
+          const list = snapshot.docs.map(d => ({
+            id: d.id,
+            ...d.data()
+          })) as Proposal[];
+          list.sort((a, b) => (b.created_at || '').localeCompare(a.created_at || ''));
+          return list;
+        } catch (fallbackError) {
+          console.error('Error getting proposals by client name (fallback):', fallbackError);
+          return [];
+        }
+      }
       console.error('Error getting proposals by client name:', error);
       return [];
     }

@@ -151,7 +151,7 @@ export default function ExpensesScreen() {
 
   const onRefresh = async () => {
     if (Platform.OS !== 'web') {
-      const { Haptics } = await import('expo-haptics');
+      const Haptics = (await import('expo-haptics')).default;
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     }
     setRefreshing(true);
@@ -909,7 +909,7 @@ export default function ExpensesScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <X size={24} color="#ffffff" />
+            <X size={24} color="#000000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Expenses</Text>
         </View>
@@ -926,7 +926,7 @@ export default function ExpensesScreen() {
         <View style={styles.header}>
           {Platform.OS !== 'web' && (
             <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <X size={24} color="#ffffff" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           )}
           {Platform.OS === 'web' ? (
@@ -2197,6 +2197,7 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingHorizontal: 20,
     paddingBottom: 20,
+    paddingRight: 56,
     gap: 12,
   },
   backButton: {
@@ -2215,12 +2216,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 22,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#f5f5f5',
+    color: '#6b7280',
   },
   headerTitle: {
     flex: 1,
@@ -2926,9 +2927,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   paymentCountText: {
-    fontSize: 10,
-    color: '#000000',
-    marginTop: 2,
     fontSize: 11,
     color: '#000000',
     marginTop: 2,

@@ -1537,7 +1537,7 @@ export default function ProjectDetailScreen() {
               disabled={userRole === 'client'}
             >
               {(step.status === 'finished' || step.manual_checkmark) ? (
-                <Check size={16} color="#ffffff" />
+                <Check size={16} color="#ffffff" strokeWidth={3} />
               ) : null}
             </TouchableOpacity>
             <View style={styles.stepTitleAndBudget}>
@@ -4800,8 +4800,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   stepCheckboxChecked: {
-    backgroundColor: '#ffffff',
-    borderColor: '#000000',
+    backgroundColor: '#10b981',
+    borderColor: '#10b981',
   },
   stepCheckboxDisabled: {
     opacity: 0.5,

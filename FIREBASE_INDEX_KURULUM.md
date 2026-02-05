@@ -1,6 +1,8 @@
 # Firebase Index Kurulum Rehberi
 
-Sales sayfasında client'a basınca proposals sorgusu için composite index gerekiyor.
+Proposals koleksiyonunda `client_name` + `created_at` ile sorgu (Clients, Invoice detay vb.) için composite index gerekiyor.
+
+**Not:** Uygulama index yokken de çalışır (yedek sorgu ile). Index oluşturmanız sorguları hızlandırır ve önerilir.
 
 ## Otomatik Kurulum (Önerilen)
 
