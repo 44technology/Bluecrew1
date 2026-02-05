@@ -2,6 +2,12 @@
 
 Build "Run fastlane" aşamasında Xcode hatalarıyla düşüyor. Aşağıdakileri sırayla yapın.
 
+## ⚠️ Bu projede Reanimated v4 var – New Architecture KAPATILMAZ
+
+**react-native-reanimated v4**, New Architecture **açık olmadan** çalışmaz; podspec içinde kontrol eder ve kapalıysa hata verir. Bu yüzden **New Architecture’ı kapatma** seçeneği bu projede **uygulanamaz**. Hata çözümü için aşağıdaki diğer adımları ve gerçek log hatalarını kullanın.
+
+---
+
 ## 1. Gerçek hata mesajını bulun
 
 - Expo dashboard: **Build** → ilgili build’e tıklayın.
@@ -9,37 +15,21 @@ Build "Run fastlane" aşamasında Xcode hatalarıyla düşüyor. Aşağıdakiler
 - Sayfada **"error:"** veya **"Error"** geçen satırları bulun (genelde kırmızı veya vurgulu).
 - O birkaç satırı (ve hemen üstündeki 2–3 satırı) kopyalayıp paylaşın; buna göre kesin çözüm söylenebilir.
 
-## 2. Sık görülen düzeltmeler
+## 2. Sık görülen düzeltmeler (New Arch açık kalacak)
 
-### A) New Architecture’ı kapatmayı deneyin
+### A) New Architecture’ı kapatma – BU PROJEDE YAPMAYIN
 
-Birçok EAS Xcode hatası New Architecture (React Native yeni mimari) kaynaklıdır. Production build’de geçici kapatmak genelde işe yarar.
+Bu projede **react-native-reanimated v4** kullanıldığı için `newArchEnabled: false` yapılmamalı. Reanimated v4 podspec’te New Architecture zorunludur; kapalıysa build başlamadan hata alırsınız. EAS hatasını aşağıdaki B, C ve gerçek log hatalarıyla çözün.
 
-**app.json** – `ios` içine `"newArchEnabled": false` ekleyin (zaten `true` ise `false` yapın):
+### B) EAS image / Xcode sürümü
 
-```json
-"ios": {
-  "supportsTablet": true,
-  "bundleIdentifier": "com.bluecrew.app",
-  "googleServicesFile": "./GoogleService-Info.plist",
-  "newArchEnabled": false,
-  ...
-}
-```
+`eas.json` içinde production profiline hangi image kullanıldığını görebilirsiniz (şu an: `macos-sonoma-14.6-xcode-16.1`). Gerekirse [EAS image listesinden](https://docs.expo.dev/build-reference/infrastructure/) daha güncel bir image deneyin. Varsayılan genelde sorunsuzdur; sadece loglarda “Xcode version” veya “image” geçen satırlara bakın.
 
-**ios/Podfile.properties.json** – `newArchEnabled` değerini `"false"` yapın:
+### D) "PhaseScriptExecution [Expo] Configure project" hatası
 
-```json
-"newArchEnabled": "false"
-```
+Hata **"[Expo] Configure project"** script phase’inde düşüyorsa (ARCHIVE FAILED): Bu projede düzeltme yapıldı. Build phase artık `bash -l -c` (login shell) kullanmıyor; script doğrudan çalışıyor, böylece EAS’ta `node` PATH’te bulunuyor. Değişiklik `ios/BlueCrew.xcodeproj/project.pbxproj` içinde. Commit + push sonrası tekrar build alın.
 
-Sonra yeniden build alın.
-
-### B) EAS’ın kullandığı Xcode / image
-
-`eas.json` içinde production profiline hangi image kullanıldığını görebilirsiniz. Varsayılan genelde sorunsuzdur; sadece loglarda “Xcode version” veya “image” geçen satırlara bakın.
-
-### C) Code signing / credentials
+### E) Code signing / credentials
 
 Hata “signing”, “provisioning”, “certificate” veya “keychain” ile ilgiliyse:
 
@@ -58,4 +48,4 @@ veya Expo dashboard’dan **New build** ile aynı profili seçin.
 
 ---
 
-**Özet:** Önce EAS’taki **Xcode Logs**’tan gerçek hata satırlarını (error: …) paylaşın. İsterseniz aynı anda **2.A** adımını (New Architecture’ı kapatma) uygulayıp tekrar build alın; çoğu “genel” Xcode hatası bu şekilde çözülür.
+**Özet (Reanimated v4 nedeniyle New Arch kapatılmaz):** Önce EAS’taki **Xcode Logs**’tan gerçek hata satırlarını (error: …) paylaşın. Hatayı 2.B (image), 2.C (credentials) veya logtaki spesifik mesaja göre çözün.
