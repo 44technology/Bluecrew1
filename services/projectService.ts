@@ -64,7 +64,11 @@ export class ProjectService {
     }
   }
 
-  // Get project by ID
+  // Get project by ID (alias: getProject for backward compatibility)
+  static async getProject(projectId: string): Promise<Project | null> {
+    return this.getProjectById(projectId);
+  }
+
   static async getProjectById(projectId: string): Promise<Project | null> {
     try {
       const projectDoc = await getDoc(doc(db, PROJECTS_COLLECTION, projectId));

@@ -290,7 +290,7 @@ export default function TopNavigationBar() {
               >
                 <IconComponent 
                   size={18} 
-                  color={(active || submenuActive) ? '#236ecf' : '#6b7280'} 
+                  color={(active || submenuActive) ? '#000000' : '#000000'} 
                 />
                 <Text style={[styles.navText, (active || submenuActive) && styles.navTextActive]}>
                   {item.title}
@@ -298,7 +298,7 @@ export default function TopNavigationBar() {
                 {hasSubmenu && (
                   <ChevronDown 
                     size={16} 
-                    color={(active || submenuActive) ? '#236ecf' : '#6b7280'}
+                    color={(active || submenuActive) ? '#000000' : '#000000'}
                     style={[styles.chevron, isExpanded && styles.chevronExpanded]}
                   />
                 )}
@@ -327,7 +327,7 @@ export default function TopNavigationBar() {
                       >
                         <SubIconComponent 
                           size={16} 
-                          color={subActive ? '#236ecf' : '#6b7280'} 
+                          color={subActive ? '#000000' : '#000000'} 
                         />
                         <Text style={[styles.subNavText, subActive && styles.subNavTextActive]}>
                           {subItem.title}
@@ -395,10 +395,10 @@ const styles = StyleSheet.create({
   navText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   navTextActive: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   navItemContainer: {
@@ -439,11 +439,11 @@ const styles = StyleSheet.create({
   },
   subNavText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   subNavTextActive: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
 });

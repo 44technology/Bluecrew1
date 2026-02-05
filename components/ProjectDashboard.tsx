@@ -73,7 +73,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project, onB
       title: 'Project Settings',
       description: 'Configure project settings',
       icon: Settings,
-      color: '#6b7280',
+      color: '#000000',
       route: '/project-settings',
     },
   ];
@@ -88,7 +88,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project, onB
       case 'completed': return '#3b82f6';
       case 'on_hold': return '#f59e0b';
       case 'cancelled': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -107,7 +107,7 @@ export const ProjectDashboard: React.FC<ProjectDashboardProps> = ({ project, onB
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity style={styles.backButton} onPress={onBack}>
-          <ArrowLeft size={24} color="#236ecf" />
+          <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <Text style={styles.projectTitle} numberOfLines={2}>
@@ -263,7 +263,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   infoValue: {
@@ -315,6 +315,6 @@ const styles = StyleSheet.create({
   },
   menuDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
 });

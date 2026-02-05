@@ -12,7 +12,9 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Plus, Camera, FileText, Folder, X, Image as ImageIcon, File } from 'lucide-react-native';
+import { Plus, Camera, FileText, Folder, X, Image as ImageIcon, File } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
+import HamburgerMenu from '@/components/HamburgerMenu';
 import { useAuth } from '@/contexts/AuthContext';
 import { Project } from '@/types';
 import { DocumentService, Document as DocumentType } from '@/services/documentService';
@@ -265,14 +267,14 @@ export default function DocumentsScreen() {
 
   return (
     <View style={styles.container}>
+      <HamburgerMenu />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.push(`/(tabs)/project/${id}`)} style={styles.backButton}>
-          <ArrowLeft size={24} color="#ffcc00" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Documents</Text>
-        <TouchableOpacity onPress={() => setShowUploadModal(true)} style={styles.addButton}>
-          <Plus size={24} color="#ffcc00" />
-        </TouchableOpacity>
+        <BackButton 
+          onPress={() => router.push(`/(tabs)/project/${id}`)}
+          color="#000000"
+          backgroundColor="rgba(0,0,0,0.06)" 
+        />
+        <Text style={styles.headerTitle} numberOfLines={1}>Documents</Text>
       </View>
 
       {/* Category Tabs */}
@@ -300,7 +302,7 @@ export default function DocumentsScreen() {
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffcc00" />
+            <ActivityIndicator size="large" color="#ffffff" />
           </View>
         ) : documents.length === 0 ? (
           <View style={styles.emptyState}>
@@ -320,7 +322,7 @@ export default function DocumentsScreen() {
                   />
                 ) : (
                   <View style={styles.documentIconContainer}>
-                    <FileText size={40} color="#236ecf" />
+                    <FileText size={40} color="#000000" />
                   </View>
                 )}
                 <View style={styles.documentInfo}>
@@ -345,6 +347,12 @@ export default function DocumentsScreen() {
         )}
       </ScrollView>
 
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setShowUploadModal(true)}>
+        <Plus size={24} color="#000000" />
+      </TouchableOpacity>
+
       {/* Upload Modal */}
       <Modal
         visible={showUploadModal}
@@ -354,14 +362,14 @@ export default function DocumentsScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Upload Document</Text>
             <TouchableOpacity onPress={() => setShowUploadModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
           <View style={styles.modalContent}>
             {uploading && (
               <View style={styles.uploadingContainer}>
-                <ActivityIndicator size="large" color="#236ecf" />
+                <ActivityIndicator size="large" color="#000000" />
                 <Text style={styles.uploadingText}>Uploading...</Text>
               </View>
             )}
@@ -370,7 +378,7 @@ export default function DocumentsScreen() {
                 style={[styles.uploadOption, uploading && styles.uploadOptionDisabled]}
                 onPress={handleTakePhoto}
                 disabled={uploading}>
-                <Camera size={32} color={uploading ? "#9ca3af" : "#236ecf"} />
+                <Camera size={32} color={uploading ? "#000000" : "#000000"} />
                 <Text style={[styles.uploadOptionText, uploading && styles.uploadOptionTextDisabled]}>Take Photo</Text>
               </TouchableOpacity>
 
@@ -378,7 +386,7 @@ export default function DocumentsScreen() {
                 style={[styles.uploadOption, uploading && styles.uploadOptionDisabled]}
                 onPress={handleUploadDocument}
                 disabled={uploading}>
-                <FileText size={32} color={uploading ? "#9ca3af" : "#236ecf"} />
+                <FileText size={32} color={uploading ? "#000000" : "#000000"} />
                 <Text style={[styles.uploadOptionText, uploading && styles.uploadOptionTextDisabled]}>Upload Document</Text>
               </TouchableOpacity>
             </View>
@@ -415,7 +423,7 @@ export default function DocumentsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   header: {
     flexDirection: 'row',
@@ -423,59 +431,66 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingTop: 50,
     paddingHorizontal: 20,
+    paddingRight: 60,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#f5f5f5',
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border
+    borderBottomColor: '#b0b0b0',
   },
   backButton: {
     padding: 8,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#000000',
     flex: 1,
+    minWidth: 0,
     textAlign: 'center',
   },
-  addButton: {
-    backgroundColor: '#236ecf',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  fab: {
+    position: 'absolute',
+    bottom: Platform.OS === 'web' ? 40 : 90,
+    right: Platform.OS === 'web' ? 40 : 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   categoryTabs: {
     flexDirection: 'row',
-    backgroundColor: '#1e40af', // Darker blue like team tabs
+    backgroundColor: '#f5f5f5',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#b0b0b0',
     gap: 8,
   },
   categoryTab: {
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   categoryTabActive: {
-    backgroundColor: '#ffcc00', // Yellow active tab
+    backgroundColor: '#000000',
   },
   categoryTabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue
+    color: '#000000',
   },
   categoryTabTextActive: {
-    color: '#236ecf', // Blue text on yellow
+    color: '#ffffff',
   },
   content: {
     flex: 1,
@@ -486,7 +501,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     paddingVertical: 40,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   emptyState: {
     alignItems: 'center',
@@ -500,7 +515,7 @@ const styles = StyleSheet.create({
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like teams
+    color: '#f5f5f5', // Light yellow like teams
     marginTop: 4,
   },
   documentsGrid: {
@@ -520,7 +535,7 @@ const styles = StyleSheet.create({
     elevation: 3,
     position: 'relative',
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   documentImage: {
     width: '100%',
@@ -545,7 +560,7 @@ const styles = StyleSheet.create({
   },
   documentMeta: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   deleteButton: {
     position: 'absolute',
@@ -603,13 +618,13 @@ const styles = StyleSheet.create({
     marginTop: 8,
     fontSize: 14,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   uploadOptionDisabled: {
     opacity: 0.5,
   },
   uploadOptionTextDisabled: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   uploadingContainer: {
     alignItems: 'center',
@@ -621,7 +636,7 @@ const styles = StyleSheet.create({
     marginTop: 12,
     fontSize: 16,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   categorySelector: {
     marginTop: 20,
@@ -646,13 +661,13 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   categoryButtonActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   categoryButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   categoryButtonTextActive: {
     color: '#ffffff',

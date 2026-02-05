@@ -181,7 +181,7 @@ export default function CommissionScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading commission data...</Text>
         </View>
       </View>
@@ -200,11 +200,11 @@ export default function CommissionScreen() {
           style={styles.backButton}
           onPress={() => router.push('/hr')}
         >
-          <ArrowLeft size={24} color="#236ecf" />
+          <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <View style={styles.titleRow}>
-            <TrendingUp size={28} color="#236ecf" />
+            <TrendingUp size={28} color="#000000" />
             <Text style={styles.title}>Commission</Text>
           </View>
           <Text style={styles.subtitle}>
@@ -239,7 +239,7 @@ export default function CommissionScreen() {
               placeholder="Search by invoice, client, or sales person..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
           </View>
           
@@ -289,7 +289,7 @@ export default function CommissionScreen() {
         <ScrollView style={styles.entriesContainer} showsVerticalScrollIndicator={false}>
           {filteredEntries.length === 0 ? (
             <View style={styles.emptyStateCard}>
-              <Receipt size={32} color="#6b7280" />
+              <Receipt size={32} color="#000000" />
               <Text style={styles.emptyCardTitle}>No commission entries</Text>
               <Text style={styles.emptyCardSubtext}>
                 Entries appear when invoices are paid for won proposals.
@@ -313,7 +313,7 @@ export default function CommissionScreen() {
                 <View key={entry.invoice.id} style={styles.entryCard}>
                   <View style={styles.entryHeader}>
                     <View style={styles.entryHeaderLeft}>
-                      <Receipt size={20} color="#236ecf" />
+                      <Receipt size={20} color="#000000" />
                       <View style={styles.entryTitleContainer}>
                         <Text style={styles.entryTitle}>
                           {entry.invoice.invoice_number}
@@ -402,7 +402,7 @@ export default function CommissionScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
     flexDirection: 'row',
@@ -410,9 +410,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header like other pages
+    backgroundColor: '#f5f5f5', // Darker blue header like other pages
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like other pages
+    borderBottomColor: '#ffffff', // Yellow border like other pages
     gap: 16,
     ...(Platform.OS === 'web' ? {
       position: 'sticky' as any,
@@ -435,11 +435,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like other pages
+    color: '#ffffff', // Yellow text like other pages
   },
   subtitle: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#f5f5f5', // Light yellow like other pages
   },
   content: {
     flex: 1,
@@ -456,7 +456,7 @@ const styles = StyleSheet.create({
     padding: 20,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -472,7 +472,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   summaryValue: {
@@ -481,7 +481,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   totalCommissionValue: {
-    color: '#236ecf',
+    color: '#000000',
   },
   summaryDivider: {
     width: 1,
@@ -514,7 +514,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   filterScroll: {
     flex: 1,
@@ -529,12 +529,12 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   filterChipActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   filterChipText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   filterChipTextActive: {
@@ -562,7 +562,7 @@ const styles = StyleSheet.create({
   },
   emptyCardSubtext: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
   },
   salesPersonSummary: {
@@ -571,7 +571,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   salesPersonTitle: {
     fontSize: 18,
@@ -582,7 +582,7 @@ const styles = StyleSheet.create({
   salesPersonTotal: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   entryCard: {
     backgroundColor: '#ffffff',
@@ -620,7 +620,7 @@ const styles = StyleSheet.create({
   },
   entrySubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   commissionBadge: {
     flexDirection: 'row',
@@ -647,12 +647,12 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   detailValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   calculationBox: {
     backgroundColor: '#f9fafb',
@@ -675,12 +675,12 @@ const styles = StyleSheet.create({
   },
   calculationLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   calculationValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   baseAmountRow: {
     marginTop: 8,

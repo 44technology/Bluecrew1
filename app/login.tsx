@@ -9,11 +9,16 @@ import {
   ScrollView,
   KeyboardAvoidingView,
   Platform,
+  ActivityIndicator,
+  Image,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { router } from 'expo-router';
 import { AuthService, UserProfile } from '@/services/authService';
 import { useAuth } from '@/contexts/AuthContext';
+import { StatusBar } from 'expo-status-bar';
+import { PLATFORM_NAME } from '@/types';
+import { RADIUS, SHADOW, SPACING } from '@/constants/design';
 
 export default function LoginScreen() {
   const { login } = useAuth();
@@ -98,32 +103,48 @@ export default function LoginScreen() {
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <StatusBar style="dark" />
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.header}>
-          <Text style={styles.title}>BlueCrew</Text>
-          <Text style={styles.subtitle}>Welcome back!</Text>
+          <View style={styles.logoBadge}>
+            <Image
+              source={require('@/assets/images/logo.png')}
+              style={styles.logoImage}
+              resizeMode="contain"
+            />
+          </View>
+          <Text style={styles.title}>{PLATFORM_NAME}</Text>
+          <Text style={styles.subtitle}>Project and operations management</Text>
         </View>
 
         <View style={styles.form}>
+          <Text style={styles.formTitle}>Login</Text>
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email *</Text>
+            <Text style={styles.label}>Email</Text>
             <TextInput
               style={styles.input}
               value={formData.email}
               onChangeText={(text) => setFormData(prev => ({ ...prev, email: text }))}
-              placeholder="Enter your email"
+              placeholder="example@company.com"
+              placeholderTextColor="#94a3b8"
               keyboardType="email-address"
               autoCapitalize="none"
+              autoCorrect={false}
             />
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password *</Text>
+            <Text style={styles.label}>Password</Text>
             <TextInput
               style={styles.input}
               value={formData.password}
               onChangeText={(text) => setFormData(prev => ({ ...prev, password: text }))}
-              placeholder="Enter your password"
+              placeholder="••••••••"
+              placeholderTextColor="#94a3b8"
               secureTextEntry
             />
           </View>
@@ -132,6 +153,7 @@ export default function LoginScreen() {
             <TouchableOpacity
               style={styles.checkboxContainer}
               onPress={() => setRememberMe(!rememberMe)}
+              activeOpacity={0.7}
             >
               <View style={[styles.checkbox, rememberMe && styles.checkboxChecked]}>
                 {rememberMe && <Text style={styles.checkmark}>✓</Text>}
@@ -144,13 +166,14 @@ export default function LoginScreen() {
             style={[styles.submitButton, loading && styles.submitButtonDisabled]}
             onPress={handleSubmit}
             disabled={loading}
+            activeOpacity={0.85}
           >
-            <Text style={styles.submitButtonText}>
-              {loading ? 'Please wait...' : 'Sign In'}
-            </Text>
+            {loading ? (
+              <ActivityIndicator color="#ffffff" size="small" />
+            ) : (
+              <Text style={styles.submitButtonText}>Log in</Text>
+            )}
           </TouchableOpacity>
-
-          {/* Registration disabled - only admins can create accounts through Team page */}
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -160,133 +183,124 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8fafc',
+    backgroundColor: '#ffffff',
   },
   scrollContainer: {
     flexGrow: 1,
     justifyContent: 'center',
-    padding: 20,
+    padding: SPACING.lg,
+    paddingTop: 60,
+    paddingBottom: 40,
   },
   header: {
     alignItems: 'center',
-    marginBottom: 40,
+    marginBottom: SPACING.xl,
+  },
+  logoBadge: {
+    width: 64,
+    height: 64,
+    borderRadius: RADIUS.lg,
+    backgroundColor: '#f5f5f5',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: SPACING.md,
+    borderWidth: 2,
+    borderColor: '#e5e5e5',
+  },
+  logoImage: {
+    width: '100%',
+    height: '100%',
   },
   title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#1e293b',
-    marginBottom: 8,
+    fontSize: 28,
+    fontWeight: '700',
+    color: '#000000',
+    marginBottom: SPACING.xs,
+    letterSpacing: 0.3,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#64748b',
+    fontSize: 15,
+    color: '#000000',
+    fontWeight: '500',
   },
   form: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
-    padding: 24,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    borderRadius: RADIUS.xl,
+    padding: SPACING.lg,
+    ...SHADOW.card,
+  },
+  formTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: SPACING.lg,
   },
   inputGroup: {
-    marginBottom: 20,
+    marginBottom: SPACING.md,
   },
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
-    marginBottom: 8,
+    color: '#000000',
+    marginBottom: SPACING.sm,
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    borderRadius: 8,
-    padding: 12,
+    borderWidth: 1.5,
+    borderColor: '#e2e8f0',
+    borderRadius: RADIUS.md,
+    paddingHorizontal: SPACING.md,
+    paddingVertical: 14,
     fontSize: 16,
-    backgroundColor: '#ffffff',
-  },
-  roleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  roleButton: {
-    flex: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    borderWidth: 1,
-    borderColor: '#d1d5db',
-    alignItems: 'center',
-  },
-  roleButtonActive: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
-  },
-  roleButtonText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#6b7280',
-  },
-  roleButtonTextActive: {
-    color: '#ffffff',
+    backgroundColor: '#f8fafc',
+    color: '#111827',
   },
   submitButton: {
-    backgroundColor: '#3b82f6',
-    paddingVertical: 14,
-    borderRadius: 8,
+    backgroundColor: '#000000',
+    paddingVertical: 16,
+    borderRadius: RADIUS.md,
     alignItems: 'center',
-    marginTop: 8,
+    marginTop: SPACING.sm,
+    ...SHADOW.button,
   },
   submitButtonDisabled: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#94a3b8',
+    opacity: 0.9,
   },
   submitButtonText: {
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
-  switchButton: {
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  switchButtonText: {
-    color: '#3b82f6',
-    fontSize: 14,
-    fontWeight: '500',
-  },
   rememberMeContainer: {
-    marginBottom: 20,
+    marginBottom: SPACING.md,
   },
   checkboxContainer: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   checkbox: {
-    width: 20,
-    height: 20,
+    width: 22,
+    height: 22,
     borderWidth: 2,
-    borderColor: '#d1d5db',
-    borderRadius: 4,
+    borderColor: '#cbd5e1',
+    borderRadius: 6,
     backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
   },
   checkboxChecked: {
-    backgroundColor: '#3b82f6',
-    borderColor: '#3b82f6',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   checkmark: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: 'bold',
   },
   rememberMeText: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: 15,
+    color: '#475569',
     fontWeight: '500',
   },
 });

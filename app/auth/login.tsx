@@ -187,12 +187,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: '700',
-    color: '#236ecf', // Blue text on white background
+    color: '#000000', // Blue text on white background
     marginBottom: 8,
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280', // Gray text on white background
+    color: '#000000', // Gray text on white background
     textAlign: 'center',
   },
   form: {
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#236ecf', // Blue text on white background
+    color: '#000000', // Blue text on white background
     marginBottom: 8,
   },
   input: {
@@ -216,14 +216,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   loginButton: {
-    backgroundColor: '#236ecf', // Blue button
+    backgroundColor: '#ffffff', // Blue button
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
     marginTop: 8,
   },
   disabledButton: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#000000',
   },
   loginButtonText: {
     color: '#ffffff', // White text on blue button
@@ -242,7 +242,7 @@ const styles = StyleSheet.create({
   },
   dividerText: {
     marginHorizontal: 16,
-    color: '#6b7280', // Gray text on white background
+    color: '#000000', // Gray text on white background
     fontSize: 14,
   },
   registerButton: {
@@ -250,10 +250,10 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: '#236ecf', // Blue border
+    borderColor: '#000000', // Blue border
   },
   registerButtonText: {
-    color: '#236ecf', // Blue text
+    color: '#000000', // Blue text
     fontSize: 16,
     fontWeight: '600',
   },
@@ -276,8 +276,8 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   checkboxChecked: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   checkmark: {
     color: '#ffffff',
@@ -286,7 +286,7 @@ const styles = StyleSheet.create({
   },
   rememberMeText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
 });

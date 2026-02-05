@@ -7,6 +7,11 @@ dist/
 web-build/
 expo-env.d.ts
 
+# native / iOS
+ios/Pods/
+ios/Pods 2/
+ios/build/
+
 # native
 *.orig.*
 *.jks

@@ -581,7 +581,7 @@ export default function ClientsScreen() {
               onPress={() => {
                 router.push(`/clients/${client.id}`);
               }}>
-              <Eye size={18} color="#236ecf" />
+              <Eye size={18} color="#000000" />
             </TouchableOpacity>
         {userRole === 'admin' && (
           <TouchableOpacity
@@ -597,12 +597,12 @@ export default function ClientsScreen() {
       
       <View style={styles.clientDetails}>
         <View style={styles.contactRow}>
-          <Mail size={16} color="#6b7280" />
+          <Mail size={16} color="#000000" />
           <Text style={styles.contactText}>{client.email}</Text>
         </View>
         {client.phone && (
           <View style={styles.contactRow}>
-            <Phone size={16} color="#6b7280" />
+            <Phone size={16} color="#000000" />
             <Text style={styles.contactText}>{client.phone}</Text>
           </View>
         )}
@@ -637,7 +637,7 @@ export default function ClientsScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/sales')} style={styles.backButton}>
-            <ArrowLeft size={24} color="#ffcc00" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <View style={styles.headerContent}>
             <Text style={styles.title}>Clients</Text>
@@ -675,7 +675,7 @@ export default function ClientsScreen() {
             style={styles.addButton}
             onPress={() => setShowAddModal(true)}
           >
-            <Plus size={18} color="#1f2937" />
+            <Plus size={18} color="#ffffff" />
             <Text style={styles.addButtonText}>Add Client</Text>
           </TouchableOpacity>
         </View>
@@ -685,13 +685,13 @@ export default function ClientsScreen() {
       {Platform.OS === 'web' && (
         <View style={styles.webToolbar}>
           <View style={styles.searchContainer}>
-            <Search size={20} color="#6b7280" />
+            <Search size={20} color="#000000" />
             <TextInput
               style={styles.searchInput}
               placeholder="Search clients..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
           </View>
           <View style={styles.toolbarActions}>
@@ -734,7 +734,7 @@ export default function ClientsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#236ecf"
+              tintColor="#000000"
             />
           ) : undefined
         }
@@ -799,7 +799,7 @@ export default function ClientsScreen() {
                     style={styles.tableActionButton}
                     onPress={() => router.push(`/clients/${client.id}`)}
                   >
-                    <Eye size={16} color="#236ecf" />
+                    <Eye size={16} color="#000000" />
                   </TouchableOpacity>
                   {userRole === 'admin' && (
                     <TouchableOpacity
@@ -828,7 +828,7 @@ export default function ClientsScreen() {
             setFieldErrors({});
             setShowAddModal(true);
           }}>
-          <Plus size={24} color="#ffffff" />
+          <Plus size={24} color="#000000" />
         </TouchableOpacity>
       )}
 
@@ -844,7 +844,7 @@ export default function ClientsScreen() {
               setShowDetailModal(false);
               setSelectedClient(null);
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -870,23 +870,23 @@ export default function ClientsScreen() {
                   </View>
 
                   <View style={styles.detailRow}>
-                    <Mail size={18} color="#6b7280" />
+                    <Mail size={18} color="#000000" />
                     <Text style={styles.detailValue}>{selectedClient.email}</Text>
                   </View>
                   {selectedClient.phone && (
                     <View style={styles.detailRow}>
-                      <Phone size={18} color="#6b7280" />
+                      <Phone size={18} color="#000000" />
                       <Text style={styles.detailValue}>{selectedClient.phone}</Text>
                     </View>
                   )}
                   {selectedClient.address && (
                     <View style={styles.detailRow}>
-                      <MapPin size={18} color="#6b7280" />
+                      <MapPin size={18} color="#000000" />
                       <Text style={styles.detailValue}>{selectedClient.address}</Text>
                     </View>
                   )}
                   <View style={styles.detailRow}>
-                    <Calendar size={18} color="#6b7280" />
+                    <Calendar size={18} color="#000000" />
                     <Text style={styles.detailValue}>
                       Created: {new Date(selectedClient.created_at).toLocaleDateString()}
                     </Text>
@@ -904,7 +904,7 @@ export default function ClientsScreen() {
                       style={styles.addNoteButton}
                       onPress={() => setShowNoteModal(true)}
                     >
-                      <Plus size={18} color="#236ecf" />
+                      <Plus size={18} color="#000000" />
                       <Text style={styles.addNoteButtonText}>Add Note</Text>
                     </TouchableOpacity>
                   </View>
@@ -946,7 +946,7 @@ export default function ClientsScreen() {
               setShowDatePicker(false);
               setSelectedDate(new Date());
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -964,7 +964,7 @@ export default function ClientsScreen() {
                 onPress={() => setShowDatePicker(true)}
               >
                 <View style={styles.dateInputContainer}>
-                  <Calendar size={18} color="#6b7280" />
+                  <Calendar size={18} color="#000000" />
                   <Text style={[styles.dateInputText, !newNote.contact_date && styles.dateInputPlaceholder]}>
                     {newNote.contact_date 
                       ? new Date(newNote.contact_date).toLocaleDateString()
@@ -1019,7 +1019,7 @@ export default function ClientsScreen() {
               setShowAddModal(false);
               setFieldErrors({});
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -1091,7 +1091,7 @@ export default function ClientsScreen() {
                   style={styles.eyeButton}
                   onPress={() => setShowPassword(!showPassword)}
                 >
-                  {showPassword ? <Eye size={20} color="#6b7280" /> : <EyeOff size={20} color="#6b7280" />}
+                  {showPassword ? <Eye size={20} color="#000000" /> : <EyeOff size={20} color="#000000" />}
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={styles.generatePasswordButton}
@@ -1106,7 +1106,7 @@ export default function ClientsScreen() {
               {fieldErrors.temporaryPassword && (
                 <Text style={styles.errorText}>{fieldErrors.temporaryPassword}</Text>
               )}
-              <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>Client will use this password to login</Text>
+              <Text style={{ fontSize: 12, color: '#000000', marginTop: 4 }}>Client will use this password to login</Text>
             </View>
 
             <TouchableOpacity style={styles.submitButton} onPress={handleAddClient}>
@@ -1133,22 +1133,22 @@ export default function ClientsScreen() {
               <Text style={styles.deleteIconText}>⚠</Text>
             </View>
             
-            <Text style={styles.deleteTitle}>Silmek istediğinizden emin misiniz?</Text>
+            <Text style={styles.deleteTitle}>Are you sure you want to delete?</Text>
             <Text style={styles.deleteMessage}>
-              {clientToDelete?.name} adlı müşteriyi silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              Are you sure you want to delete the client "{clientToDelete?.name}"? This action cannot be undone.
             </Text>
             
             <View style={styles.deleteButtons}>
               <TouchableOpacity 
                 style={styles.cancelDeleteButton}
                 onPress={cancelDelete}>
-                <Text style={styles.cancelDeleteText}>İptal</Text>
+                <Text style={styles.cancelDeleteText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.confirmDeleteButton}
                 onPress={confirmDelete}>
-                <Text style={styles.confirmDeleteText}>Sil</Text>
+                <Text style={styles.confirmDeleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -1203,17 +1203,17 @@ export default function ClientsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 12,
   },
   backButton: {
@@ -1223,13 +1223,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text
+    color: '#ffffff',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
+    fontSize: 14,
+    color: '#f5f5f5',
     marginTop: 4,
   },
   content: {
@@ -1250,7 +1250,7 @@ const styles = StyleSheet.create({
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like teams
+    color: '#f5f5f5', // Light yellow like teams
     marginTop: 8,
     textAlign: 'center',
   },
@@ -1265,7 +1265,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   clientHeader: {
     flexDirection: 'row',
@@ -1276,7 +1276,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#236ecf', // Blue like teams
+    backgroundColor: '#ffffff', // Blue like teams
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1292,16 +1292,16 @@ const styles = StyleSheet.create({
   clientName: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#236ecf', // Blue like teams
+    color: '#000000', // Blue like teams
     marginBottom: 4,
   },
   clientEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   clientCompany: {
     fontSize: 14,
-    color: '#ffcc00', // Yellow like teams
+    color: '#ffffff', // Yellow like teams
     fontWeight: '600',
   },
   clientActions: {
@@ -1349,14 +1349,14 @@ const styles = StyleSheet.create({
   },
   crmStatLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
     textAlign: 'center',
   },
   crmStatValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     textAlign: 'center',
   },
   modalContainer: {
@@ -1399,7 +1399,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1424,7 +1424,7 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   sectionTitle: {
@@ -1451,7 +1451,7 @@ const styles = StyleSheet.create({
     borderColor: '#bfdbfe',
   },
   addNoteButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1469,14 +1469,14 @@ const styles = StyleSheet.create({
   },
   crmStatLabelDetail: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
     textAlign: 'center',
   },
   crmStatValueDetail: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     textAlign: 'center',
   },
   noteItem: {
@@ -1494,11 +1494,11 @@ const styles = StyleSheet.create({
   noteAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   noteDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   noteText: {
     fontSize: 14,
@@ -1507,7 +1507,7 @@ const styles = StyleSheet.create({
   },
   noNotesText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
@@ -1518,7 +1518,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1545,10 +1545,10 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   dateInputPlaceholder: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   submitButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -1568,17 +1568,17 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginLeft: 8,
   },
   fab: {
     position: 'absolute',
     right: 20,
     bottom: 90,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#ffcc00', // Yellow button like teams
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff', // Yellow button like teams
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
@@ -1595,7 +1595,7 @@ const styles = StyleSheet.create({
   },
   loadingText: {
     fontSize: 16,
-    color: '#fbbf24', // Light yellow text on blue background
+    color: '#f5f5f5', // Light yellow text on blue background
     fontWeight: '500',
   },
   modalOverlay: {
@@ -1628,7 +1628,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   deleteIcon: {
@@ -1656,7 +1656,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -1676,7 +1676,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,
@@ -1719,7 +1719,7 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1755,7 +1755,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     padding: 0,
   },
   toolbarActions: {
@@ -1784,7 +1784,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   selectAllButtonText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1795,7 +1795,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   clearButtonText: {
-    color: '#6b7280',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '500',
   },
@@ -1832,8 +1832,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   checkboxSelected: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   checkboxCheck: {
     color: '#ffffff',
@@ -1844,7 +1844,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1859,7 +1859,7 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   tableActions: {
     flexDirection: 'row',
@@ -1910,7 +1910,7 @@ const styles = StyleSheet.create({
   generatePasswordButton: {
     paddingHorizontal: 16,
     paddingVertical: 12,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     justifyContent: 'center',
     alignItems: 'center',
@@ -1933,7 +1933,7 @@ const styles = StyleSheet.create({
   bottomMenuText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
     textAlign: 'center',
   },

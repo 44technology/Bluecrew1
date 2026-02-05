@@ -13,7 +13,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, Calendar, Clock, MapPin, CheckCircle, X, ArrowLeft } from 'lucide-react-native';
+import { Plus, Calendar, Clock, MapPin, CheckCircle, X } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PMSchedule, Project } from '@/types';
@@ -424,7 +425,7 @@ export default function ScheduleScreen() {
       case 'pending': return '#f59e0b';
       case 'in_progress': return '#3b82f6';
       case 'completed': return '#10b981';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -448,7 +449,7 @@ export default function ScheduleScreen() {
 
       <View style={styles.scheduleDetails}>
         <View style={styles.detailRow}>
-          <Calendar size={16} color="#6b7280" />
+          <Calendar size={16} color="#000000" />
           <Text style={styles.detailText}>
             {new Date(schedule.start_date).toLocaleDateString()} - {new Date(schedule.end_date).toLocaleDateString()}
           </Text>
@@ -488,7 +489,7 @@ export default function ScheduleScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading projects...</Text>
       </View>
     );
@@ -498,12 +499,10 @@ export default function ScheduleScreen() {
     <View style={[styles.container, Platform.OS === 'web' && styles.webContainer]}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#236ecf" />
-          </TouchableOpacity>
+          <BackButton 
+            color="#000000"
+            backgroundColor="rgba(35, 110, 207, 0.1)"
+          />
           <View>
             <Text style={styles.title}>Schedule</Text>
             {selectedProject && (
@@ -574,7 +573,7 @@ export default function ScheduleScreen() {
                 setSelectedMonth(newMonth);
               }}
             >
-              <ArrowLeft size={20} color="#236ecf" />
+              <ArrowLeft size={20} color="#000000" />
             </TouchableOpacity>
             <Text style={styles.calendarMonthText}>
               {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
@@ -587,7 +586,7 @@ export default function ScheduleScreen() {
                 setSelectedMonth(newMonth);
               }}
             >
-              <ArrowLeft size={20} color="#236ecf" style={{ transform: [{ rotate: '180deg' }] }} />
+              <ArrowLeft size={20} color="#000000" style={{ transform: [{ rotate: '180deg' }] }} />
             </TouchableOpacity>
           </View>
           {Platform.OS === 'web' ? (
@@ -606,7 +605,7 @@ export default function ScheduleScreen() {
         <TouchableOpacity
           style={styles.fab}
           onPress={() => setShowProjectModal(true)}>
-          <Plus size={24} color="#ffffff" />
+          <Plus size={24} color="#000000" />
         </TouchableOpacity>
       )}
 
@@ -619,7 +618,7 @@ export default function ScheduleScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Schedule</Text>
             <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -688,7 +687,7 @@ export default function ScheduleScreen() {
                     <Text style={styles.datePickerText}>
                       {newSchedule.start_date || 'Select Start Date'}
                     </Text>
-                    <Calendar size={20} color="#6b7280" />
+                    <Calendar size={20} color="#000000" />
                   </TouchableOpacity>
                   {showStartDatePicker && (
                     <DateTimePicker
@@ -730,7 +729,7 @@ export default function ScheduleScreen() {
                     <Text style={styles.datePickerText}>
                       {newSchedule.end_date || 'Select End Date'}
                     </Text>
-                    <Calendar size={20} color="#6b7280" />
+                    <Calendar size={20} color="#000000" />
                   </TouchableOpacity>
                   {showEndDatePicker && (
                     <DateTimePicker
@@ -893,7 +892,7 @@ export default function ScheduleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   webContainer: {
     maxWidth: 1400,
@@ -908,9 +907,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 20 : 50,
     paddingHorizontal: Platform.OS === 'web' ? 40 : 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#f5f5f5', // Darker blue header
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     ...(Platform.OS === 'web' ? {
       position: 'sticky' as any,
       top: 0,
@@ -929,17 +928,17 @@ const styles = StyleSheet.create({
   projectName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fbbf24',
+    color: '#f5f5f5',
     marginBottom: 4,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text
+    color: '#ffffff',
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
+    color: '#f5f5f5', // Light yellow like teams
     marginTop: 4,
   },
   content: {
@@ -970,7 +969,7 @@ const styles = StyleSheet.create({
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like teams
+    color: '#f5f5f5', // Light yellow like teams
     marginTop: 8,
     textAlign: 'center',
   },
@@ -995,7 +994,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
     ...(Platform.OS === 'web' ? {
       maxWidth: '100%',
       cursor: 'default' as any,
@@ -1013,7 +1012,7 @@ const styles = StyleSheet.create({
   scheduleTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#236ecf', // Blue like teams
+    color: '#000000', // Blue like teams
     marginBottom: 4,
   },
   projectName: {
@@ -1034,7 +1033,7 @@ const styles = StyleSheet.create({
   },
   scheduleDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -1048,7 +1047,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginLeft: 8,
   },
   scheduleActions: {
@@ -1069,13 +1068,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   activeStatusButton: {
-    backgroundColor: '#ffcc00', // Yellow button
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff', // Yellow button
+    borderColor: '#000000',
   },
   statusButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   activeStatusButtonText: {
     color: '#ffffff', // White text on yellow button
@@ -1095,10 +1094,10 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: Platform.OS === 'web' ? 40 : 20,
     bottom: Platform.OS === 'web' ? 40 : 90,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#ffcc00', // Yellow button
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff', // Yellow button
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 8,
@@ -1136,7 +1135,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   modalContent: {
     flex: 1,
@@ -1149,7 +1148,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1186,7 +1185,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedPMOption: {
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     backgroundColor: '#f0f9ff',
   },
   pmInfo: {
@@ -1195,12 +1194,12 @@ const styles = StyleSheet.create({
   pmName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 4,
   },
   pmEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   projectList: {
     gap: 8,
@@ -1216,17 +1215,17 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedProjectOption: {
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     backgroundColor: '#f0f9ff',
   },
   selectedIndicator: {
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#ffcc00', // Yellow button
+    backgroundColor: '#ffffff', // Yellow button
   },
   submitButton: {
-    backgroundColor: '#236ecf', // Blue button
+    backgroundColor: '#000000',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -1251,7 +1250,7 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   timePickerButton: {
@@ -1268,14 +1267,14 @@ const styles = StyleSheet.create({
   },
   timePickerText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf', // Blue background
+    backgroundColor: '#ffffff', // Blue background
   },
   loadingText: {
     marginTop: 10,
@@ -1319,7 +1318,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   deleteIcon: {
@@ -1347,7 +1346,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -1367,7 +1366,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,
@@ -1406,7 +1405,7 @@ const styles = StyleSheet.create({
   },
   projectClient: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   projectStatus: {
@@ -1438,7 +1437,7 @@ const styles = StyleSheet.create({
   },
   pmEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   selectedInfo: {
     backgroundColor: '#f0f9ff',
@@ -1493,15 +1492,15 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   viewModeButtonActive: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#ffffff',
   },
   viewModeText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   viewModeTextActive: {
-    color: '#236ecf',
+    color: '#000000',
   },
   calendarHeader: {
     flexDirection: 'row',
@@ -1546,7 +1545,7 @@ const styles = StyleSheet.create({
   calendarDayHeaderText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     textTransform: 'uppercase',
   },
   calendarDays: {
@@ -1570,7 +1569,7 @@ const styles = StyleSheet.create({
   },
   calendarDayToday: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   calendarDayWithSchedules: {
@@ -1579,11 +1578,11 @@ const styles = StyleSheet.create({
   calendarDayNumber: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
   },
   calendarDayNumberToday: {
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   calendarDaySchedules: {
     flexDirection: 'row',

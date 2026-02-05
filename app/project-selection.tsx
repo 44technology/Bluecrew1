@@ -89,7 +89,7 @@ export default function ProjectSelectionScreen() {
       case 'in_progress': return '#0ea5e9';
       case 'pending': return '#f59e0b';
       case 'cancelled': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -106,7 +106,7 @@ export default function ProjectSelectionScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading projects...</Text>
       </View>
     );
@@ -204,7 +204,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   content: {
     flex: 1,
@@ -225,17 +225,17 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   segmentActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   segmentText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   segmentTextActive: {
-    color: '#236ecf',
+    color: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
@@ -246,7 +246,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   emptyState: {
     alignItems: 'center',
@@ -254,7 +254,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   projectsList: {
     gap: 16,
@@ -272,9 +272,9 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   selectedProjectCard: {
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     shadowOpacity: 0.3,
-    shadowColor: '#236ecf',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 6,
@@ -306,12 +306,12 @@ const styles = StyleSheet.create({
   },
   projectClient: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   projectDescription: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -322,7 +322,7 @@ const styles = StyleSheet.create({
   },
   projectDate: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
   },
   projectProgress: {
     fontSize: 12,
@@ -348,7 +348,7 @@ const styles = StyleSheet.create({
   },
   menuSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 20,
   },
   menuGrid: {
@@ -381,10 +381,10 @@ const styles = StyleSheet.create({
   },
   selectedProjectMenu: {
     borderWidth: 3,
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     backgroundColor: '#f0f9ff',
     shadowOpacity: 0.3,
-    shadowColor: '#236ecf',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
     shadowRadius: 8,
     elevation: 6,
@@ -399,7 +399,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   selectedProjectBadge: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,

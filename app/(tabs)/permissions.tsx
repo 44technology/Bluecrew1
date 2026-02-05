@@ -12,8 +12,9 @@ import {
 import { 
   Building2, Users, UserCheck, User, FileText, Clock, CheckCircle, 
   UserCog, Receipt, Briefcase, Settings, Package, Calendar, 
-  ArrowLeft, Save, Shield
+  Save, Shield
 } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
@@ -441,7 +442,7 @@ export default function PermissionsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading permissions...</Text>
         </View>
       </View>
@@ -453,18 +454,7 @@ export default function PermissionsScreen() {
       {Platform.OS === 'web' ? <TopNavigationBar /> : <HamburgerMenu />}
       
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => {
-            if (router.canGoBack()) {
-              router.back();
-            } else {
-              router.push('/');
-            }
-          }}
-        >
-          <ArrowLeft size={24} color="#ffcc00" />
-        </TouchableOpacity>
+        <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
         <View style={styles.headerContent}>
           <Text style={styles.title}>Permissions</Text>
           <Text style={styles.subtitle}>
@@ -500,6 +490,7 @@ export default function PermissionsScreen() {
                   styles.roleTabText,
                   selectedRole === role && styles.roleTabTextActive,
                 ]}
+                numberOfLines={1}
               >
                 {roleLabels[role]}
               </Text>
@@ -529,11 +520,11 @@ export default function PermissionsScreen() {
                 <View key={page.id} style={styles.pageCard}>
                   <View style={styles.pageInfo}>
                     <View style={[styles.pageIcon, isEnabled && styles.pageIconEnabled]}>
-                      <Icon size={24} color={isEnabled ? '#236ecf' : '#9ca3af'} />
+                      <Icon size={24} color={isEnabled ? '#000000' : '#000000'} />
                     </View>
                     <View style={styles.pageDetails}>
                       <Text style={styles.pageName}>{page.name}</Text>
-                      <Text style={styles.pageDescription}>{page.description}</Text>
+                      <Text style={styles.pageDescription} numberOfLines={1}>{page.description}</Text>
                       <Text style={styles.pageHref}>{page.href}</Text>
                     </View>
                   </View>
@@ -550,7 +541,7 @@ export default function PermissionsScreen() {
                           <Text style={[
                             styles.permissionButtonText,
                             currentPermission === 'view' && styles.permissionButtonTextActive,
-                          ]}>
+                          ]} numberOfLines={1}>
                             View
                           </Text>
                         </TouchableOpacity>
@@ -564,7 +555,7 @@ export default function PermissionsScreen() {
                           <Text style={[
                             styles.permissionButtonText,
                             currentPermission === 'edit' && styles.permissionButtonTextActive,
-                          ]}>
+                          ]} numberOfLines={1}>
                             Edit
                           </Text>
                         </TouchableOpacity>
@@ -598,7 +589,7 @@ export default function PermissionsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
     flexDirection: 'row',
@@ -606,9 +597,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header like other pages
+    backgroundColor: '#f5f5f5', // Darker blue header like other pages
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like other pages
+    borderBottomColor: '#ffffff', // Yellow border like other pages
     gap: 16,
   },
   backButton: {
@@ -620,17 +611,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like other pages
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#000000',
   },
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -660,21 +651,25 @@ const styles = StyleSheet.create({
     padding: 4,
     marginBottom: 20,
     gap: 4,
+    paddingHorizontal: 4,
   },
   roleTab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    paddingHorizontal: 8,
     borderRadius: 8,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 44,
   },
   roleTabActive: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   roleTabText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
+    textAlign: 'center',
   },
   roleTabTextActive: {
     color: '#ffffff',
@@ -688,12 +683,12 @@ const styles = StyleSheet.create({
   roleTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff', // White text on blue background like other pages
+    color: '#000000',
     marginBottom: 4,
   },
   roleSubtitle: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#000000',
   },
   pagesList: {
     gap: 12,
@@ -729,19 +724,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   pageName: {
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
     color: '#1f2937',
     marginBottom: 4,
   },
   pageDescription: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#000000',
     marginBottom: 4,
   },
   pageHref: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
     fontFamily: Platform.OS === 'web' ? 'monospace' : 'monospace',
   },
   toggleButton: {
@@ -753,7 +748,7 @@ const styles = StyleSheet.create({
     padding: 2,
   },
   toggleButtonEnabled: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   toggleCircle: {
     width: 28,
@@ -772,25 +767,29 @@ const styles = StyleSheet.create({
   },
   permissionButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     marginRight: 8,
   },
   permissionButton: {
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     paddingVertical: 6,
     borderRadius: 6,
     backgroundColor: '#f3f4f6',
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    minWidth: 60,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   permissionButtonActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   permissionButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
+    textAlign: 'center',
   },
   permissionButtonTextActive: {
     color: '#ffffff',
@@ -803,7 +802,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background like other pages
+    color: '#000000',
     fontWeight: '500',
   },
 });

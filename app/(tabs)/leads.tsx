@@ -356,7 +356,7 @@ export default function LeadsScreen() {
       case 'qualified': return '#10b981';
       case 'converted': return '#059669';
       case 'lost': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -420,7 +420,7 @@ export default function LeadsScreen() {
       <>
         <HamburgerMenu />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading leads...</Text>
         </View>
       </>
@@ -433,7 +433,7 @@ export default function LeadsScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.push('/sales')} style={styles.backButton}>
-            <ArrowLeft size={24} color="#ffcc00" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <View style={styles.headerTop}>
             <View style={styles.headerContent}>
@@ -459,7 +459,7 @@ export default function LeadsScreen() {
               placeholder="Search leads..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
           </View>
         )}
@@ -473,7 +473,7 @@ export default function LeadsScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor="#236ecf"
+                tintColor="#000000"
               />
             ) : undefined
           }
@@ -513,7 +513,7 @@ export default function LeadsScreen() {
                 </View>
                 <View style={styles.cardFooter}>
                   <View style={styles.notesCount}>
-                    <MessageSquare size={16} color="#6b7280" />
+                    <MessageSquare size={16} color="#000000" />
                     <Text style={styles.notesCountText}>{lead.notes.length} notes</Text>
                   </View>
                   <Text style={styles.dateText}>
@@ -537,7 +537,7 @@ export default function LeadsScreen() {
                 setFieldErrors({});
                 setShowCreateModal(false);
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -640,7 +640,7 @@ export default function LeadsScreen() {
                 setShowDetailModal(false);
                 setSelectedLead(null);
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -665,23 +665,23 @@ export default function LeadsScreen() {
                     </View>
 
                     <View style={styles.detailRow}>
-                      <Mail size={18} color="#6b7280" />
+                      <Mail size={18} color="#000000" />
                       <Text style={styles.detailValue}>{selectedLead.email}</Text>
                     </View>
                     {selectedLead.phone && (
                       <View style={styles.detailRow}>
-                        <Phone size={18} color="#6b7280" />
+                        <Phone size={18} color="#000000" />
                         <Text style={styles.detailValue}>{selectedLead.phone}</Text>
                       </View>
                     )}
                     {selectedLead.address && (
                       <View style={styles.detailRow}>
-                        <MapPin size={18} color="#6b7280" />
+                        <MapPin size={18} color="#000000" />
                         <Text style={styles.detailValue}>{selectedLead.address}</Text>
                       </View>
                     )}
                     <View style={styles.detailRow}>
-                      <Calendar size={18} color="#6b7280" />
+                      <Calendar size={18} color="#000000" />
                       <Text style={styles.detailValue}>
                         Created: {new Date(selectedLead.created_at).toLocaleDateString()}
                       </Text>
@@ -725,7 +725,7 @@ export default function LeadsScreen() {
                           ]}
                           onPress={() => handleAssignSales(selectedLead, sales.id, sales.name)}
                         >
-                          <User size={18} color={selectedLead.assigned_to === sales.id ? '#236ecf' : '#6b7280'} />
+                          <User size={18} color={selectedLead.assigned_to === sales.id ? '#000000' : '#000000'} />
                           <Text style={[
                             styles.salesOptionText,
                             selectedLead.assigned_to === sales.id && styles.selectedSalesOptionText
@@ -733,7 +733,7 @@ export default function LeadsScreen() {
                             {sales.name}
                           </Text>
                           {selectedLead.assigned_to === sales.id && (
-                            <CheckCircle size={18} color="#236ecf" />
+                            <CheckCircle size={18} color="#000000" />
                           )}
                         </TouchableOpacity>
                       ))}
@@ -762,7 +762,7 @@ export default function LeadsScreen() {
                         style={styles.addNoteButton}
                         onPress={() => setShowNoteModal(true)}
                       >
-                        <Plus size={18} color="#236ecf" />
+                        <Plus size={18} color="#000000" />
                         <Text style={styles.addNoteButtonText}>Add Note</Text>
                       </TouchableOpacity>
                     </View>
@@ -822,7 +822,7 @@ export default function LeadsScreen() {
                 setShowNoteModal(false);
                 setNewNote({ note: '', contact_date: '' });
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -833,7 +833,7 @@ export default function LeadsScreen() {
                   style={styles.dateInput}
                   onPress={() => setShowDatePicker(true)}
                 >
-                  <Calendar size={20} color="#6b7280" />
+                  <Calendar size={20} color="#000000" />
                   <Text style={[styles.dateInputText, !newNote.contact_date && styles.dateInputPlaceholder]}>
                     {newNote.contact_date 
                       ? new Date(newNote.contact_date).toLocaleDateString('en-US', { 
@@ -914,7 +914,7 @@ export default function LeadsScreen() {
                 setShowConvertModal(false);
                 setConvertToClientPassword('');
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -1035,17 +1035,17 @@ export default function LeadsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 12,
   },
   backButton: {
@@ -1062,17 +1062,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#ffffff',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24',
+    color: '#f5f5f5',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1086,7 +1086,7 @@ const styles = StyleSheet.create({
   searchContainer: {
     paddingHorizontal: 20,
     paddingVertical: 12,
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
   },
   searchInput: {
     backgroundColor: '#ffffff',
@@ -1105,7 +1105,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 10,
@@ -1146,7 +1146,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -1158,7 +1158,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1178,12 +1178,12 @@ const styles = StyleSheet.create({
   },
   cardEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   cardPhone: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -1211,11 +1211,11 @@ const styles = StyleSheet.create({
   },
   notesCountText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   dateText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   modalContainer: {
     flex: 1,
@@ -1246,7 +1246,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1264,7 +1264,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
@@ -1289,7 +1289,7 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1315,7 +1315,7 @@ const styles = StyleSheet.create({
   },
   detailValue: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   sectionTitle: {
@@ -1342,7 +1342,7 @@ const styles = StyleSheet.create({
     borderColor: '#bfdbfe',
   },
   addNoteButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1361,11 +1361,11 @@ const styles = StyleSheet.create({
   noteAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   noteDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   noteText: {
     fontSize: 14,
@@ -1374,7 +1374,7 @@ const styles = StyleSheet.create({
   },
   noNotesText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
@@ -1394,15 +1394,15 @@ const styles = StyleSheet.create({
   },
   statusButtonActive: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
   },
   statusButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   statusButtonTextActive: {
-    color: '#236ecf',
+    color: '#000000',
   },
   modalActions: {
     flexDirection: 'row',
@@ -1458,17 +1458,17 @@ const styles = StyleSheet.create({
   },
   selectedSalesOption: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   salesOptionText: {
     flex: 1,
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
   },
   selectedSalesOptionText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   unassignButton: {
@@ -1489,12 +1489,12 @@ const styles = StyleSheet.create({
   },
   assignedToText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 12,
   },
   assignedToName: {
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   bottomMenu: {
     position: 'absolute',
@@ -1531,7 +1531,7 @@ const styles = StyleSheet.create({
   bottomMenuText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
     textAlign: 'center',
   },

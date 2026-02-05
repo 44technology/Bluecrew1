@@ -114,7 +114,8 @@ export class CommentService {
       } catch (indexError: any) {
         // If index doesn't exist, fallback to client-side sorting
         if (indexError.code === 'failed-precondition' || indexError.message?.includes('index')) {
-          console.warn('Index not found for comments, using client-side sorting. Please create the index:', indexError.message);
+          // Silently use client-side sorting (don't show warning to user)
+          // console.warn('Index not found for comments, using client-side sorting. Please create the index:', indexError.message);
           
           // Get all comments for the project without orderBy
           const q = query(
@@ -208,7 +209,8 @@ export class CommentService {
       } catch (indexError: any) {
         // If index doesn't exist, fallback to client-side sorting
         if (indexError.code === 'failed-precondition' || indexError.message?.includes('index')) {
-          console.warn('Index not found for invoice comments, using client-side sorting.');
+          // Silently use client-side sorting (don't show warning to user)
+          // console.warn('Index not found for invoice comments, using client-side sorting.');
           
           // Get all comments for the invoice without orderBy
           const q = query(

@@ -29,17 +29,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#236ecf',
+    color: '#000000',
     marginBottom: 10,
   },
   subtitle: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 40,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 10,

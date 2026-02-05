@@ -12,7 +12,8 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
-import { Plus, X, Eye, FileText, DollarSign, Calendar, Trash, Download, ArrowLeft, User, UserCheck, Receipt, BarChart3, MessageSquare, Filter, Search, Building2, CheckCircle, Circle, Upload, Paperclip } from 'lucide-react-native';
+import { Plus, X, Eye, FileText, DollarSign, Calendar, Trash, Download, User, UserCheck, Receipt, BarChart3, MessageSquare, Filter, Search, Building2, CheckCircle, Circle, Upload, Paperclip } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -25,6 +26,7 @@ import { ProjectService } from '@/services/projectService';
 import { usePagePermission } from '@/hooks/usePagePermission';
 import { CommentService } from '@/services/commentService';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import SecondaryButton from '@/components/SecondaryButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -141,6 +143,18 @@ export default function InvoicesScreen() {
   useEffect(() => {
     loadData();
   }, [userRole]);
+
+  // Open invoice detail modal if id is provided in params
+  useEffect(() => {
+    if (params.id && invoices.length > 0) {
+      const invoiceId = params.id as string;
+      const invoice = invoices.find(inv => inv.id === invoiceId);
+      if (invoice) {
+        setSelectedInvoice(invoice);
+        setShowDetailModal(true);
+      }
+    }
+  }, [params.id, invoices]);
 
   // Mobile web detection (to avoid colliding with HamburgerMenu absolute button)
   useEffect(() => {
@@ -927,8 +941,8 @@ export default function InvoicesScreen() {
       case 'overdue': return '#ef4444';
       case 'partial-paid': return '#f59e0b';
       case 'pending': return '#3b82f6';
-      case 'cancelled': return '#6b7280';
-      default: return '#6b7280';
+      case 'cancelled': return '#000000';
+      default: return '#000000';
     }
   };
 
@@ -1118,7 +1132,7 @@ export default function InvoicesScreen() {
               align-items: flex-start;
               margin-bottom: 40px;
               padding-bottom: 20px;
-              border-bottom: 3px solid #236ecf;
+              border-bottom: 3px solid #000000;
             }
             .logo-container {
               flex: 1;
@@ -1130,7 +1144,7 @@ export default function InvoicesScreen() {
             .company-name-fallback {
               font-size: 28px;
               font-weight: bold;
-              color: #236ecf;
+              color: #000000;
               object-fit: contain;
             }
             .header-info {
@@ -1140,7 +1154,7 @@ export default function InvoicesScreen() {
             .invoice-title {
               font-size: 36px;
               font-weight: bold;
-              color: #236ecf;
+              color: #000000;
               margin: 0 0 10px 0;
             }
             .invoice-number {
@@ -1190,7 +1204,7 @@ export default function InvoicesScreen() {
               background-color: #fff;
             }
             .table thead {
-              background-color: #236ecf;
+              background-color: #000000;
               color: #fff;
             }
             .table th {
@@ -1223,13 +1237,13 @@ export default function InvoicesScreen() {
             }
             .work-item-desc {
               font-size: 12px;
-              color: #6b7280;
+              color: #000000;
               font-style: italic;
             }
             .total-section {
               margin-top: 20px;
               padding-top: 20px;
-              border-top: 2px solid #236ecf;
+              border-top: 2px solid #000000;
             }
             .total-row {
               display: flex;
@@ -1251,7 +1265,7 @@ export default function InvoicesScreen() {
               padding-top: 20px;
               border-top: 1px solid #e5e7eb;
               text-align: center;
-              color: #6b7280;
+              color: #000000;
               font-size: 12px;
             }
             .footer p {
@@ -1267,7 +1281,7 @@ export default function InvoicesScreen() {
             }
             .status-pending {
               background-color: #dbeafe;
-              color: #1e40af;
+              color: #171717;
             }
             .status-paid {
               background-color: #d1fae5;
@@ -1302,8 +1316,8 @@ export default function InvoicesScreen() {
             <div class="info-box">
               <div class="info-label">Bill To</div>
               <div class="info-value">${invoice.client_name}</div>
-              ${invoice.client_email ? `<div style="font-size: 14px; color: #6b7280; margin-top: 5px;">${invoice.client_email}</div>` : ''}
-              ${invoice.client_address ? `<div style="font-size: 14px; color: #6b7280; margin-top: 5px;">${invoice.client_address}</div>` : ''}
+              ${invoice.client_email ? `<div style="font-size: 14px; color: #000000; margin-top: 5px;">${invoice.client_email}</div>` : ''}
+              ${invoice.client_address ? `<div style="font-size: 14px; color: #000000; margin-top: 5px;">${invoice.client_address}</div>` : ''}
             </div>
             <div class="info-box">
               <div class="info-label">Invoice Date</div>
@@ -1409,7 +1423,7 @@ export default function InvoicesScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading invoices...</Text>
       </View>
     );
@@ -1437,7 +1451,7 @@ export default function InvoicesScreen() {
             </Text>
           )}
           {invoice.due_date && (
-            <Text style={[styles.kanbanCardDate, { color: invoice.status === 'overdue' ? '#ef4444' : '#6b7280' }]}>
+            <Text style={[styles.kanbanCardDate, { color: invoice.status === 'overdue' ? '#ef4444' : '#000000' }]}>
               Due: {new Date(invoice.due_date).toLocaleDateString()}
             </Text>
           )}
@@ -1470,7 +1484,7 @@ export default function InvoicesScreen() {
               setShowDetailModal(true);
             }}
           >
-            <Eye size={16} color="#236ecf" />
+            <Eye size={16} color="#000000" />
             <Text style={styles.kanbanCardActionText}>View</Text>
           </TouchableOpacity>
           {((invoice.status === 'pending' || invoice.status === 'overdue') || 
@@ -1532,9 +1546,10 @@ export default function InvoicesScreen() {
       <HamburgerMenu />
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push('/sales')} style={styles.backButton}>
-            <ArrowLeft size={24} color="#ffcc00" />
-          </TouchableOpacity>
+          <BackButton 
+            onPress={() => router.push('/sales')}
+            color="#ffffff" 
+          />
           <View style={styles.headerTop}>
             <View style={styles.headerContent}>
               <Text style={styles.title}>Invoices</Text>
@@ -1546,7 +1561,7 @@ export default function InvoicesScreen() {
                   style={styles.filterButton}
                   onPress={() => setShowFilter(!showFilter)}
                 >
-                  <Filter size={20} color="#236ecf" />
+                  <Filter size={20} color="#000000" />
                   <Text style={styles.filterButtonText}>Filter</Text>
                 </TouchableOpacity>
                 {(canEditInvoices || userRole === 'admin' || userRole === 'sales') && userRole !== 'client' && (
@@ -1566,7 +1581,7 @@ export default function InvoicesScreen() {
         {Platform.OS === 'web' && showFilter && (
           <View style={styles.filterSection}>
             <View style={styles.filterInputContainer}>
-              <Search size={20} color="#6b7280" />
+              <Search size={20} color="#000000" />
               <TextInput
                 style={styles.filterInput}
                 placeholder="Search by invoice number, client name, date, amount..."
@@ -1575,7 +1590,7 @@ export default function InvoicesScreen() {
               />
               {filterQuery ? (
                 <TouchableOpacity onPress={() => setFilterQuery('')}>
-                  <X size={20} color="#6b7280" />
+                  <X size={20} color="#000000" />
                 </TouchableOpacity>
               ) : null}
             </View>
@@ -1592,7 +1607,7 @@ export default function InvoicesScreen() {
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={onRefresh}
-                  tintColor="#236ecf"
+                  tintColor="#000000"
                 />
               ) : undefined
             }
@@ -1653,7 +1668,7 @@ export default function InvoicesScreen() {
             {renderKanbanColumn('Overdue', 'overdue', '#ef4444')}
             {renderKanbanColumn('Partial Paid', 'partial-paid', '#f59e0b')}
             {renderKanbanColumn('Paid', 'paid', '#059669')}
-            {renderKanbanColumn('Cancelled', 'cancelled', '#6b7280')}
+            {renderKanbanColumn('Cancelled', 'cancelled', '#000000')}
           </View>
         )}
 
@@ -1670,7 +1685,7 @@ export default function InvoicesScreen() {
                 setWorkTitles([]);
                 setNewWorkTitle({ name: '', description: '', quantity: '', unit: '', unit_price: '', price: '' });
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -1685,7 +1700,7 @@ export default function InvoicesScreen() {
                   style={styles.proposalSelectButton}
                   onPress={() => setShowProposalSelect(true)}
                 >
-                  <FileText size={18} color="#236ecf" />
+                  <FileText size={18} color="#000000" />
                   <Text style={styles.proposalSelectButtonText}>
                     {selectedProposalId 
                       ? proposals.find(p => p.id === selectedProposalId)?.proposal_number || 'Select Proposal'
@@ -1722,7 +1737,7 @@ export default function InvoicesScreen() {
                     style={styles.addClientButton}
                     onPress={() => setShowNewClientModal(true)}
                   >
-                    <Plus size={16} color="#236ecf" />
+                    <Plus size={16} color="#000000" />
                     <Text style={styles.addClientButtonText}>Add New Client</Text>
                   </TouchableOpacity>
                 </View>
@@ -1799,7 +1814,7 @@ export default function InvoicesScreen() {
                           ? new Date(newInvoice.due_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
                           : 'Select due date'}
                       </Text>
-                      <Calendar size={20} color="#6b7280" />
+                      <Calendar size={20} color="#000000" />
                     </TouchableOpacity>
                     {showDueDatePicker && (
                       <DateTimePicker
@@ -2024,7 +2039,7 @@ export default function InvoicesScreen() {
                 setShowDetailModal(false);
                 setSelectedInvoice(null);
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -2039,7 +2054,7 @@ export default function InvoicesScreen() {
                           style={styles.downloadButton}
                           onPress={() => handleExportPDF(selectedInvoice)}
                         >
-                          <Download size={18} color="#236ecf" />
+                          <Download size={18} color="#000000" />
                           <Text style={styles.downloadButtonText}>Download PDF</Text>
                         </TouchableOpacity>
                       )}
@@ -2275,7 +2290,7 @@ export default function InvoicesScreen() {
                           {selectedInvoice.client_approved ? (
                             <CheckCircle size={24} color="#10b981" />
                           ) : (
-                            <Circle size={24} color="#6b7280" />
+                            <Circle size={24} color="#000000" />
                           )}
                         </TouchableOpacity>
                         <View style={styles.clientApprovalTextContainer}>
@@ -2317,7 +2332,7 @@ export default function InvoicesScreen() {
                             // Show comment input
                           }}
                         >
-                          <MessageSquare size={18} color="#236ecf" />
+                          <MessageSquare size={18} color="#000000" />
                           <Text style={styles.addCommentButtonText}>Add Comment</Text>
                         </TouchableOpacity>
                       )}
@@ -2404,7 +2419,7 @@ export default function InvoicesScreen() {
                     setSelectedWorkTitleFromList('');
                   }
                 }}>
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.categoryList}>
@@ -2454,7 +2469,7 @@ export default function InvoicesScreen() {
                 setShowPartialPaidModal(false);
                 setPartialPaidAmount('');
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -2463,7 +2478,7 @@ export default function InvoicesScreen() {
                 <>
                   <View style={styles.inputGroup}>
                     <Text style={styles.label}>Total Invoice Amount</Text>
-                    <Text style={[styles.input, { backgroundColor: '#f3f4f6', color: '#6b7280' }]}>
+                    <Text style={[styles.input, { backgroundColor: '#f3f4f6', color: '#000000' }]}>
                       {formatCurrency(selectedInvoice.total_cost)}
                     </Text>
                   </View>
@@ -2481,7 +2496,7 @@ export default function InvoicesScreen() {
                       placeholder="Enter amount paid"
                       keyboardType="numeric"
                     />
-                    <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                    <Text style={{ fontSize: 12, color: '#000000', marginTop: 4 }}>
                       Enter the amount the client has paid (must be less than total)
                     </Text>
                   </View>
@@ -2521,7 +2536,7 @@ export default function InvoicesScreen() {
                   setPayAmount('');
                   setInvoiceToPay(null);
                 }}>
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.categoryList} showsVerticalScrollIndicator={false}>
@@ -2529,7 +2544,7 @@ export default function InvoicesScreen() {
                   <>
                     <View style={styles.inputGroup}>
                       <Text style={styles.label}>Total Invoice Amount</Text>
-                      <Text style={[styles.input, { backgroundColor: '#f3f4f6', color: '#6b7280' }]}>
+                      <Text style={[styles.input, { backgroundColor: '#f3f4f6', color: '#000000' }]}>
                         {formatCurrency(invoiceToPay.total_cost)}
                       </Text>
                     </View>
@@ -2537,7 +2552,7 @@ export default function InvoicesScreen() {
                     {(invoiceToPay.paid_amount !== undefined && invoiceToPay.paid_amount > 0) && (
                       <View style={styles.inputGroup}>
                         <Text style={styles.label}>Paid Amount</Text>
-                        <Text style={[styles.input, { backgroundColor: '#f3f4f6', color: '#6b7280' }]}>
+                        <Text style={[styles.input, { backgroundColor: '#f3f4f6', color: '#000000' }]}>
                           {formatCurrency(invoiceToPay.paid_amount)}
                         </Text>
                       </View>
@@ -2555,7 +2570,7 @@ export default function InvoicesScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="Enter payment amount"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#000000"
                         value={payAmount}
                         onChangeText={setPayAmount}
                         keyboardType="decimal-pad"
@@ -2566,16 +2581,17 @@ export default function InvoicesScreen() {
                     </View>
 
                     <View style={styles.modalActionButtons}>
-                      <TouchableOpacity
+                      <SecondaryButton
                         style={styles.cancelButton}
                         onPress={() => {
                           setShowPayModal(false);
                           setPayAmount('');
                           setInvoiceToPay(null);
                         }}
+                        textStyle={styles.cancelButtonText}
                       >
-                        <Text style={styles.cancelButtonText}>Cancel</Text>
-                      </TouchableOpacity>
+                        Cancel
+                      </SecondaryButton>
                       <TouchableOpacity
                         style={[styles.submitButton, styles.modalPrimaryButton]}
                         onPress={handlePay}
@@ -2605,7 +2621,7 @@ export default function InvoicesScreen() {
                   setShowPaymentDetailModal(false);
                   setSelectedPayment(null);
                 }}>
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.paymentDetailBody}>
@@ -2667,7 +2683,7 @@ export default function InvoicesScreen() {
                           onPress={handlePickPaymentImage}
                           disabled={uploadingPaymentDocument}
                         >
-                          <Paperclip size={18} color="#236ecf" />
+                          <Paperclip size={18} color="#000000" />
                           <Text style={styles.documentButtonText}>Add Image</Text>
                         </TouchableOpacity>
                         <TouchableOpacity
@@ -2675,13 +2691,13 @@ export default function InvoicesScreen() {
                           onPress={handlePickPaymentDocument}
                           disabled={uploadingPaymentDocument}
                         >
-                          <FileText size={18} color="#236ecf" />
+                          <FileText size={18} color="#000000" />
                           <Text style={styles.documentButtonText}>Add Document</Text>
                         </TouchableOpacity>
                       </View>
                       {uploadingPaymentDocument && (
                         <View style={styles.uploadingContainer}>
-                          <ActivityIndicator size="small" color="#236ecf" />
+                          <ActivityIndicator size="small" color="#000000" />
                           <Text style={styles.uploadingText}>Uploading...</Text>
                         </View>
                       )}
@@ -2689,7 +2705,7 @@ export default function InvoicesScreen() {
                         <View style={styles.documentsList}>
                           {paymentDocuments.map((doc) => (
                             <View key={doc.id} style={styles.documentItem}>
-                              <FileText size={16} color="#6b7280" />
+                              <FileText size={16} color="#000000" />
                               <Text style={styles.documentName} numberOfLines={1}>{doc.name}</Text>
                               <TouchableOpacity
                                 onPress={() => {
@@ -2699,7 +2715,7 @@ export default function InvoicesScreen() {
                                 }}
                                 style={styles.viewDocumentButton}
                               >
-                                <Eye size={16} color="#236ecf" />
+                                <Eye size={16} color="#000000" />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={styles.removeDocumentButton}
@@ -2734,7 +2750,7 @@ export default function InvoicesScreen() {
                     setSelectedWorkTitleFromList('');
                   }
                 }}>
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
               <ScrollView style={styles.categoryList}>
@@ -2784,7 +2800,7 @@ export default function InvoicesScreen() {
                 setShowNewClientModal(false);
                 setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -2832,7 +2848,7 @@ export default function InvoicesScreen() {
                   secureTextEntry
                   autoCapitalize="none"
                 />
-                <Text style={{ fontSize: 12, color: '#6b7280', marginTop: 4 }}>
+                <Text style={{ fontSize: 12, color: '#000000', marginTop: 4 }}>
                   Client will use this password to login
                 </Text>
               </View>
@@ -2848,13 +2864,12 @@ export default function InvoicesScreen() {
         <Modal
           visible={showProposalSelect}
           transparent={true}
-          animationType="slide"
-          presentationStyle="pageSheet">
+          animationType="slide">
           <View style={styles.modalContainer}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Proposal</Text>
               <TouchableOpacity onPress={() => setShowProposalSelect(false)}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -2865,7 +2880,7 @@ export default function InvoicesScreen() {
               
               {proposals.length === 0 ? (
                 <View style={styles.emptyState}>
-                  <FileText size={48} color="#9ca3af" />
+                  <FileText size={48} color="#000000" />
                   <Text style={styles.emptyText}>No approved proposals available</Text>
                   <Text style={styles.emptySubtext}>All approved proposals already have invoices</Text>
                 </View>
@@ -2953,17 +2968,17 @@ export default function InvoicesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 12,
   },
   backButton: {
@@ -2997,12 +3012,12 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   filterButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
   addButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     width: Platform.OS === 'web' ? 40 : undefined,
     height: Platform.OS === 'web' ? 40 : undefined,
     borderRadius: Platform.OS === 'web' ? 20 : 8,
@@ -3020,7 +3035,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   addButtonText: {
-    color: '#1f2937',
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
     display: Platform.OS === 'web' ? 'none' : 'flex',
@@ -3058,13 +3073,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   filterToggleActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   filterToggleText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   filterToggleTextActive: {
     color: '#ffffff',
@@ -3156,7 +3171,7 @@ const styles = StyleSheet.create({
   kanbanCardInvoiceNumber: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   kanbanCardBody: {
     marginBottom: 12,
@@ -3169,7 +3184,7 @@ const styles = StyleSheet.create({
   },
   kanbanCardDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   kanbanCardAmounts: {
@@ -3182,7 +3197,7 @@ const styles = StyleSheet.create({
   },
   kanbanCardLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   kanbanCardValue: {
     fontSize: 12,
@@ -3219,7 +3234,7 @@ const styles = StyleSheet.create({
   kanbanCardActionText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   kanbanCardPayButton: {
     backgroundColor: '#10b981',
@@ -3233,29 +3248,29 @@ const styles = StyleSheet.create({
   },
   kanbanEmptyText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#000000',
   },
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24',
+    color: '#000000',
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
     gap: 8,
   },
   addButtonText: {
-    color: '#1f2937',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -3272,7 +3287,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 10,
@@ -3302,7 +3317,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -3321,7 +3336,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   statusBadge: {
@@ -3363,7 +3378,7 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   modalContainer: {
     flex: 1,
@@ -3406,12 +3421,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   helperText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: -4,
     marginBottom: 8,
     fontStyle: 'italic',
@@ -3428,7 +3443,7 @@ const styles = StyleSheet.create({
     borderColor: '#bfdbfe',
   },
   addClientButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3461,16 +3476,16 @@ const styles = StyleSheet.create({
   },
   selectedProject: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   projectText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   selectedProjectText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   clientList: {
@@ -3488,16 +3503,16 @@ const styles = StyleSheet.create({
   },
   selectedClient: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   clientText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   selectedClientText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   toggleContainer: {
@@ -3516,15 +3531,15 @@ const styles = StyleSheet.create({
   toggleButtonActive: {
     backgroundColor: '#eff6ff',
     borderWidth: 2,
-    borderColor: '#236ecf',
+    borderColor: '#000000',
   },
   toggleButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   toggleButtonTextActive: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   newClientForm: {
@@ -3535,7 +3550,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3558,7 +3573,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -3579,7 +3594,7 @@ const styles = StyleSheet.create({
   },
   workTitleDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   workTitlePrice: {
@@ -3593,7 +3608,7 @@ const styles = StyleSheet.create({
   },
   workTitleDetailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   removeWorkTitleButton: {
     padding: 8,
@@ -3621,7 +3636,7 @@ const styles = StyleSheet.create({
   priceLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   priceInput: {
     flex: 1,
@@ -3637,7 +3652,7 @@ const styles = StyleSheet.create({
   percentageLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     minWidth: 30,
   },
   calculatedAmount: {
@@ -3654,12 +3669,12 @@ const styles = StyleSheet.create({
   calculatedAmountLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e40af',
+    color: '#171717',
   },
   calculatedAmountValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e40af',
+    color: '#171717',
   },
   calculatedPriceContainer: {
     flexDirection: 'row',
@@ -3675,15 +3690,15 @@ const styles = StyleSheet.create({
   calculatedPriceLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e40af',
+    color: '#171717',
   },
   calculatedPriceValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e40af',
+    color: '#171717',
   },
   addWorkTitleButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 12,
     justifyContent: 'center',
@@ -3697,7 +3712,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -3707,7 +3722,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   submitButtonText: {
-    color: '#1f2937',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -3723,7 +3738,6 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -3731,7 +3745,6 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   cancelButtonText: {
-    color: '#374151',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -3772,7 +3785,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   downloadButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3785,11 +3798,11 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   detailValue: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
     textAlign: 'right',
   },
@@ -3808,7 +3821,7 @@ const styles = StyleSheet.create({
   workTitleDetailNumber: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   workTitleDetailName: {
     fontSize: 16,
@@ -3817,7 +3830,7 @@ const styles = StyleSheet.create({
   },
   workTitleDetailDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   workTitleDetailInfo: {
@@ -3826,7 +3839,7 @@ const styles = StyleSheet.create({
   },
   workTitleDetailInfoText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   workTitleDetailPrice: {
     fontSize: 16,
@@ -3869,7 +3882,7 @@ const styles = StyleSheet.create({
   paymentSummaryLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   paymentSummaryPaid: {
     fontSize: 18,
@@ -3883,7 +3896,7 @@ const styles = StyleSheet.create({
   },
   rejectionReason: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     padding: 12,
     backgroundColor: '#fef2f2',
     borderRadius: 8,
@@ -3908,13 +3921,13 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   statusButtonActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   statusButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   clientApprovalContainer: {
     flexDirection: 'row',
@@ -3940,7 +3953,7 @@ const styles = StyleSheet.create({
   },
   clientApprovalDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 4,
   },
   clientApprovalStatusContainer: {
@@ -4010,7 +4023,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -4052,7 +4065,7 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   selectedProposal: {
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     backgroundColor: '#f0f9ff',
   },
   proposalOptionContent: {
@@ -4066,12 +4079,12 @@ const styles = StyleSheet.create({
   },
   proposalOptionClient: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   proposalOptionDate: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
     marginBottom: 2,
   },
   proposalOptionTotal: {
@@ -4082,7 +4095,7 @@ const styles = StyleSheet.create({
   },
   helperText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
     lineHeight: 18,
   },
@@ -4094,12 +4107,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#000000',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -4126,7 +4139,7 @@ const styles = StyleSheet.create({
   },
   rejectModalMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -4136,7 +4149,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     marginBottom: 20,
     textAlignVertical: 'top',
   },
@@ -4153,7 +4166,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelRejectText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -4187,7 +4200,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sendCommentButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -4213,11 +4226,11 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   commentDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   commentText: {
     fontSize: 14,
@@ -4226,7 +4239,7 @@ const styles = StyleSheet.create({
   },
   noCommentsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
@@ -4274,7 +4287,7 @@ const styles = StyleSheet.create({
   },
   paymentHistoryDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   paymentHistoryAmount: {
@@ -4285,12 +4298,12 @@ const styles = StyleSheet.create({
   },
   paymentHistoryMethod: {
     fontSize: 12,
-    color: '#374151',
+    color: '#000000',
     marginBottom: 4,
   },
   paymentHistoryPaidBy: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: '#000000',
   },
   paymentHistoryFooter: {
     flexDirection: 'row',
@@ -4307,7 +4320,7 @@ const styles = StyleSheet.create({
   paymentHistoryFooterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   paymentHistoryFooterAmount: {
     fontSize: 16,
@@ -4361,7 +4374,7 @@ const styles = StyleSheet.create({
   documentButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#236ecf',
+    color: '#000000',
   },
   uploadingContainer: {
     flexDirection: 'row',
@@ -4374,7 +4387,7 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
   },
   documentsList: {
     marginTop: 8,
@@ -4382,7 +4395,7 @@ const styles = StyleSheet.create({
   documentName: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     marginLeft: 8,
   },
   viewDocumentButton: {
@@ -4401,16 +4414,16 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectedCategory: {
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     backgroundColor: '#eff6ff',
   },
   categoryText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   selectedCategoryText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   selectedIndicator: {
@@ -4421,14 +4434,14 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   inputText: {
     fontSize: 16,
     color: '#1f2937',
   },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   addCommentButton: {
     flexDirection: 'row',
@@ -4442,7 +4455,7 @@ const styles = StyleSheet.create({
     borderColor: '#bfdbfe',
   },
   addCommentButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -4481,7 +4494,7 @@ const styles = StyleSheet.create({
   bottomMenuText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
     textAlign: 'center',
   },

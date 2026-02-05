@@ -502,7 +502,7 @@ export default function TestFirebase() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   contentContainer: {
     padding: 20,
@@ -511,7 +511,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#ffffff',
     textAlign: 'center',
     marginBottom: 30,
   },
@@ -521,12 +521,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   statusLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   statusText: {
@@ -545,17 +545,17 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 16,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   userLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   userText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   resultsContainer: {
     backgroundColor: '#ffffff',
@@ -563,12 +563,12 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     marginBottom: 20,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   resultsTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 12,
   },
   resultItem: {
@@ -582,13 +582,13 @@ const styles = StyleSheet.create({
   resultLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
   },
   resultValue: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
     flex: 2,
     textAlign: 'right',
   },
@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   testButton: {
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
@@ -607,7 +607,7 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   primaryButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#ffffff',
   },
   secondaryButton: {
     backgroundColor: '#059669',

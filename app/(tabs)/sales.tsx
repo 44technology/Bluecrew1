@@ -16,6 +16,7 @@ import { router } from 'expo-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import SecondaryButton from '@/components/SecondaryButton';
 import { ProposalService } from '@/services/proposalService';
 import { Proposal } from '@/types';
 
@@ -161,9 +162,9 @@ export default function SalesScreen() {
   <style>
     @media print { body { margin: 0; padding: 20px; } }
     body { font-family: 'Arial', 'Helvetica', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #236ecf; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #000000; }
     .logo { max-width: 200px; max-height: 80px; object-fit: contain; }
-    .proposal-title { font-size: 36px; font-weight: bold; color: #236ecf; margin: 0 0 10px 0; }
+    .proposal-title { font-size: 36px; font-weight: bold; color: #000000; margin: 0 0 10px 0; }
     .proposal-number { font-size: 18px; color: #666; margin: 0; }
     .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
     .info-box { flex: 1; padding: 15px; background-color: #f9fafb; border-radius: 8px; margin-right: 15px; }
@@ -171,15 +172,15 @@ export default function SalesScreen() {
     .info-value { font-size: 16px; font-weight: 600; color: #1f2937; }
     .section-title { font-size: 20px; font-weight: bold; color: #1f2937; margin: 30px 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
     .table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #fff; }
-    .table thead { background-color: #236ecf; color: #fff; }
+    .table thead { background-color: #000000; color: #fff; }
     .table th { padding: 12px; text-align: left; font-weight: 600; font-size: 14px; }
     .table th.text-right { text-align: right; }
     .table td { padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
     .table tbody tr:last-child td { border-bottom: none; }
     .text-right { text-align: right; }
     .work-item-name { font-weight: 600; color: #1f2937; margin-bottom: 4px; }
-    .work-item-desc { font-size: 12px; color: #6b7280; font-style: italic; }
-    .total-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #236ecf; }
+    .work-item-desc { font-size: 12px; color: #000000; font-style: italic; }
+    .total-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #000000; }
     .total-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-size: 18px; font-weight: bold; }
     .total-label { color: #1f2937; }
     .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e5e7eb; color: #4b5563; font-size: 14px; }
@@ -296,7 +297,7 @@ export default function SalesScreen() {
     if (status === 'approved') return '#059669';
     if (status === 'rejected') return '#ef4444';
     if (status === 'request_changes') return '#f59e0b';
-    return '#6b7280';
+    return '#000000';
   };
 
   const getStatusText = (status: string | null) => {
@@ -313,7 +314,7 @@ export default function SalesScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading proposals...</Text>
       </View>
     );
@@ -334,7 +335,7 @@ export default function SalesScreen() {
               }
             }}
           >
-            <ArrowLeft size={24} color="#ffcc00" />
+            <ArrowLeft size={24} color="#ffffff" />
           </TouchableOpacity>
           <View>
             <Text style={styles.title}>Proposals</Text>
@@ -345,7 +346,7 @@ export default function SalesScreen() {
         <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
           {proposals.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <FileText size={48} color="#9ca3af" />
+              <FileText size={48} color="#000000" />
               <Text style={styles.emptyText}>No proposals available</Text>
               <Text style={styles.emptySubtext}>Proposals sent to you will appear here</Text>
             </View>
@@ -559,15 +560,16 @@ export default function SalesScreen() {
                 onChangeText={setRejectionReason}
               />
               <View style={styles.rejectModalButtons}>
-                <TouchableOpacity
+                <SecondaryButton
                   style={[styles.rejectModalButton, styles.cancelButton]}
                   onPress={() => {
                     setShowRejectModal(false);
                     setRejectionReason('');
                   }}
+                  textStyle={styles.cancelButtonText}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
+                  Cancel
+                </SecondaryButton>
             <TouchableOpacity
                   style={[styles.rejectModalButton, styles.confirmRejectButton]}
                   onPress={handleReject}
@@ -599,15 +601,16 @@ export default function SalesScreen() {
                 onChangeText={setChangeRequestReason}
               />
               <View style={styles.rejectModalButtons}>
-                <TouchableOpacity
+                <SecondaryButton
                   style={[styles.rejectModalButton, styles.cancelButton]}
                   onPress={() => {
                     setShowChangeRequestModal(false);
                     setChangeRequestReason('');
                   }}
+                  textStyle={styles.cancelButtonText}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
+                  Cancel
+                </SecondaryButton>
                 <TouchableOpacity
                   style={[styles.rejectModalButton, styles.requestChangesConfirmButton]}
                   onPress={handleRequestChanges}
@@ -626,13 +629,13 @@ export default function SalesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 10,
@@ -645,9 +648,9 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
   },
   backButton: {
     padding: 4,
@@ -656,12 +659,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24',
+    color: '#000000',
   },
   content: {
     flex: 1,
@@ -712,7 +715,7 @@ const styles = StyleSheet.create({
   },
   proposalDate: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -732,11 +735,11 @@ const styles = StyleSheet.create({
   totalCost: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   category: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textTransform: 'capitalize',
   },
   changeRequestNote: {
@@ -808,7 +811,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 28,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '300',
   },
   modalBody: {
@@ -820,7 +823,7 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
     textTransform: 'uppercase',
   },
@@ -831,7 +834,7 @@ const styles = StyleSheet.create({
   detailTotal: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   workItem: {
     padding: 12,
@@ -847,12 +850,12 @@ const styles = StyleSheet.create({
   },
   workItemDetails: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   workItemDescription: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     fontStyle: 'italic',
   },
   actionButtons: {
@@ -901,7 +904,7 @@ const styles = StyleSheet.create({
   },
   rejectModalSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
   },
   rejectInput: {
@@ -926,10 +929,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f3f4f6',
+    flex: 1,
   },
   cancelButtonText: {
-    color: '#374151',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -948,7 +950,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 20,
     borderRadius: 8,

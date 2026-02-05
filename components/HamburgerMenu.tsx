@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { useLanguage } from '@/contexts/LanguageContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { PermissionService } from '@/services/permissionService';
 import {
   Building2,
@@ -53,7 +53,7 @@ export default function HamburgerMenu() {
   const [expandedMenus, setExpandedMenus] = useState<Set<string>>(new Set());
   const [pageAccess, setPageAccess] = useState<Record<string, boolean>>({});
   const { userRole } = useAuth();
-  const { t } = useLanguage();
+  const { theme } = useTheme();
   const router = useRouter();
 
   useEffect(() => {
@@ -114,7 +114,7 @@ export default function HamburgerMenu() {
   const menuItems: MenuItem[] = [
     {
       name: 'index',
-      title: t('projects'),
+      title: 'Projects',
       icon: Building2,
       href: '/projects',
     },
@@ -125,8 +125,14 @@ export default function HamburgerMenu() {
       href: '/notifications',
     },
     {
+      name: 'company-settings',
+      title: 'Company Settings',
+      icon: Building2,
+      href: '/company-settings',
+    },
+    {
       name: 'team',
-      title: t('employees'),
+      title: 'Team',
       icon: Users,
       href: userRole === 'admin' ? '/team' : null,
     },
@@ -138,7 +144,7 @@ export default function HamburgerMenu() {
     },
     {
       name: 'time-clock',
-      title: t('timeClock'),
+      title: 'Time Clock',
       icon: Clock,
       href: (userRole === 'admin' || userRole === 'pm' || userRole === 'sales' || userRole === 'office') ? '/time-clock' : null,
     },
@@ -196,7 +202,7 @@ export default function HamburgerMenu() {
     },
     {
       name: 'reports',
-      title: t('reports'),
+      title: 'Reports',
       icon: FileText,
       href: userRole === 'admin' ? '/reports' : null,
     },
@@ -208,7 +214,7 @@ export default function HamburgerMenu() {
     },
     {
       name: 'settings',
-      title: t('settings'),
+      title: 'Settings',
       icon: Settings,
       href: '/settings',
     },
@@ -252,8 +258,10 @@ export default function HamburgerMenu() {
       <TouchableOpacity
         style={styles.hamburgerButton}
         onPress={() => setIsOpen(true)}
+        activeOpacity={0.7}
+        hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
       >
-        <Menu size={24} color="#236ecf" />
+        <Menu size={20} color={theme.primary} />
       </TouchableOpacity>
 
       <Modal
@@ -270,11 +278,18 @@ export default function HamburgerMenu() {
                 style={styles.closeButton}
                 onPress={() => setIsOpen(false)}
               >
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
-            <ScrollView style={styles.menuContent} showsVerticalScrollIndicator={false}>
+            <ScrollView 
+              style={styles.menuContent} 
+              contentContainerStyle={styles.menuScrollContent}
+              showsVerticalScrollIndicator={true}
+              bounces={true}
+              alwaysBounceVertical={true}
+              scrollEventThrottle={16}
+            >
               {visibleItems.map((item, index) => {
                 const IconComponent = item.icon;
                 const hasSubmenu = item.submenu && item.submenu.length > 0;
@@ -297,11 +312,11 @@ export default function HamburgerMenu() {
                       }}
                     >
                       <View style={styles.menuItemContent}>
-                        <IconComponent size={20} color="#374151" />
+                        <IconComponent size={20} color="#000000" />
                         <Text style={styles.menuItemText}>{item.title}</Text>
                       </View>
                       {hasSubmenu && (
-                        isExpanded ? <ChevronDown size={18} color="#6b7280" /> : <ChevronRight size={18} color="#6b7280" />
+                        isExpanded ? <ChevronDown size={18} color="#000000" /> : <ChevronRight size={18} color="#000000" />
                       )}
                     </TouchableOpacity>
                     
@@ -317,7 +332,7 @@ export default function HamburgerMenu() {
                           onPress={() => handleMenuPress(subItem.href!)}
                         >
                           <View style={styles.subMenuItemContent}>
-                            <SubIconComponent size={18} color="#6b7280" />
+                            <SubIconComponent size={18} color="#000000" />
                             <Text style={styles.subMenuItemText}>{subItem.title}</Text>
                           </View>
                         </TouchableOpacity>
@@ -338,18 +353,18 @@ const styles = StyleSheet.create({
   hamburgerButton: {
     position: 'absolute',
     top: Platform.OS === 'web' ? 58 : 50,
-    right: 16,
+    right: 8,
     zIndex: 10000,
     backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: Platform.OS === 'web' ? 10 : 12,
+    borderRadius: 6,
+    padding: Platform.OS === 'web' ? 8 : 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 10,
-    minWidth: Platform.OS === 'web' ? 40 : 44,
-    minHeight: Platform.OS === 'web' ? 40 : 44,
+    minWidth: Platform.OS === 'web' ? 32 : 36,
+    minHeight: Platform.OS === 'web' ? 32 : 36,
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -364,6 +379,8 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 20,
     maxHeight: '80%',
     minHeight: '50%',
+    display: 'flex',
+    flexDirection: 'column',
   },
   menuHeader: {
     flexDirection: 'row',
@@ -384,6 +401,9 @@ const styles = StyleSheet.create({
   menuContent: {
     flex: 1,
   },
+  menuScrollContent: {
+    paddingBottom: 20,
+  },
   menuItem: {
     borderBottomWidth: 1,
     borderBottomColor: '#f3f4f6',
@@ -399,7 +419,7 @@ const styles = StyleSheet.create({
   },
   menuItemText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   subMenuItem: {
@@ -420,7 +440,7 @@ const styles = StyleSheet.create({
   },
   subMenuItemText: {
     fontSize: 15,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
 });

@@ -8,6 +8,8 @@ import {
   ActivityIndicator,
   Platform,
   RefreshControl,
+  Modal,
+  TextInput,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { 
@@ -17,29 +19,40 @@ import {
   MapPin, 
   Calendar, 
   Hash,
-  ArrowLeft,
   CheckCircle,
   Clock,
-  Filter
+  Filter,
+  ArrowUpDown,
+  X
 } from 'lucide-react-native';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
-import { MaterialRequest } from '@/types';
+import { MaterialRequest, Project } from '@/types';
 import { MaterialRequestService } from '@/services/materialRequestService';
+import { ProjectService } from '@/services/projectService';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import TopNavigationBar from '@/components/TopNavigationBar';
+import BackButton from '@/components/BackButton';
 import { Alert } from 'react-native';
 
-type FilterStatus = 'all' | 'ordered' | 'shipped' | 'delivered';
+type FilterStatus = 'all' | 'approved' | 'ordered' | 'shipped' | 'delivered';
+type SortOption = 'date' | 'name' | 'project' | 'status';
 
 export default function TrackingScreen() {
   const { t } = useLanguage();
   const { userRole } = useAuth();
   const router = useRouter();
   const [requests, setRequests] = useState<MaterialRequest[]>([]);
+  const [projects, setProjects] = useState<{ [key: string]: Project }>({});
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [filterStatus, setFilterStatus] = useState<FilterStatus>('all');
+  const [sortBy, setSortBy] = useState<SortOption>('date');
+  const [sortAscending, setSortAscending] = useState(false);
+  const [showSortModal, setShowSortModal] = useState(false);
+  const [showDeliveryAddressModal, setShowDeliveryAddressModal] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState('');
+  const [requestIdForOrder, setRequestIdForOrder] = useState<string | null>(null);
 
   useEffect(() => {
     loadRequests();
@@ -74,6 +87,22 @@ export default function TrackingScreen() {
       console.log('Tracking requests filtered:', trackingRequests.length);
       console.log('Sample request:', trackingRequests[0]);
       
+      // Load project details for delivery address
+      const projectIds = [...new Set(trackingRequests.map(req => req.project_id))];
+      const projectsMap: { [key: string]: Project } = {};
+      
+      for (const projectId of projectIds) {
+        try {
+          const project = await ProjectService.getProjectById(projectId);
+          if (project) {
+            projectsMap[projectId] = project;
+          }
+        } catch (error) {
+          console.error(`Error loading project ${projectId}:`, error);
+        }
+      }
+      
+      setProjects(projectsMap);
       setRequests(trackingRequests);
     } catch (error) {
       console.error('Error loading tracking requests:', error);
@@ -95,14 +124,52 @@ export default function TrackingScreen() {
 
   const filteredRequests = filterStatus === 'all' 
     ? requests 
+    : filterStatus === 'approved'
+    ? requests.filter(req => !req.purchase_status || req.purchase_status === 'pending')
     : requests.filter(req => req.purchase_status === filterStatus);
+
+  // Sort function
+  const sortRequests = (requestsToSort: MaterialRequest[]) => {
+    const sorted = [...requestsToSort];
+    sorted.sort((a, b) => {
+      let comparison = 0;
+      
+      switch (sortBy) {
+        case 'date':
+          const dateA = a.approved_at ? new Date(a.approved_at).getTime() : 0;
+          const dateB = b.approved_at ? new Date(b.approved_at).getTime() : 0;
+          comparison = dateA - dateB;
+          break;
+        case 'name':
+          const nameA = (a.item_name && a.item_name.trim()) || a.description || '';
+          const nameB = (b.item_name && b.item_name.trim()) || b.description || '';
+          comparison = nameA.localeCompare(nameB);
+          break;
+        case 'project':
+          comparison = (a.project_name || '').localeCompare(b.project_name || '');
+          break;
+        case 'status':
+          const statusA = a.purchase_status || 'pending';
+          const statusB = b.purchase_status || 'pending';
+          const statusOrder = { 'pending': 0, 'ordered': 1, 'shipped': 2, 'delivered': 3 };
+          comparison = (statusOrder[statusA as keyof typeof statusOrder] || 0) - (statusOrder[statusB as keyof typeof statusOrder] || 0);
+          break;
+      }
+      
+      return sortAscending ? comparison : -comparison;
+    });
+    
+    return sorted;
+  };
+
+  const sortedAndFilteredRequests = sortRequests(filteredRequests);
 
   const getStatusColor = (status?: string) => {
     switch (status) {
       case 'ordered': return '#3b82f6'; // Blue
       case 'shipped': return '#f59e0b'; // Orange
       case 'delivered': return '#10b981'; // Green
-      default: return '#6b7280'; // Gray
+      default: return '#000000'; // Gray
     }
   };
 
@@ -214,25 +281,81 @@ export default function TrackingScreen() {
   // Status update functions for office and admin
   const handleUpdateStatus = async (requestId: string, newStatus: 'ordered' | 'shipped' | 'delivered') => {
     try {
+      // If marking as ordered, ask for delivery address first
+      if (newStatus === 'ordered') {
+        const request = requests.find(r => r.id === requestId);
+        if (request && (!request.purchase_status || request.purchase_status === 'pending')) {
+          setRequestIdForOrder(requestId);
+          setDeliveryAddress('');
+          setShowDeliveryAddressModal(true);
+          return;
+        }
+      }
+      
+      // For other statuses or if already ordered, proceed directly
+      await performStatusUpdate(requestId, newStatus);
+    } catch (error) {
+      console.error('Error updating status:', error);
+      Alert.alert('Error', 'Failed to update status');
+    }
+  };
+
+  const performStatusUpdate = async (requestId: string, newStatus: 'ordered' | 'shipped' | 'delivered', address?: string) => {
+    try {
+      const currentDate = new Date().toISOString();
       const updateData: any = {
         purchase_status: newStatus,
       };
 
       // Set appropriate date based on status
       if (newStatus === 'ordered') {
-        updateData.purchase_date = new Date().toISOString();
+        updateData.purchase_date = currentDate;
+        if (address) {
+          updateData.delivery_address = address;
+        }
       } else if (newStatus === 'shipped') {
-        updateData.shipping_date = new Date().toISOString();
+        updateData.shipping_date = currentDate;
+        // Ensure purchase_date exists if not already set
+        const request = requests.find(r => r.id === requestId);
+        if (request && !request.purchase_date) {
+          updateData.purchase_date = currentDate;
+        }
       } else if (newStatus === 'delivered') {
-        updateData.delivery_date_actual = new Date().toISOString();
+        updateData.delivery_date_actual = currentDate;
+        // Ensure previous dates exist if not already set
+        const request = requests.find(r => r.id === requestId);
+        if (request) {
+          if (!request.purchase_date) {
+            updateData.purchase_date = currentDate;
+          }
+          if (!request.shipping_date) {
+            updateData.shipping_date = currentDate;
+          }
+        }
       }
 
       await MaterialRequestService.updateMaterialRequest(requestId, updateData);
       await loadRequests();
-      Alert.alert('Success', `Status updated to ${getStatusText(newStatus)}`);
+      
+      const dateStr = formatDate(currentDate);
+      Alert.alert('Success', `Status updated to ${getStatusText(newStatus)}\nDate recorded: ${dateStr}`);
     } catch (error) {
       console.error('Error updating status:', error);
       Alert.alert('Error', 'Failed to update status');
+    }
+  };
+
+  const handleConfirmDeliveryAddress = async () => {
+    if (!deliveryAddress.trim()) {
+      Alert.alert('Error', 'Please enter delivery address');
+      return;
+    }
+    
+    if (requestIdForOrder) {
+      setShowDeliveryAddressModal(false);
+      await performStatusUpdate(requestIdForOrder, 'ordered', deliveryAddress.trim());
+      setRequestIdForOrder(null);
+      setDeliveryAddress('');
     }
   };
 
@@ -241,7 +364,7 @@ export default function TrackingScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading tracking information...</Text>
       </View>
     );
@@ -253,85 +376,107 @@ export default function TrackingScreen() {
       {Platform.OS === 'web' && <TopNavigationBar />}
       
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.back()}
-        >
-          <ArrowLeft size={24} color="#236ecf" />
-        </TouchableOpacity>
+        <BackButton 
+          color="#000000"
+          backgroundColor="rgba(35, 110, 207, 0.1)"
+        />
         <View style={styles.headerContent}>
-          <Text style={styles.title}>Material Tracking</Text>
+          <Text style={styles.title} numberOfLines={1}>Material Tracking</Text>
           <Text style={styles.subtitle}>
-            {filteredRequests.length} request{filteredRequests.length !== 1 ? 's' : ''} found
+            {sortedAndFilteredRequests.length} request{sortedAndFilteredRequests.length !== 1 ? 's' : ''} found
           </Text>
         </View>
       </View>
 
       {/* Filter Buttons */}
       <View style={styles.filterContainer}>
-        <TouchableOpacity
-          style={[styles.filterButton, filterStatus === 'all' && styles.filterButtonActive]}
-          onPress={() => setFilterStatus('all')}
-        >
-          <Text style={[styles.filterButtonText, filterStatus === 'all' && styles.filterButtonTextActive]}>
-            All
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, filterStatus === 'ordered' && styles.filterButtonActive]}
-          onPress={() => setFilterStatus('ordered')}
-        >
-          <ShoppingCart size={16} color={filterStatus === 'ordered' ? '#ffffff' : '#6b7280'} />
-          <Text style={[styles.filterButtonText, filterStatus === 'ordered' && styles.filterButtonTextActive]}>
-            Ordered
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, filterStatus === 'shipped' && styles.filterButtonActive]}
-          onPress={() => setFilterStatus('shipped')}
-        >
-          <Truck size={16} color={filterStatus === 'shipped' ? '#ffffff' : '#6b7280'} />
-          <Text style={[styles.filterButtonText, filterStatus === 'shipped' && styles.filterButtonTextActive]}>
-            Shipped
-          </Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.filterButton, filterStatus === 'delivered' && styles.filterButtonActive]}
-          onPress={() => setFilterStatus('delivered')}
-        >
-          <MapPin size={16} color={filterStatus === 'delivered' ? '#ffffff' : '#6b7280'} />
-          <Text style={[styles.filterButtonText, filterStatus === 'delivered' && styles.filterButtonTextActive]}>
-            Delivered
-          </Text>
-        </TouchableOpacity>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.filterScrollView}>
+          <TouchableOpacity
+            style={[styles.filterButton, filterStatus === 'all' && styles.filterButtonActive]}
+            onPress={() => setFilterStatus('all')}
+          >
+            <Text style={[styles.filterButtonText, filterStatus === 'all' && styles.filterButtonTextActive]} numberOfLines={1}>
+              All
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, filterStatus === 'approved' && styles.filterButtonActive]}
+            onPress={() => setFilterStatus('approved')}
+          >
+            <CheckCircle size={16} color={filterStatus === 'approved' ? '#ffffff' : '#000000'} />
+            <Text style={[styles.filterButtonText, filterStatus === 'approved' && styles.filterButtonTextActive]} numberOfLines={1}>
+              Approved
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, filterStatus === 'ordered' && styles.filterButtonActive]}
+            onPress={() => setFilterStatus('ordered')}
+          >
+            <ShoppingCart size={16} color={filterStatus === 'ordered' ? '#ffffff' : '#000000'} />
+            <Text style={[styles.filterButtonText, filterStatus === 'ordered' && styles.filterButtonTextActive]} numberOfLines={1}>
+              Ordered
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, filterStatus === 'shipped' && styles.filterButtonActive]}
+            onPress={() => setFilterStatus('shipped')}
+          >
+            <Truck size={16} color={filterStatus === 'shipped' ? '#ffffff' : '#000000'} />
+            <Text style={[styles.filterButtonText, filterStatus === 'shipped' && styles.filterButtonTextActive]} numberOfLines={1}>
+              Shipped
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, filterStatus === 'delivered' && styles.filterButtonActive]}
+            onPress={() => setFilterStatus('delivered')}
+          >
+            <MapPin size={16} color={filterStatus === 'delivered' ? '#ffffff' : '#000000'} />
+            <Text style={[styles.filterButtonText, filterStatus === 'delivered' && styles.filterButtonTextActive]} numberOfLines={1}>
+              Delivered
+            </Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={[styles.filterButton, styles.sortButton]}
+            onPress={() => setShowSortModal(true)}
+          >
+            <ArrowUpDown size={16} color="#000000" />
+            <Text style={styles.filterButtonText} numberOfLines={1}>Sort</Text>
+          </TouchableOpacity>
+        </ScrollView>
       </View>
 
       <ScrollView 
         style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={true}
+        scrollEventThrottle={16}
         refreshControl={
           Platform.OS !== 'web' ? (
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#236ecf"
+              tintColor="#000000"
             />
           ) : undefined
         }
       >
-        {filteredRequests.length === 0 ? (
+        {sortedAndFilteredRequests.length === 0 ? (
           <View style={styles.emptyState}>
-            <Package size={48} color="#9ca3af" />
+            <Package size={48} color="#000000" />
             <Text style={styles.emptyText}>No tracking information available</Text>
             <Text style={styles.emptySubtext}>
               {filterStatus === 'all' 
                 ? 'No approved material requests with tracking status'
+                : filterStatus === 'approved'
+                ? 'No approved material requests (pending purchase)'
                 : `No requests with status: ${getStatusText(filterStatus)}`
               }
             </Text>
           </View>
         ) : (
-          filteredRequests.map((request) => {
+          sortedAndFilteredRequests.map((request) => {
             const StatusIcon = getStatusIcon(request.purchase_status);
             const statusColor = getStatusColor(request.purchase_status);
             const timelineSteps = getTimelineSteps(request);
@@ -340,11 +485,20 @@ export default function TrackingScreen() {
               <View key={request.id} style={styles.trackingCard}>
                 <View style={styles.cardHeader}>
                   <View style={styles.cardHeaderLeft}>
-                    <Package size={20} color="#236ecf" />
+                    <Package size={20} color="#000000" />
                     <View style={styles.cardHeaderText}>
-                      <Text style={styles.cardTitle}>{request.item_name || request.description || 'N/A'}</Text>
+                      <Text style={styles.cardTitle}>
+                        {request.item_name && request.item_name.trim() 
+                          ? request.item_name 
+                          : (request.description || 'N/A')}
+                      </Text>
+                      {request.item_name && request.item_name.trim() && request.description && (
+                        <Text style={styles.cardSubtitleText} numberOfLines={1}>
+                          {request.description}
+                        </Text>
+                      )}
                       <View style={styles.cardSubtitle}>
-                        <Hash size={12} color="#6b7280" />
+                        <Hash size={12} color="#000000" />
                         <Text style={styles.cardSubtitleText}>{request.project_name}</Text>
                       </View>
                     </View>
@@ -358,7 +512,13 @@ export default function TrackingScreen() {
                 </View>
 
                 <View style={styles.cardDetails}>
-                  {request.description && request.item_name && request.description !== request.item_name && (
+                  {request.item_name && request.item_name.trim() && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Item Name:</Text>
+                      <Text style={styles.detailValue}>{request.item_name}</Text>
+                    </View>
+                  )}
+                  {request.description && (
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Description:</Text>
                       <Text style={styles.detailValue}>{request.description}</Text>
@@ -374,10 +534,36 @@ export default function TrackingScreen() {
                       <Text style={styles.detailValue}>{request.sub_contractor}</Text>
                     </View>
                   )}
-                  <View style={styles.detailRow}>
-                    <Text style={styles.detailLabel}>Expected Delivery:</Text>
-                    <Text style={styles.detailValue}>{formatDate(request.delivery_date)}</Text>
-                  </View>
+                  {(projects[request.project_id] || (request as any).delivery_address) && (
+                    <View style={styles.detailRowAddress}>
+                      <Text style={styles.detailLabel}>Delivery Address:</Text>
+                      <Text style={styles.detailValueAddress} numberOfLines={3}>
+                        {(request as any).delivery_address || 
+                         (projects[request.project_id]?.project_address || 
+                          (projects[request.project_id]?.project_street ? 
+                           `${projects[request.project_id].project_street}, ${projects[request.project_id].project_city || ''} ${projects[request.project_id].project_state || ''} ${projects[request.project_id].project_zip || ''}`.trim() :
+                           'N/A'))}
+                      </Text>
+                    </View>
+                  )}
+                  {request.purchase_date && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Ordered Date:</Text>
+                      <Text style={[styles.detailValue, { color: '#3b82f6' }]}>{formatDate(request.purchase_date)}</Text>
+                    </View>
+                  )}
+                  {request.shipping_date && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Shipped Date:</Text>
+                      <Text style={[styles.detailValue, { color: '#f59e0b' }]}>{formatDate(request.shipping_date)}</Text>
+                    </View>
+                  )}
+                  {request.delivery_date_actual && (
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Delivered Date:</Text>
+                      <Text style={[styles.detailValue, { color: '#10b981' }]}>{formatDate(request.delivery_date_actual)}</Text>
+                    </View>
+                  )}
                 </View>
 
                 {/* Status Update Buttons - Only for admin and office */}
@@ -443,7 +629,7 @@ export default function TrackingScreen() {
                           ]}>
                             <IconComponent 
                               size={16} 
-                              color={isCompleted ? '#ffffff' : '#9ca3af'} 
+                              color={isCompleted ? '#ffffff' : '#000000'} 
                             />
                           </View>
                           {!isLast && (
@@ -475,6 +661,144 @@ export default function TrackingScreen() {
           })
         )}
       </ScrollView>
+
+      {/* Sort Modal */}
+      <Modal
+        visible={showSortModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowSortModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.sortModalContent}>
+            <View style={styles.sortModalHeader}>
+              <Text style={styles.sortModalTitle}>Sort By</Text>
+              <TouchableOpacity
+                onPress={() => setShowSortModal(false)}
+                style={styles.sortModalCloseButton}
+              >
+                <X size={24} color="#000000" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.sortOptions}>
+              <TouchableOpacity
+                style={[styles.sortOption, sortBy === 'date' && styles.sortOptionActive]}
+                onPress={() => {
+                  setSortBy('date');
+                  setSortAscending(!sortAscending);
+                }}
+              >
+                <Calendar size={20} color={sortBy === 'date' ? '#000000' : '#000000'} />
+                <Text style={[styles.sortOptionText, sortBy === 'date' && styles.sortOptionTextActive]}>
+                  Date {sortBy === 'date' && (sortAscending ? '↑' : '↓')}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.sortOption, sortBy === 'name' && styles.sortOptionActive]}
+                onPress={() => {
+                  setSortBy('name');
+                  setSortAscending(!sortAscending);
+                }}
+              >
+                <Package size={20} color={sortBy === 'name' ? '#000000' : '#000000'} />
+                <Text style={[styles.sortOptionText, sortBy === 'name' && styles.sortOptionTextActive]}>
+                  Item Name {sortBy === 'name' && (sortAscending ? '↑' : '↓')}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.sortOption, sortBy === 'project' && styles.sortOptionActive]}
+                onPress={() => {
+                  setSortBy('project');
+                  setSortAscending(!sortAscending);
+                }}
+              >
+                <Hash size={20} color={sortBy === 'project' ? '#000000' : '#000000'} />
+                <Text style={[styles.sortOptionText, sortBy === 'project' && styles.sortOptionTextActive]}>
+                  Project {sortBy === 'project' && (sortAscending ? '↑' : '↓')}
+                </Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity
+                style={[styles.sortOption, sortBy === 'status' && styles.sortOptionActive]}
+                onPress={() => {
+                  setSortBy('status');
+                  setSortAscending(!sortAscending);
+                }}
+              >
+                <CheckCircle size={20} color={sortBy === 'status' ? '#000000' : '#000000'} />
+                <Text style={[styles.sortOptionText, sortBy === 'status' && styles.sortOptionTextActive]}>
+                  Status {sortBy === 'status' && (sortAscending ? '↑' : '↓')}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Delivery Address Modal */}
+      <Modal
+        visible={showDeliveryAddressModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => {
+          setShowDeliveryAddressModal(false);
+          setRequestIdForOrder(null);
+          setDeliveryAddress('');
+        }}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.deliveryAddressModalContent}>
+            <View style={styles.deliveryAddressModalHeader}>
+              <Text style={styles.deliveryAddressModalTitle}>Enter Delivery Address</Text>
+              <TouchableOpacity
+                onPress={() => {
+                  setShowDeliveryAddressModal(false);
+                  setRequestIdForOrder(null);
+                  setDeliveryAddress('');
+                }}
+                style={styles.deliveryAddressModalCloseButton}
+              >
+                <X size={24} color="#000000" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.deliveryAddressModalBody}>
+              <Text style={styles.deliveryAddressModalLabel}>Delivery Address *</Text>
+              <TextInput
+                style={styles.deliveryAddressInput}
+                placeholder="Enter delivery address"
+                value={deliveryAddress}
+                onChangeText={setDeliveryAddress}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+            
+            <View style={styles.deliveryAddressModalActions}>
+              <TouchableOpacity
+                style={[styles.deliveryAddressModalButton, styles.deliveryAddressModalButtonCancel]}
+                onPress={() => {
+                  setShowDeliveryAddressModal(false);
+                  setRequestIdForOrder(null);
+                  setDeliveryAddress('');
+                }}
+              >
+                <Text style={styles.deliveryAddressModalButtonCancelText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.deliveryAddressModalButton, styles.deliveryAddressModalButtonConfirm]}
+                onPress={handleConfirmDeliveryAddress}
+              >
+                <Text style={styles.deliveryAddressModalButtonConfirmText}>Confirm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 }
@@ -493,13 +817,13 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     padding: 20,
-    paddingTop: Platform.OS === 'web' ? 20 : 20,
+    paddingTop: Platform.OS === 'web' ? 20 : 50,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
@@ -510,48 +834,59 @@ const styles = StyleSheet.create({
   },
   headerContent: {
     flex: 1,
+    marginLeft: 4,
   },
   title: {
-    fontSize: 24,
+    fontSize: 22,
     fontWeight: '700',
     color: '#111827',
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 4,
   },
   filterContainer: {
-    flexDirection: 'row',
-    padding: 16,
+    paddingVertical: 16,
+    paddingHorizontal: 16,
     backgroundColor: '#ffffff',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    gap: 8,
+  },
+  filterScrollView: {
+    flexGrow: 0,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: '#f3f4f6',
     gap: 6,
+    marginRight: 8,
+    minWidth: 80,
+  },
+  sortButton: {
+    marginLeft: 8,
   },
   filterButtonActive: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   filterButtonText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   filterButtonTextActive: {
     color: '#ffffff',
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 16,
+    paddingBottom: 120, // Extra padding for mobile tab bar
   },
   emptyState: {
     alignItems: 'center',
@@ -561,12 +896,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 8,
     textAlign: 'center',
   },
@@ -611,7 +946,7 @@ const styles = StyleSheet.create({
   },
   cardSubtitleText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   statusBadge: {
     flexDirection: 'row',
@@ -636,15 +971,28 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     marginBottom: 8,
   },
+  detailRowAddress: {
+    flexDirection: 'column',
+    marginBottom: 8,
+  },
   detailLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
+    marginBottom: 4,
   },
   detailValue: {
     fontSize: 14,
     color: '#111827',
     fontWeight: '600',
+    flex: 1,
+    textAlign: 'right',
+  },
+  detailValueAddress: {
+    fontSize: 14,
+    color: '#111827',
+    fontWeight: '600',
+    flex: 1,
   },
   timelineContainer: {
     marginTop: 16,
@@ -655,7 +1003,7 @@ const styles = StyleSheet.create({
   timelineTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 16,
   },
   timelineItem: {
@@ -704,11 +1052,11 @@ const styles = StyleSheet.create({
     color: '#111827',
   },
   timelineLabelPending: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   timelineDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   statusActionsContainer: {
     marginTop: 16,
@@ -720,7 +1068,7 @@ const styles = StyleSheet.create({
   statusActionsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 12,
   },
   statusActions: {
@@ -763,6 +1111,134 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#10b981',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'flex-end',
+  },
+  sortModalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    maxHeight: '80%',
+  },
+  sortModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  sortModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  sortModalCloseButton: {
+    padding: 4,
+  },
+  sortOptions: {
+    padding: 20,
+  },
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 8,
+    marginBottom: 12,
+    backgroundColor: '#f9fafb',
+    gap: 12,
+  },
+  sortOptionActive: {
+    backgroundColor: '#eff6ff',
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  sortOptionText: {
+    fontSize: 16,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  sortOptionTextActive: {
+    color: '#000000',
+    fontWeight: '600',
+  },
+  deliveryAddressModalContent: {
+    backgroundColor: '#ffffff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 20,
+    maxHeight: '80%',
+  },
+  deliveryAddressModalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  deliveryAddressModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+  },
+  deliveryAddressModalCloseButton: {
+    padding: 4,
+  },
+  deliveryAddressModalBody: {
+    padding: 20,
+  },
+  deliveryAddressModalLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+    marginBottom: 12,
+  },
+  deliveryAddressInput: {
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: '#111827',
+    minHeight: 100,
+    backgroundColor: '#ffffff',
+  },
+  deliveryAddressModalActions: {
+    flexDirection: 'row',
+    gap: 12,
+    padding: 20,
+    paddingTop: 0,
+  },
+  deliveryAddressModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  deliveryAddressModalButtonCancel: {
+    backgroundColor: '#f3f4f6',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  deliveryAddressModalButtonConfirm: {
+    backgroundColor: '#ffffff',
+  },
+  deliveryAddressModalButtonCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  deliveryAddressModalButtonConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });
 

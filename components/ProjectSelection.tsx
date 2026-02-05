@@ -109,7 +109,7 @@ export const ProjectSelection: React.FC<ProjectSelectionProps> = ({ onProjectSel
       case 'completed': return '#3b82f6';
       case 'on_hold': return '#f59e0b';
       case 'cancelled': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -126,7 +126,7 @@ export const ProjectSelection: React.FC<ProjectSelectionProps> = ({ onProjectSel
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading projects...</Text>
       </View>
     );
@@ -144,7 +144,7 @@ export const ProjectSelection: React.FC<ProjectSelectionProps> = ({ onProjectSel
           <TouchableOpacity
             style={styles.filterButton}
             onPress={() => setShowFilterModal(true)}>
-            <Filter size={20} color="#236ecf" />
+            <Filter size={20} color="#000000" />
           </TouchableOpacity>
           {userRole === 'admin' && (
             <TouchableOpacity
@@ -158,7 +158,7 @@ export const ProjectSelection: React.FC<ProjectSelectionProps> = ({ onProjectSel
 
       {/* Search Bar */}
       <View style={styles.searchContainer}>
-        <Search size={20} color="#6b7280" style={styles.searchIcon} />
+        <Search size={20} color="#000000" style={styles.searchIcon} />
         <TextInput
           style={styles.searchInput}
           placeholder="Search projects..."
@@ -315,7 +315,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -343,7 +343,7 @@ const styles = StyleSheet.create({
   },
   subtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   headerRight: {
@@ -358,7 +358,7 @@ const styles = StyleSheet.create({
   },
   addButton: {
     padding: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     borderRadius: 8,
   },
   searchContainer: {
@@ -401,7 +401,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   projectHeader: {
     flexDirection: 'row',
@@ -431,7 +431,7 @@ const styles = StyleSheet.create({
   },
   clientName: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   progressText: {
@@ -446,7 +446,7 @@ const styles = StyleSheet.create({
   },
   deadlineText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   budgetText: {
     fontSize: 12,
@@ -460,12 +460,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#000000',
   },
   modalOverlay: {
     flex: 1,
@@ -504,7 +504,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 24,
-    color: '#6b7280',
+    color: '#000000',
   },
   modalContent: {
     padding: 20,
@@ -515,7 +515,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 12,
   },
   roleButtons: {
@@ -532,13 +532,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedRoleButton: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   roleButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   selectedRoleButtonText: {
     color: '#ffffff',
@@ -553,7 +553,7 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -582,11 +582,11 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   applyButton: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,

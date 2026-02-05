@@ -11,7 +11,8 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Plus, Package, ArrowLeft, X, CheckCircle } from 'lucide-react-native';
+import { Plus, Package, X, CheckCircle, ArrowLeft } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Project } from '@/types';
@@ -117,7 +118,7 @@ export default function ProjectMaterialsScreen() {
       case 'high': return '#ef4444';
       case 'medium': return '#f59e0b';
       case 'low': return '#059669';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -126,14 +127,14 @@ export default function ProjectMaterialsScreen() {
       case 'approved': return '#059669';
       case 'pending': return '#f59e0b';
       case 'rejected': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading materials...</Text>
       </View>
     );
@@ -143,11 +144,11 @@ export default function ProjectMaterialsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push(`/(tabs)/project/${id}`)}>
-            <ArrowLeft size={24} color="#236ecf" />
-          </TouchableOpacity>
+          <BackButton 
+            onPress={() => router.push(`/(tabs)/project/${id}`)}
+            color="#000000"
+            backgroundColor="rgba(35, 110, 207, 0.1)"
+          />
           <Text style={styles.headerTitle}>Materials</Text>
         </View>
         <View style={styles.errorContainer}>
@@ -165,18 +166,18 @@ export default function ProjectMaterialsScreen() {
         <TouchableOpacity
           style={styles.backButton}
           onPress={() => router.push(`/(tabs)/project/${id}`)}>
-          <ArrowLeft size={24} color="#236ecf" />
+          <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Materials</Text>
-          <Text style={styles.headerSubtitle}>{project.title}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>Materials</Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>{project.title}</Text>
         </View>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {materialRequests.length === 0 ? (
           <View style={styles.emptyState}>
-            <Package size={48} color="#9ca3af" />
+            <Package size={48} color="#000000" />
             <Text style={styles.emptyText}>No material requests found</Text>
             <Text style={styles.emptySubtext}>Add a new material request to get started</Text>
           </View>
@@ -224,7 +225,7 @@ export default function ProjectMaterialsScreen() {
         <TouchableOpacity
           style={styles.fab}
           onPress={() => setShowAddModal(true)}>
-          <Plus size={24} color="#ffffff" />
+          <Plus size={24} color="#000000" />
         </TouchableOpacity>
       )}
 
@@ -237,7 +238,7 @@ export default function ProjectMaterialsScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Material Request</Text>
             <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -308,11 +309,11 @@ export default function ProjectMaterialsScreen() {
                     ]}
                     onPress={() => setNewRequest(prev => ({ ...prev, vendor_id: vendor.id }))}>
                     <View style={styles.vendorInfo}>
-                      <Text style={styles.vendorName}>{vendor.companyName}</Text>
-                      <Text style={styles.vendorRep}>{vendor.repName}</Text>
+                      <Text style={[styles.vendorName, newRequest.vendor_id === vendor.id && styles.selectedVendorOptionText]}>{vendor.companyName}</Text>
+                      <Text style={[styles.vendorRep, newRequest.vendor_id === vendor.id && styles.selectedVendorOptionText]}>{vendor.repName}</Text>
                     </View>
                     {newRequest.vendor_id === vendor.id && (
-                      <CheckCircle size={20} color="#236ecf" />
+                      <CheckCircle size={20} color="#ffffff" />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -359,12 +360,13 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f5f5f5',
     paddingTop: Platform.OS === 'web' ? 16 : 50,
     paddingHorizontal: 16,
+    paddingRight: 60,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#b0b0b0',
   },
   backButton: {
     marginRight: 16,
@@ -372,15 +374,16 @@ const styles = StyleSheet.create({
   },
   headerInfo: {
     flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
-    color: '#111827',
+    color: '#000000',
   },
   headerSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 4,
   },
   content: {
@@ -391,12 +394,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#000000',
   },
   errorContainer: {
     flex: 1,
@@ -417,12 +420,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 4,
   },
   requestsList: {
@@ -474,7 +477,7 @@ const styles = StyleSheet.create({
   },
   requestDescription: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -483,16 +486,16 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   fab: {
     position: 'absolute',
     bottom: 20,
     right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#236ecf',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
@@ -518,7 +521,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   modalContent: {
     flex: 1,
@@ -531,7 +534,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -570,8 +573,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedVendorOption: {
-    borderColor: '#236ecf',
-    backgroundColor: '#f0f9ff',
+    borderColor: '#000000',
+    backgroundColor: '#000000',
+  },
+  selectedVendorOptionText: {
+    color: '#ffffff',
   },
   vendorInfo: {
     flex: 1,
@@ -583,7 +589,7 @@ const styles = StyleSheet.create({
   },
   vendorRep: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   priorityRow: {
     flexDirection: 'row',
@@ -600,19 +606,19 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedPriorityOption: {
-    borderColor: '#236ecf',
-    backgroundColor: '#f0f9ff',
+    borderColor: '#000000',
+    backgroundColor: '#000000',
   },
   priorityText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   selectedPriorityText: {
-    color: '#236ecf',
+    color: '#ffffff',
   },
   submitButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',

@@ -25,6 +25,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { Employee } from '@/types';
 import { UserService, FirebaseUser } from '@/services/userService';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import SecondaryButton from '@/components/SecondaryButton';
 import TopNavigationBar from '@/components/TopNavigationBar';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 
@@ -178,7 +179,7 @@ export default function EmployeeScreen() {
         )}
         <View style={styles.rateRow}>
           <View style={styles.rateInfo}>
-            <DollarSign size={16} color="#236ecf" />
+            <DollarSign size={16} color="#000000" />
             <Text style={styles.rateLabel}>
               {employee.pay_type === 'salary' ? 'Salary:' : 'Daily Rate:'}
             </Text>
@@ -193,7 +194,7 @@ export default function EmployeeScreen() {
               style={styles.editButton}
               onPress={() => handleEditDailyRate(employee)}
             >
-              <Edit size={16} color="#236ecf" />
+              <Edit size={16} color="#000000" />
               <Text style={styles.editButtonText}>Edit</Text>
             </TouchableOpacity>
           )}
@@ -213,7 +214,7 @@ export default function EmployeeScreen() {
             <Text style={styles.subtitle}>Manage employee daily rates</Text>
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffcc00" />
+            <ActivityIndicator size="large" color="#ffffff" />
             <Text style={styles.loadingText}>Loading employees...</Text>
           </View>
         </View>
@@ -238,7 +239,7 @@ export default function EmployeeScreen() {
               else router.push('/hr');
             }}
           >
-            <ArrowLeft size={24} color="#236ecf" />
+            <ArrowLeft size={24} color="#000000" />
           </TouchableOpacity>
           <View>
             <Text style={styles.title}>Employees</Text>
@@ -252,7 +253,7 @@ export default function EmployeeScreen() {
         >
           {employees.length === 0 ? (
             <View style={styles.emptyState}>
-              <Users size={48} color="#6b7280" />
+              <Users size={48} color="#000000" />
               <Text style={styles.emptyText}>No employees found</Text>
             </View>
           ) : (
@@ -286,7 +287,7 @@ export default function EmployeeScreen() {
                     setSalary('');
                   }}
                 >
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
 
@@ -330,7 +331,7 @@ export default function EmployeeScreen() {
                         onChangeText={payType === 'salary' ? setSalary : setDailyRate}
                         placeholder={payType === 'salary' ? 'Enter salary' : 'Enter daily rate'}
                         keyboardType="numeric"
-                        placeholderTextColor="#9ca3af"
+                        placeholderTextColor="#000000"
                       />
                       <Text style={styles.inputHint}>
                         Leave empty to remove {payType === 'salary' ? 'salary' : 'daily rate'}
@@ -341,7 +342,7 @@ export default function EmployeeScreen() {
               </View>
 
               <View style={styles.modalFooter}>
-                <TouchableOpacity
+                <SecondaryButton
                   style={[styles.modalButton, styles.cancelButton]}
                   onPress={() => {
                     setShowEditModal(false);
@@ -349,9 +350,10 @@ export default function EmployeeScreen() {
                     setDailyRate('');
                     setSalary('');
                   }}
+                  textStyle={styles.cancelButtonText}
                 >
-                  <Text style={styles.cancelButtonText}>Cancel</Text>
-                </TouchableOpacity>
+                  Cancel
+                </SecondaryButton>
                 <TouchableOpacity
                   style={[styles.modalButton, styles.saveButton, saving && styles.disabledButton]}
                   onPress={handleSaveDailyRate}
@@ -378,17 +380,17 @@ export default function EmployeeScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 16,
   },
   backButton: {
@@ -397,12 +399,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24',
+    color: '#000000',
   },
   content: {
     flex: 1,
@@ -424,7 +426,7 @@ const styles = StyleSheet.create({
   },
   matchingText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -437,7 +439,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   employeeCard: {
     backgroundColor: '#ffffff',
@@ -450,7 +452,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   employeeHeader: {
     flexDirection: 'row',
@@ -461,7 +463,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -487,12 +489,12 @@ const styles = StyleSheet.create({
   },
   employeePosition: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   jobTitle: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   employeeDetails: {
@@ -508,7 +510,7 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   rateRow: {
     flexDirection: 'row',
@@ -527,12 +529,12 @@ const styles = StyleSheet.create({
   rateLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   rateValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   editButton: {
     flexDirection: 'row',
@@ -546,7 +548,7 @@ const styles = StyleSheet.create({
   editButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   // Modal styles
   modalOverlay: {
@@ -597,7 +599,7 @@ const styles = StyleSheet.create({
   },
   employeeInfoPosition: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   inputGroup: {
     marginBottom: 20,
@@ -605,7 +607,7 @@ const styles = StyleSheet.create({
   inputLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -620,7 +622,7 @@ const styles = StyleSheet.create({
   },
   inputHint: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 4,
   },
   payTypeRow: {
@@ -638,13 +640,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   payTypeChipActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   payTypeChipText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   payTypeChipTextActive: {
     color: '#ffffff',
@@ -666,15 +668,14 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   cancelButton: {
-    backgroundColor: '#f3f4f6',
+    flex: 1,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
   },
   saveButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   disabledButton: {
     opacity: 0.6,

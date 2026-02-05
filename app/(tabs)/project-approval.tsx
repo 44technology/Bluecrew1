@@ -12,7 +12,8 @@ import {
   Platform,
   Dimensions,
 } from 'react-native';
-import { CheckCircle, XCircle, Eye, Building2, Package, FileText, Calendar, DollarSign, User, Search, Download, Filter, ArrowLeft, Receipt, BarChart3, Edit, Send } from 'lucide-react-native';
+import { CheckCircle, XCircle, Eye, Building2, Package, FileText, Calendar, DollarSign, User, Search, Download, Filter, Receipt, BarChart3, Edit, Send } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { router } from 'expo-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -170,16 +171,12 @@ export default function ProjectApprovalScreen() {
         // Only admin can load and approve projects
         if (userRole === 'admin') {
           const projects = await ProjectService.getProjects();
-          // Show pending, under_review, and rejected projects
-          const pending = projects.filter(p => 
-            p.status === 'pending' || 
-            p.status === 'under_review' || 
-            p.status === 'rejected'
-          );
+          // Show pending projects only (in_progress and completed are in other lists)
+          const pending = projects.filter(p => p.status === 'pending');
           setPendingProjects(pending);
           
           // Show approved projects
-          const approved = projects.filter(p => p.status === 'approved');
+          const approved = projects.filter(p => p.status === 'in_progress');
           setApprovedProjects(approved);
           
           const pms = await UserService.getUsersByRole('pm');
@@ -250,7 +247,7 @@ export default function ProjectApprovalScreen() {
   const handleApproveProject = async (project: Project) => {
     try {
       await ProjectService.updateProject(project.id, {
-        status: 'approved',
+        status: 'in_progress',
         approved_by: user?.id || '',
         approved_by_name: user?.name || '',
         approved_at: new Date().toISOString(),
@@ -262,7 +259,7 @@ export default function ProjectApprovalScreen() {
 
       // Update selectedProject status to show "Assign to PMs" section
       if (selectedProject && selectedProject.id === project.id) {
-        setSelectedProject(prev => prev ? { ...prev, status: 'approved' } : null);
+        setSelectedProject(prev => prev ? { ...prev, status: 'in_progress' } : null);
       }
 
       setPendingProjects(prev => prev.filter(p => p.id !== project.id));
@@ -326,7 +323,7 @@ export default function ProjectApprovalScreen() {
 
     try {
       await ProjectService.updateProject(selectedProject.id, {
-        status: 'under_review',
+        status: 'pending',
         change_request_by: user?.id || '',
         change_request_by_name: user?.name || '',
         change_request_at: new Date().toISOString(),
@@ -514,7 +511,7 @@ export default function ProjectApprovalScreen() {
         gross_profit_rate: grossProfitRate,
         steps: updatedSteps,
         is_job: true,
-        status: 'active',
+        status: 'in_progress',
       });
 
       setPendingProjects(prev => prev.filter(p => p.id !== project.id));
@@ -733,7 +730,7 @@ export default function ProjectApprovalScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading...</Text>
       </View>
     );
@@ -775,132 +772,7 @@ export default function ProjectApprovalScreen() {
     );
   };
 
-  // Batch operations
-  const toggleItemSelection = (id: string) => {
-    const newSelected = new Set(selectedItems);
-    if (newSelected.has(id)) {
-      newSelected.delete(id);
-    } else {
-      newSelected.add(id);
-    }
-    setSelectedItems(newSelected);
-  };
-
-  const selectAll = () => {
-    if (activeTab === 'project') {
-      const allIds = new Set(pendingProjects.map(p => p.id));
-      setSelectedItems(allIds);
-    } else if (activeTab === 'material') {
-      const allIds = new Set(pendingMaterialRequests.map(r => r.id));
-      setSelectedItems(allIds);
-    } else {
-      const allIds = new Set(pendingChangeOrders.map(co => co.id));
-      setSelectedItems(allIds);
-    }
-  };
-
-  const clearSelection = () => {
-    setSelectedItems(new Set());
-  };
-
-  const handleBatchApprove = async () => {
-    if (selectedItems.size === 0) {
-      Alert.alert('Error', 'Please select items to approve');
-      return;
-    }
-
-    try {
-      if (activeTab === 'project') {
-        for (const id of selectedItems) {
-          await ProjectService.updateProject(id, {
-            status: 'approved',
-            approved_by: user?.id || '',
-            approved_by_name: user?.name || '',
-            approved_at: new Date().toISOString(),
-          });
-        }
-      } else if (activeTab === 'material') {
-        for (const id of selectedItems) {
-          await MaterialRequestService.updateMaterialRequest(id, {
-            status: 'approved',
-            approved_by: user?.id || '',
-            approved_at: new Date().toISOString(),
-          });
-        }
-      } else {
-        for (const id of selectedItems) {
-          await ChangeOrderService.updateChangeOrderRequest(id, {
-            status: 'approved',
-            approved_by: user?.id || '',
-            approved_at: new Date().toISOString(),
-          });
-        }
-      }
-
-      clearSelection();
-      Alert.alert('Success', `${selectedItems.size} item(s) approved successfully`);
-      await loadData();
-    } catch (error) {
-      console.error('Error batch approving:', error);
-      Alert.alert('Error', 'Failed to approve items');
-    }
-  };
-
-  const handleBatchReject = () => {
-    if (selectedItems.size === 0) {
-      Alert.alert('Error', 'Please select items to reject');
-      return;
-    }
-    setShowRejectModal(true);
-  };
-
-  const confirmBatchReject = async () => {
-    if (!rejectionReason.trim()) {
-      Alert.alert('Error', 'Please provide a rejection reason');
-      return;
-    }
-
-    try {
-      if (activeTab === 'project') {
-        for (const id of selectedItems) {
-          await ProjectService.updateProject(id, {
-            status: 'rejected',
-            rejected_by: user?.id || '',
-            rejected_by_name: user?.name || '',
-            rejected_at: new Date().toISOString(),
-            rejection_reason: rejectionReason,
-          });
-        }
-      } else if (activeTab === 'material') {
-        for (const id of selectedItems) {
-          await MaterialRequestService.updateMaterialRequest(id, {
-            status: 'rejected',
-            rejected_by: user?.id || '',
-            rejected_at: new Date().toISOString(),
-            rejection_reason: rejectionReason,
-          });
-        }
-      } else {
-        for (const id of selectedItems) {
-          await ChangeOrderService.updateChangeOrderRequest(id, {
-            status: 'rejected',
-            rejected_by: user?.id || '',
-            rejected_at: new Date().toISOString(),
-            rejection_reason: rejectionReason,
-          });
-        }
-      }
-
-      setRejectionReason('');
-      setShowRejectModal(false);
-      clearSelection();
-      Alert.alert('Success', `${selectedItems.size} item(s) rejected`);
-      await loadData();
-    } catch (error) {
-      console.error('Error batch rejecting:', error);
-      Alert.alert('Error', 'Failed to reject items');
-    }
-  };
+  // Batch operations removed - single selection only
 
   // Show selection screen if viewMode is 'select'
   if (viewMode === 'select') {
@@ -920,7 +792,7 @@ export default function ProjectApprovalScreen() {
                 style={styles.selectionCard}
                 onPress={() => setViewMode('project')}
               >
-                <Building2 size={48} color="#236ecf" />
+                <Building2 size={36} color="#000000" />
                 <Text style={styles.selectionTitle}>Project</Text>
                 <Text style={styles.selectionDescription}>
                   Approve projects, materials, and change orders
@@ -930,7 +802,7 @@ export default function ProjectApprovalScreen() {
                 style={styles.selectionCard}
                 onPress={() => setViewMode('sales')}
               >
-                <BarChart3 size={48} color="#8b5cf6" />
+                <BarChart3 size={36} color="#8b5cf6" />
                 <Text style={styles.selectionTitle}>Sales</Text>
                 <Text style={styles.selectionDescription}>
                   Approve proposals
@@ -950,12 +822,10 @@ export default function ProjectApprovalScreen() {
         <HamburgerMenu />
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity 
-              onPress={() => setViewMode('select')} 
-              style={styles.backButton}
-            >
-              <ArrowLeft size={24} color="#ffcc00" />
-            </TouchableOpacity>
+            <BackButton 
+              onPress={() => setViewMode('select')}
+              color="#ffffff" 
+            />
             <View style={styles.headerContent}>
               <Text style={styles.title}>Sales Approval</Text>
               <Text style={styles.subtitle}>Choose approval type</Text>
@@ -967,7 +837,7 @@ export default function ProjectApprovalScreen() {
                 style={styles.selectionCard}
                 onPress={() => setViewMode('sales-proposal')}
               >
-                <FileText size={48} color="#f59e0b" />
+                <FileText size={36} color="#f59e0b" />
                 <Text style={styles.selectionTitle}>Proposal</Text>
                 <Text style={styles.selectionDescription}>
                   Review and approve pending proposals
@@ -985,18 +855,16 @@ export default function ProjectApprovalScreen() {
       <HamburgerMenu />
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
+          <BackButton 
             onPress={() => {
               if (viewMode === 'project') {
                 setViewMode('select');
               } else if (viewMode === 'sales-proposal') {
                 setViewMode('sales');
               }
-            }} 
-            style={styles.backButton}
-          >
-            <ArrowLeft size={24} color="#ffcc00" />
-          </TouchableOpacity>
+            }}
+            color="#ffffff" 
+          />
           <View style={styles.headerContent}>
             <Text style={styles.title}>
               {viewMode === 'project' ? 'Project Approval' : 
@@ -1022,7 +890,7 @@ export default function ProjectApprovalScreen() {
           style={[styles.tab, activeTab === 'project' && styles.activeTab]}
           onPress={() => setActiveTab('project')}
         >
-          <Building2 size={18} color={activeTab === 'project' ? '#236ecf' : '#ffffff'} />
+          <Building2 size={18} color={activeTab === 'project' ? '#ffffff' : '#000000'} />
           <Text style={[styles.tabText, activeTab === 'project' && styles.activeTabText]}>
             Project
           </Text>
@@ -1031,7 +899,7 @@ export default function ProjectApprovalScreen() {
           style={[styles.tab, activeTab === 'material' && styles.activeTab]}
           onPress={() => setActiveTab('material')}
         >
-          <Package size={18} color={activeTab === 'material' ? '#236ecf' : '#ffffff'} />
+          <Package size={18} color={activeTab === 'material' ? '#ffffff' : '#000000'} />
           <Text style={[styles.tabText, activeTab === 'material' && styles.activeTabText]}>
             Material
           </Text>
@@ -1040,7 +908,7 @@ export default function ProjectApprovalScreen() {
           style={[styles.tab, activeTab === 'change-order' && styles.activeTab]}
           onPress={() => setActiveTab('change-order')}
         >
-          <FileText size={18} color={activeTab === 'change-order' ? '#236ecf' : '#ffffff'} />
+          <FileText size={18} color={activeTab === 'change-order' ? '#ffffff' : '#000000'} />
           <Text style={[styles.tabText, activeTab === 'change-order' && styles.activeTabText]}>
             Change Order
           </Text>
@@ -1051,48 +919,17 @@ export default function ProjectApprovalScreen() {
       {Platform.OS === 'web' && (
         <View style={styles.webToolbar}>
           <View style={styles.searchContainer}>
-            <Search size={20} color="#6b7280" />
+            <Search size={20} color="#000000" />
             <TextInput
               style={styles.searchInput}
               placeholder="Search..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
           </View>
           <View style={styles.toolbarActions}>
-            {selectedItems.size > 0 && (
-              <>
-                <TouchableOpacity
-                  style={styles.batchButton}
-                  onPress={handleBatchApprove}
-                >
-                  <CheckCircle size={16} color="#ffffff" />
-                  <Text style={styles.batchButtonText}>Approve ({selectedItems.size})</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.batchButton, styles.rejectBatchButton]}
-                  onPress={handleBatchReject}
-                >
-                  <XCircle size={16} color="#ffffff" />
-                  <Text style={styles.batchButtonText}>Reject ({selectedItems.size})</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.clearButton}
-                  onPress={clearSelection}
-                >
-                  <Text style={styles.clearButtonText}>Clear</Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {selectedItems.size === 0 && (
-              <TouchableOpacity
-                style={styles.selectAllButton}
-                onPress={selectAll}
-              >
-                <Text style={styles.selectAllButtonText}>Select All</Text>
-              </TouchableOpacity>
-            )}
+            {/* Batch actions removed - single selection only */}
           </View>
         </View>
       )}
@@ -1101,27 +938,20 @@ export default function ProjectApprovalScreen() {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
+        bounces={true}
+        alwaysBounceVertical={true}
+        scrollEventThrottle={16}
       >
         {/* Table View (Desktop only) */}
         {displayMode === 'table' ? (
           <ScrollView 
-            horizontal={true}
-            showsHorizontalScrollIndicator={true}
+            horizontal={Platform.OS !== 'web'}
+            showsHorizontalScrollIndicator={Platform.OS !== 'web'}
             style={styles.tableScrollContainer}
             contentContainerStyle={styles.tableScrollContent}
           >
             <View style={styles.tableContainer}>
               <View style={styles.tableHeader}>
-              <View style={styles.tableCheckbox}>
-                <TouchableOpacity
-                  style={styles.checkbox}
-                  onPress={selectAll}
-                >
-                  {selectedItems.size > 0 && (
-                    <Text style={styles.checkboxCheck}>✓</Text>
-                  )}
-                </TouchableOpacity>
-              </View>
               {activeTab === 'project' && (
                 <>
                   <Text style={styles.tableHeaderText}>Project</Text>
@@ -1134,7 +964,7 @@ export default function ProjectApprovalScreen() {
               )}
               {activeTab === 'material' && (
                 <>
-                  <Text style={styles.tableHeaderText}>Description</Text>
+                  <Text style={styles.tableHeaderText}>Material Name</Text>
                   <Text style={styles.tableHeaderText}>Project</Text>
                   <Text style={styles.tableHeaderText}>Quantity</Text>
                   <Text style={styles.tableHeaderText}>Creation Date</Text>
@@ -1161,19 +991,6 @@ export default function ProjectApprovalScreen() {
                 ) : (
                   getFilteredProjects().map((project) => (
                     <View key={project.id} style={styles.tableRow}>
-                      <View style={styles.tableCheckbox}>
-                        <TouchableOpacity
-                          style={[
-                            styles.checkbox,
-                            selectedItems.has(project.id) && styles.checkboxSelected
-                          ]}
-                          onPress={() => toggleItemSelection(project.id)}
-                        >
-                          {selectedItems.has(project.id) && (
-                            <Text style={styles.checkboxCheck}>✓</Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
                       <Text style={styles.tableCell}>{project.title}</Text>
                       <Text style={styles.tableCell}>{project.client_name}</Text>
                       <Text style={styles.tableCell}>{formatCurrency(project.total_budget || 0)}</Text>
@@ -1182,17 +999,16 @@ export default function ProjectApprovalScreen() {
                         <View style={[
                           styles.statusBadge,
                           project.status === 'pending' && styles.statusBadgePending,
-                          project.status === 'under_review' && styles.statusBadgeReview,
-                          project.status === 'rejected' && styles.statusBadgeRejected,
+                          project.status === 'in_progress' && styles.statusBadgeApproved,
+                          project.status === 'completed' && styles.statusBadgeRejected,
                         ]}>
                           <Text style={[
                             styles.statusBadgeText,
                             project.status === 'pending' && styles.statusBadgeTextPending,
-                            project.status === 'under_review' && styles.statusBadgeTextReview,
-                            project.status === 'rejected' && styles.statusBadgeTextRejected,
+                            project.status === 'in_progress' && styles.statusBadgeTextApproved,
+                            project.status === 'completed' && styles.statusBadgeTextRejected,
                           ]}>
-                            {project.status === 'under_review' ? 'Under Review' : 
-                             project.status.charAt(0).toUpperCase() + project.status.slice(1).replace('_', ' ')}
+                            {project.status === 'in_progress' ? 'In Progress' : project.status === 'completed' ? 'Completed' : 'Pending'}
                           </Text>
                         </View>
                       </View>
@@ -1204,9 +1020,9 @@ export default function ProjectApprovalScreen() {
                             setShowDetailModal(true);
                           }}
                         >
-                          <Eye size={16} color="#236ecf" />
+                          <Eye size={16} color="#000000" />
                         </TouchableOpacity>
-                        {project.status !== 'rejected' && (
+                        {project.status === 'pending' && (
                           <TouchableOpacity
                             style={[styles.tableActionButton, styles.approveActionButton]}
                             onPress={() => handleApproveProject(project)}
@@ -1214,7 +1030,7 @@ export default function ProjectApprovalScreen() {
                             <CheckCircle size={16} color="#22c55e" />
                           </TouchableOpacity>
                         )}
-                        {project.status !== 'rejected' && (
+                        {project.status === 'pending' && (
                           <TouchableOpacity
                             style={[styles.tableActionButton, styles.rejectActionButton]}
                             onPress={() => {
@@ -1240,20 +1056,7 @@ export default function ProjectApprovalScreen() {
                 ) : (
                   getFilteredMaterialRequests().map((request) => (
                     <View key={request.id} style={styles.tableRow}>
-                      <View style={styles.tableCheckbox}>
-                        <TouchableOpacity
-                          style={[
-                            styles.checkbox,
-                            selectedItems.has(request.id) && styles.checkboxSelected
-                          ]}
-                          onPress={() => toggleItemSelection(request.id)}
-                        >
-                          {selectedItems.has(request.id) && (
-                            <Text style={styles.checkboxCheck}>✓</Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
-                      <Text style={styles.tableCell}>{request.description || '-'}</Text>
+                      <Text style={styles.tableCell}>{request.item_name && request.item_name.trim() ? request.item_name : (request.description || '-')}</Text>
                       <Text style={styles.tableCell}>{request.project_name || '-'}</Text>
                       <Text style={styles.tableCell}>{request.quantity || '-'}</Text>
                       <Text style={styles.tableCell}>
@@ -1308,7 +1111,7 @@ export default function ProjectApprovalScreen() {
                             setShowDetailModal(true);
                           }}
                         >
-                          <Eye size={16} color="#236ecf" />
+                          <Eye size={16} color="#000000" />
                         </TouchableOpacity>
                         {userRole === 'admin' && (
                           <>
@@ -1344,19 +1147,6 @@ export default function ProjectApprovalScreen() {
                 ) : (
                   getFilteredChangeOrders().map((request) => (
                     <View key={request.id} style={styles.tableRow}>
-                      <View style={styles.tableCheckbox}>
-                        <TouchableOpacity
-                          style={[
-                            styles.checkbox,
-                            selectedItems.has(request.id) && styles.checkboxSelected
-                          ]}
-                          onPress={() => toggleItemSelection(request.id)}
-                        >
-                          {selectedItems.has(request.id) && (
-                            <Text style={styles.checkboxCheck}>✓</Text>
-                          )}
-                        </TouchableOpacity>
-                      </View>
                       <Text style={styles.tableCell}>{request.title}</Text>
                       <Text style={styles.tableCell}>{request.project_name}</Text>
                       <View style={styles.tableCell}>
@@ -1388,7 +1178,7 @@ export default function ProjectApprovalScreen() {
                             setShowDetailModal(true);
                           }}
                         >
-                          <Eye size={16} color="#236ecf" />
+                          <Eye size={16} color="#000000" />
                         </TouchableOpacity>
                         {userRole === 'admin' && (
                           <>
@@ -1438,7 +1228,7 @@ export default function ProjectApprovalScreen() {
                     >
                       <View style={styles.cardHeader}>
                         <View style={styles.cardIcon}>
-                          <Building2 size={24} color="#236ecf" />
+                          <Building2 size={24} color="#000000" />
                         </View>
                         <View style={styles.cardInfo}>
                           <Text style={styles.cardTitle} numberOfLines={2}>{project.title}</Text>
@@ -1447,17 +1237,16 @@ export default function ProjectApprovalScreen() {
                             <View style={[
                               styles.statusBadge,
                               project.status === 'pending' && styles.statusBadgePending,
-                              project.status === 'under_review' && styles.statusBadgeReview,
-                              project.status === 'rejected' && styles.statusBadgeRejected,
+                              project.status === 'in_progress' && styles.statusBadgeApproved,
+                              project.status === 'completed' && styles.statusBadgeRejected,
                             ]}>
                               <Text style={[
                                 styles.statusBadgeText,
                                 project.status === 'pending' && styles.statusBadgeTextPending,
-                                project.status === 'under_review' && styles.statusBadgeTextReview,
-                                project.status === 'rejected' && styles.statusBadgeTextRejected,
+                                project.status === 'in_progress' && styles.statusBadgeTextApproved,
+                                project.status === 'completed' && styles.statusBadgeTextRejected,
                               ]}>
-                                {project.status === 'under_review' ? 'Under Review' : 
-                                 project.status.charAt(0).toUpperCase() + project.status.slice(1).replace('_', ' ')}
+                                {project.status === 'in_progress' ? 'In Progress' : project.status === 'completed' ? 'Completed' : 'Pending'}
                               </Text>
                             </View>
                             <View style={styles.budgetBadge}>
@@ -1797,13 +1586,8 @@ export default function ProjectApprovalScreen() {
                   <View style={styles.detailSection}>
                     <View style={styles.commentsSectionHeader}>
                       <View style={styles.commentsTitleContainer}>
-                        <MessageSquare size={20} color="#236ecf" />
+                        <MessageSquare size={20} color="#000000" />
                         <Text style={styles.sectionTitle}>Review Comments</Text>
-                        {selectedProject.status === 'under_review' && (
-                          <View style={styles.reviewBadge}>
-                            <Text style={styles.reviewBadgeText}>Under Review</Text>
-                          </View>
-                        )}
                       </View>
                       {userRole === 'admin' && (
                         <TouchableOpacity
@@ -1830,7 +1614,7 @@ export default function ProjectApprovalScreen() {
 
                     {loadingProjectComments ? (
                       <View style={styles.loadingComments}>
-                        <ActivityIndicator size="small" color="#236ecf" />
+                        <ActivityIndicator size="small" color="#000000" />
                         <Text style={styles.loadingCommentsText}>Loading comments...</Text>
                       </View>
                     ) : projectComments.length > 0 ? (
@@ -1861,7 +1645,7 @@ export default function ProjectApprovalScreen() {
                   </View>
                 )}
 
-                {selectedProject && selectedProject.status === 'approved' && (
+                {selectedProject && selectedProject.status === 'in_progress' && (
                   <View style={styles.detailSection}>
                     <Text style={styles.sectionTitle}>Assign to PMs</Text>
                     <View style={styles.commissionSection}>
@@ -2267,7 +2051,7 @@ export default function ProjectApprovalScreen() {
                 <View style={styles.detailSection}>
                   <View style={styles.commentsSectionHeader}>
                     <View style={styles.commentsTitleContainer}>
-                      <MessageSquare size={20} color="#236ecf" />
+                      <MessageSquare size={20} color="#000000" />
                       <Text style={styles.sectionTitle}>Comments</Text>
                     </View>
                     {userRole === 'admin' && (
@@ -2315,7 +2099,7 @@ export default function ProjectApprovalScreen() {
 
                   {loadingComments ? (
                     <View style={styles.loadingComments}>
-                      <ActivityIndicator size="small" color="#236ecf" />
+                      <ActivityIndicator size="small" color="#000000" />
                       <Text style={styles.loadingCommentsText}>Loading comments...</Text>
                     </View>
                   ) : changeOrderComments.length > 0 ? (
@@ -2355,14 +2139,14 @@ export default function ProjectApprovalScreen() {
                   onPress={async () => {
                     try {
                       await ProjectService.updateProject(selectedProject.id, {
-                        status: 'under_review',
+                        status: 'pending',
                       });
                       const updatedProject = await ProjectService.getProjectById(selectedProject.id);
                       if (updatedProject) {
                         setSelectedProject(updatedProject);
                       }
                       await loadData();
-                      Alert.alert('Success', 'Project marked as under review');
+                      Alert.alert('Success', 'Project marked as pending');
                     } catch (error) {
                       console.error('Error updating project status:', error);
                       Alert.alert('Error', 'Failed to update project status');
@@ -2370,7 +2154,7 @@ export default function ProjectApprovalScreen() {
                   }}
                 >
                   <Eye size={20} color="#ffffff" />
-                  <Text style={styles.reviewButtonText}>Mark as Review</Text>
+                  <Text style={styles.reviewButtonText}>Mark as Pending</Text>
                 </TouchableOpacity>
               )}
 
@@ -2434,7 +2218,7 @@ export default function ProjectApprovalScreen() {
                 </TouchableOpacity>
               )}
 
-              {activeTab === 'project' && selectedProject?.status === 'approved' && selectedPMs.length > 0 && (
+              {activeTab === 'project' && selectedProject?.status === 'in_progress' && selectedPMs.length > 0 && (
                 <TouchableOpacity
                   style={styles.assignButton}
                   onPress={() => handleAssignToPMs(selectedProject!)}>
@@ -2483,18 +2267,14 @@ export default function ProjectApprovalScreen() {
               <TouchableOpacity
                 style={styles.confirmRejectButton}
                 onPress={() => {
-                  if (selectedItems.size > 0) {
-                    confirmBatchReject();
+                  if (viewMode === 'sales-proposal' && selectedProposal) {
+                    handleRejectProposal(selectedProposal);
+                  } else if (activeTab === 'project') {
+                    handleRejectProject();
+                  } else if (activeTab === 'material') {
+                    handleRejectMaterialRequest();
                   } else {
-                    if (viewMode === 'sales-proposal' && selectedProposal) {
-                      handleRejectProposal(selectedProposal);
-                    } else if (activeTab === 'project') {
-                      handleRejectProject();
-                    } else if (activeTab === 'material') {
-                      handleRejectMaterialRequest();
-                    } else {
-                      handleRejectChangeOrder();
-                    }
+                    handleRejectChangeOrder();
                   }
                 }}>
                 <Text style={styles.confirmRejectText}>Reject</Text>
@@ -2523,7 +2303,7 @@ export default function ProjectApprovalScreen() {
               value={changeRequestReason}
               onChangeText={setChangeRequestReason}
               placeholder="Enter change request details..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
               multiline
               numberOfLines={4}
             />
@@ -2591,15 +2371,15 @@ export default function ProjectApprovalScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff',
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#f5f5f5', // Darker blue header
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
   },
   headerContent: {
     flex: 1,
@@ -2610,51 +2390,57 @@ const styles = StyleSheet.create({
   },
   selectionContainer: {
     flexDirection: 'row',
-    gap: 20,
+    gap: 16,
     padding: 20,
     justifyContent: 'center',
-    flexWrap: 'wrap',
+    alignItems: 'center',
   },
   selectionCard: {
+    flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 32,
+    padding: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    minWidth: 200,
-    maxWidth: 300,
+    minHeight: 180,
+    maxWidth: '48%',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    borderWidth: 2,
+    borderWidth: 1,
     borderColor: '#e5e7eb',
   },
   selectionTitle: {
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: '700',
     color: '#1f2937',
-    marginTop: 16,
+    marginTop: 12,
     marginBottom: 8,
+    textAlign: 'center',
   },
   selectionDescription: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#000000',
     textAlign: 'center',
+    lineHeight: 16,
+    paddingHorizontal: 4,
   },
   card: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   cardFooter: {
     flexDirection: 'row',
@@ -2671,22 +2457,22 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
+    fontSize: 14,
+    color: '#000000',
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1e40af', // Darker blue like team tabs
+    backgroundColor: '#f5f5f5', // Darker blue like team tabs
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 8,
   },
   tab: {
@@ -2698,31 +2484,42 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     borderRadius: 8,
     gap: 6,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   activeTab: {
-    backgroundColor: '#ffcc00', // Yellow active tab
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue
+    color: '#000000',
   },
   activeTabText: {
-    color: '#236ecf', // Blue text on yellow
+    color: '#ffffff',
   },
   content: {
     flex: 1,
-    padding: 20,
+    padding: Platform.OS === 'web' ? 16 : 20,
+    ...(Platform.OS === 'web' && {
+      width: '100%',
+      maxWidth: '100%',
+    }),
   },
   scrollContent: {
     paddingBottom: 20,
+    ...(Platform.OS === 'web' && {
+      width: '100%',
+      maxWidth: '100%',
+    }),
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
   },
   loadingText: {
     marginTop: 10,
@@ -2764,7 +2561,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   cardHeader: {
     flexDirection: 'row',
@@ -2799,12 +2596,12 @@ const styles = StyleSheet.create({
   },
   cardSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   cardMeta: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
   },
   budgetBadge: {
     backgroundColor: '#ecfdf5',
@@ -2828,7 +2625,7 @@ const styles = StyleSheet.create({
   dateText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   statusBadge: {
     paddingHorizontal: 10,
@@ -2893,7 +2690,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 24,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   modalContent: {
@@ -2917,7 +2714,7 @@ const styles = StyleSheet.create({
   },
   detailDescription: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -2928,12 +2725,12 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     minWidth: 100,
   },
   detailValue: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   totalRow: {
@@ -2950,17 +2747,17 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     marginBottom: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   stepName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 4,
   },
   stepDescription: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   priceInfo: {
@@ -2992,7 +2789,7 @@ const styles = StyleSheet.create({
   priceLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   stepPrice: {
     fontSize: 14,
@@ -3018,10 +2815,10 @@ const styles = StyleSheet.create({
   finalPriceAmount: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   profitPrice: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '700',
   },
   stepHeader: {
@@ -3047,11 +2844,11 @@ const styles = StyleSheet.create({
   childStepName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   childStepDescription: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 4,
   },
   commissionSection: {
@@ -3060,7 +2857,7 @@ const styles = StyleSheet.create({
   commissionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   commissionInput: {
@@ -3070,7 +2867,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     backgroundColor: '#ffffff',
   },
   budgetCalculation: {
@@ -3089,12 +2886,12 @@ const styles = StyleSheet.create({
   },
   budgetLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   budgetValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   pmBudgetRow: {
     borderTopWidth: 1,
@@ -3125,20 +2922,20 @@ const styles = StyleSheet.create({
   },
   selectedPMOption: {
     backgroundColor: '#f0f9ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
   },
   pmOptionText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   selectedPMOptionText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   selectedIndicator: {
     fontSize: 16,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: 'bold',
   },
   modalActions: {
@@ -3200,7 +2997,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -3232,7 +3029,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -3294,7 +3091,7 @@ const styles = StyleSheet.create({
   },
   rejectModalMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -3304,7 +3101,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     marginBottom: 20,
     textAlignVertical: 'top',
   },
@@ -3321,7 +3118,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelRejectText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3355,7 +3152,7 @@ const styles = StyleSheet.create({
   },
   changeRequestModalMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
     textAlign: 'center',
   },
@@ -3365,7 +3162,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     marginBottom: 20,
     textAlignVertical: 'top',
     minHeight: 100,
@@ -3383,7 +3180,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelChangeRequestText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3425,7 +3222,7 @@ const styles = StyleSheet.create({
   },
   approvalSuccessMessage: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 24,
     marginBottom: 24,
@@ -3458,7 +3255,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addCommentButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
@@ -3489,7 +3286,7 @@ const styles = StyleSheet.create({
   },
   loadingCommentsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '600',
   },
   commentsList: {
@@ -3517,12 +3314,12 @@ const styles = StyleSheet.create({
   },
   commentDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   commentText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
   },
   emptyComments: {
@@ -3530,7 +3327,7 @@ const styles = StyleSheet.create({
   },
   emptyCommentsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '600',
   },
   // Web-specific styles
@@ -3558,7 +3355,7 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     padding: 0,
   },
   toolbarActions: {
@@ -3590,7 +3387,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   selectAllButtonText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3601,16 +3398,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   clearButtonText: {
-    color: '#6b7280',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '500',
   },
   // Table styles
   tableScrollContainer: {
     flex: 1,
+    ...(Platform.OS === 'web' && {
+      width: '100%',
+      maxWidth: '100%',
+    }),
   },
   tableScrollContent: {
-    minWidth: '100%',
+    ...(Platform.OS === 'web' ? {
+      width: '100%',
+    } : {
+      minWidth: '100%',
+    }),
   },
   tableContainer: {
     backgroundColor: '#ffffff',
@@ -3618,7 +3423,12 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: '#e5e7eb',
-    minWidth: 600, // Minimum width for table to be scrollable on mobile
+    ...(Platform.OS === 'web' ? {
+      width: '100%',
+      maxWidth: '100%',
+    } : {
+      minWidth: 600, // Minimum width for table to be scrollable on mobile
+    }),
   },
   tableHeader: {
     flexDirection: 'row',
@@ -3646,8 +3456,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   checkboxSelected: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   checkboxCheck: {
     color: '#ffffff',
@@ -3658,7 +3468,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
     textAlign: 'left',
@@ -3678,7 +3488,7 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     textAlign: 'left',
     paddingRight: 8,
     paddingLeft: 0,

@@ -20,7 +20,8 @@ import { UserService } from '@/services/userService';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import { Platform } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, MapPin } from 'lucide-react-native';
+import { MapPin } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import * as Location from 'expo-location';
 
 export default function TimeClockScreen() {
@@ -144,12 +145,48 @@ export default function TimeClockScreen() {
             // Fallback: try to use name or formatted address
             address = addr.name || addr.formattedAddress;
           }
+          
+          // Log for debugging
+          console.log('Expo reverse geocode result:', {
+            city: addr.city,
+            region: addr.region,
+            country: addr.country,
+            fullAddress: address,
+            coords: { lat: location.coords.latitude, lon: location.coords.longitude }
+          });
         }
       } catch (geocodeError) {
         console.warn('Expo location reverse geocoding failed:', geocodeError);
       }
       
-      // If expo-location didn't work or didn't return address, try OpenStreetMap Nominatim API (works on web)
+      // If expo-location didn't work or didn't return address, try Google Geocoding API (more accurate)
+      if (!address || address === 'Location address unavailable') {
+        try {
+          // Try Google Geocoding API first (more accurate for US locations)
+          // Note: You'll need to add your Google Maps API key to app.json or use environment variable
+          const googleApiKey = process.env.EXPO_PUBLIC_GOOGLE_MAPS_API_KEY || '';
+          
+          if (googleApiKey) {
+            const googleUrl = `https://maps.googleapis.com/maps/api/geocode/json?latlng=${location.coords.latitude},${location.coords.longitude}&key=${googleApiKey}`;
+            
+            const response = await fetch(googleUrl);
+            
+            if (response.ok) {
+              const data = await response.json();
+              
+              if (data && data.results && data.results.length > 0) {
+                // Use the first result (most accurate)
+                address = data.results[0].formatted_address;
+                console.log('Google reverse geocode result:', address);
+              }
+            }
+          }
+        } catch (googleError) {
+          console.warn('Google reverse geocoding failed:', googleError);
+        }
+      }
+      
+      // Fallback to OpenStreetMap Nominatim API if Google didn't work
       if (!address || address === 'Location address unavailable') {
         try {
           const nominatimUrl = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${location.coords.latitude}&lon=${location.coords.longitude}&zoom=18&addressdetails=1`;
@@ -200,6 +237,8 @@ export default function TimeClockScreen() {
                 // Use display_name as fallback
                 address = data.display_name;
               }
+              
+              console.log('Nominatim reverse geocode result:', address);
             } else if (data.display_name) {
               address = data.display_name;
             }
@@ -431,9 +470,9 @@ export default function TimeClockScreen() {
     } catch (error) {
       console.error('Error in manual clock out:', error);
       if (Platform.OS === 'web') {
-        alert('Manuel çıkış yapılırken bir hata oluştu.');
+        alert('An error occurred while signing out.');
       } else {
-        Alert.alert('Hata', 'Manuel çıkış yapılırken bir hata oluştu.');
+        Alert.alert('Error', 'An error occurred while signing out.');
       }
     }
   };
@@ -512,40 +551,56 @@ export default function TimeClockScreen() {
     }).sort((a, b) => a.userName.localeCompare(b.userName));
   };
 
-  const formatTime = (timestamp: string) => {
-    // Parse timestamp and format in local timezone
-    const date = new Date(timestamp);
-    return date.toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true,
-      timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
-    });
-  };
-
-  const formatDate = (dateString: string) => {
-    // Parse the date string - if it's YYYY-MM-DD format, use local date
-    // Otherwise parse as ISO string and convert to local
-    if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
-      // It's already a date string (YYYY-MM-DD), parse it as local date
-      const [year, month, day] = dateString.split('-').map(Number);
-      const date = new Date(year, month - 1, day);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
-    } else {
-      // It's an ISO timestamp, parse and use local timezone
-      const date = new Date(dateString);
-      return date.toLocaleDateString('en-US', {
-        weekday: 'long',
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
+  const formatTime = (timestamp: string | null | undefined): string => {
+    if (!timestamp || typeof timestamp !== 'string') return 'N/A';
+    try {
+      // Parse timestamp and format in local timezone
+      const date = new Date(timestamp);
+      if (isNaN(date.getTime())) return 'N/A';
+      const formatted = date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true,
         timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
       });
+      return formatted || 'N/A';
+    } catch (error) {
+      return 'N/A';
+    }
+  };
+
+  const formatDate = (dateString: string | null | undefined): string => {
+    if (!dateString || typeof dateString !== 'string') return 'N/A';
+    try {
+      // Parse the date string - if it's YYYY-MM-DD format, use local date
+      // Otherwise parse as ISO string and convert to local
+      if (dateString.match(/^\d{4}-\d{2}-\d{2}$/)) {
+        // It's already a date string (YYYY-MM-DD), parse it as local date
+        const [year, month, day] = dateString.split('-').map(Number);
+        const date = new Date(year, month - 1, day);
+        if (isNaN(date.getTime())) return 'N/A';
+        const formatted = date.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric'
+        });
+        return formatted || 'N/A';
+      } else {
+        // It's an ISO timestamp, parse and use local timezone
+        const date = new Date(dateString);
+        if (isNaN(date.getTime())) return 'N/A';
+        const formatted = date.toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+          timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone
+        });
+        return formatted || 'N/A';
+      }
+    } catch (error) {
+      return 'N/A';
     }
   };
 
@@ -576,7 +631,7 @@ export default function TimeClockScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading time clock data...</Text>
       </View>
     );
@@ -587,18 +642,7 @@ export default function TimeClockScreen() {
       <HamburgerMenu />
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.push('/');
-              }
-            }}
-          >
-            <ArrowLeft size={24} color="#ffcc00" />
-          </TouchableOpacity>
+          <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
           <View>
             <Text style={styles.title}>Time Clock</Text>
             <Text style={styles.subtitle}>Track your work hours</Text>
@@ -701,7 +745,8 @@ export default function TimeClockScreen() {
         style={styles.entriesContainer} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        bounces={false}
+        bounces={true}
+        alwaysBounceVertical={true}
         scrollEventThrottle={16}
       >
         <Text style={styles.sectionTitle}>
@@ -729,7 +774,7 @@ export default function TimeClockScreen() {
               {group.entries.map((entry) => (
                 <View key={entry.id} style={styles.entryCard}>
                   <View style={styles.entryHeader}>
-                    <View style={[styles.statusBadge, { backgroundColor: entry.status === 'clocked_in' ? '#22c55e' : '#6b7280' }]}>
+                    <View style={[styles.statusBadge, { backgroundColor: entry.status === 'clocked_in' ? '#22c55e' : '#000000' }]}>
                       <Text style={styles.statusBadgeText}>
                         {entry.status === 'clocked_in' ? 'IN' : 'OUT'}
                       </Text>
@@ -737,33 +782,39 @@ export default function TimeClockScreen() {
                   </View>
                   
                   <View style={styles.entryDetails}>
-                    <Text style={styles.entryDate}>{formatDate(entry.date)}</Text>
+                    {entry.date ? (
+                      <Text style={styles.entryDate}>{formatDate(entry.date) || 'N/A'}</Text>
+                    ) : null}
                     <View style={styles.timeRow}>
                       <Text style={styles.timeLabel}>In:</Text>
-                      <Text style={styles.timeValue}>{formatTime(entry.clock_in)}</Text>
+                      {entry.clock_in ? (
+                        <Text style={styles.timeValue}>{formatTime(entry.clock_in) || 'N/A'}</Text>
+                      ) : (
+                        <Text style={styles.timeValue}>N/A</Text>
+                      )}
                       {entry.clock_out && (
                         <>
                           <Text style={styles.timeLabel}>Out:</Text>
-                          <Text style={styles.timeValue}>{formatTime(entry.clock_out)}</Text>
+                          <Text style={styles.timeValue}>{formatTime(entry.clock_out) || 'N/A'}</Text>
                         </>
                       )}
                     </View>
-                    {entry.total_hours && entry.total_hours > 0 && (
+                    {entry.total_hours && entry.total_hours > 0 ? (
                       <Text style={styles.totalHours}>
-                        Total: {entry.total_hours} hours
+                        Total: {typeof entry.total_hours === 'number' ? entry.total_hours : String(entry.total_hours)} hours
                       </Text>
-                    )}
-                    {entry.location && entry.location.address && (
+                    ) : null}
+                    {entry.location && entry.location.address ? (
                       <View style={styles.locationRow}>
-                        <MapPin size={14} color="#6b7280" />
+                        <MapPin size={14} color="#000000" />
                         <Text style={styles.locationText}>
-                          Clock In: {entry.location.address}
+                          Clock In: {String(entry.location.address || 'N/A')}
                         </Text>
                       </View>
-                    )}
+                    ) : null}
                     {entry.clock_out_location && entry.clock_out_location.address && (
                       <View style={styles.locationRow}>
-                        <MapPin size={14} color="#6b7280" />
+                        <MapPin size={14} color="#000000" />
                         <Text style={styles.locationText}>
                           Clock Out: {entry.clock_out_location.address}
                         </Text>
@@ -798,7 +849,7 @@ export default function TimeClockScreen() {
                     <Text style={styles.userRole}>{entry.user_role.toUpperCase()}</Text>
                   </View>
                 </View>
-                <View style={[styles.statusBadge, { backgroundColor: entry.status === 'clocked_in' ? '#22c55e' : '#6b7280' }]}>
+                <View style={[styles.statusBadge, { backgroundColor: entry.status === 'clocked_in' ? '#22c55e' : '#000000' }]}>
                   <Text style={styles.statusBadgeText}>
                     {entry.status === 'clocked_in' ? 'IN' : 'OUT'}
                   </Text>
@@ -806,10 +857,14 @@ export default function TimeClockScreen() {
               </View>
               
               <View style={styles.entryDetails}>
-                <Text style={styles.entryDate}>{formatDate(entry.date)}</Text>
+                {entry.date && (
+                  <Text style={styles.entryDate}>{formatDate(entry.date)}</Text>
+                )}
                 <View style={styles.timeRow}>
                   <Text style={styles.timeLabel}>In:</Text>
-                  <Text style={styles.timeValue}>{formatTime(entry.clock_in)}</Text>
+                  {entry.clock_in && (
+                    <Text style={styles.timeValue}>{formatTime(entry.clock_in)}</Text>
+                  )}
                   {entry.clock_out && (
                     <>
                       <Text style={styles.timeLabel}>Out:</Text>
@@ -824,7 +879,7 @@ export default function TimeClockScreen() {
                 )}
                 {(entry.location || (entry as any).clock_out_location) && (
                   <View style={styles.locationRow}>
-                    <MapPin size={14} color="#6b7280" />
+                    <MapPin size={14} color="#000000" />
                     <Text style={styles.locationText}>
                       {(entry.location || (entry as any).clock_out_location)?.address || 
                        `${(entry.location || (entry as any).clock_out_location)?.latitude.toFixed(4)}, ${(entry.location || (entry as any).clock_out_location)?.longitude.toFixed(4)}`}
@@ -987,7 +1042,7 @@ export default function TimeClockScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
@@ -996,9 +1051,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingTop: 60,
     paddingBottom: 16,
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     borderBottomWidth: 2,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 16,
   },
   backButton: {
@@ -1007,11 +1062,11 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#ffcc00',
+    color: '#000000',
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24',
+    color: '#000000',
     marginTop: 4,
   },
   contentActions: {
@@ -1020,7 +1075,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   filterButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 8,
@@ -1029,18 +1084,18 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#000000',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#ffffff',
+    color: '#000000',
     fontWeight: '500',
   },
   clockSection: {
@@ -1069,11 +1124,11 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   clockInTime: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 20,
   },
   clockButton: {
@@ -1118,12 +1173,12 @@ const styles = StyleSheet.create({
   dayName: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   dayDate: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   dayIndicator: {
@@ -1138,11 +1193,11 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   todayText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '700',
   },
   todayIndicator: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   entriesContainer: {
     flex: 1,
@@ -1177,7 +1232,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1194,7 +1249,7 @@ const styles = StyleSheet.create({
   },
   userRole: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   statusBadge: {
@@ -1214,7 +1269,7 @@ const styles = StyleSheet.create({
   },
   entryDate: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   timeRow: {
@@ -1224,7 +1279,7 @@ const styles = StyleSheet.create({
   },
   timeLabel: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     marginRight: 8,
     minWidth: 30,
   },
@@ -1237,7 +1292,7 @@ const styles = StyleSheet.create({
   totalHours: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#236ecf',
+    color: '#000000',
     marginTop: 4,
   },
   modalOverlay: {
@@ -1278,7 +1333,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   modalContent: {
@@ -1290,7 +1345,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   roleSelector: {
     flexDirection: 'row',
@@ -1307,13 +1362,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   selectedRoleButton: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   roleButtonText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   selectedRoleButtonText: {
     color: '#ffffff',
@@ -1325,10 +1380,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   applyButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -1356,13 +1411,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedWeekButton: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   weekButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   selectedWeekButtonText: {
     color: '#ffffff',
@@ -1401,7 +1456,7 @@ const styles = StyleSheet.create({
   weeklyTotalHours: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   userHoursList: {
     gap: 8,
@@ -1425,7 +1480,7 @@ const styles = StyleSheet.create({
   },
   userHoursRole: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   userHoursTotal: {
@@ -1458,7 +1513,7 @@ const styles = StyleSheet.create({
   },
   locationText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
   },
   userSelector: {
@@ -1475,11 +1530,11 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   selectedUserOption: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   userOptionText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   selectedUserOptionText: {
     color: '#ffffff',

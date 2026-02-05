@@ -26,7 +26,8 @@ import { auth, db } from '@/lib/firebase';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import { useRouter } from 'expo-router';
-import { ArrowLeft, Eye, EyeOff } from 'lucide-react-native';
+import { Eye, EyeOff } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 
 export default function TeamScreen() {
   const { t } = useLanguage();
@@ -760,12 +761,12 @@ export default function TeamScreen() {
             <TouchableOpacity 
               style={styles.editButton}
               onPress={() => handleEditEmployee(employee)}>
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={styles.editButtonText} numberOfLines={1}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.deleteButton}
               onPress={() => handleDeleteEmployee(employee)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
+              <Text style={styles.deleteButtonText} numberOfLines={1}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -813,12 +814,12 @@ export default function TeamScreen() {
             <TouchableOpacity 
               style={styles.editButton}
               onPress={() => handleEditEmployee(member)}>
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={styles.editButtonText} numberOfLines={1}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.deleteButton}
               onPress={() => handleDeleteEmployee(member)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
+              <Text style={styles.deleteButtonText} numberOfLines={1}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -856,12 +857,12 @@ export default function TeamScreen() {
             <TouchableOpacity 
               style={styles.editButton}
               onPress={() => handleEditSubContractor(contractor)}>
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={styles.editButtonText} numberOfLines={1}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.deleteButton}
               onPress={() => handleDeleteSubContractor(contractor)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
+              <Text style={styles.deleteButtonText} numberOfLines={1}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -898,12 +899,12 @@ export default function TeamScreen() {
             <TouchableOpacity 
               style={styles.editButton}
               onPress={() => handleEditVendor(vendor)}>
-              <Text style={styles.editButtonText}>Edit</Text>
+              <Text style={styles.editButtonText} numberOfLines={1}>Edit</Text>
             </TouchableOpacity>
             <TouchableOpacity 
               style={styles.deleteButton}
               onPress={() => handleDeleteVendor(vendor)}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
+              <Text style={styles.deleteButtonText} numberOfLines={1}>Delete</Text>
             </TouchableOpacity>
           </View>
         )}
@@ -927,18 +928,7 @@ export default function TeamScreen() {
       <HamburgerMenu />
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.push('/');
-              }
-            }}
-          >
-            <ArrowLeft size={24} color="#236ecf" />
-          </TouchableOpacity>
+          <BackButton color="#000000" backgroundColor="rgba(0, 0, 0, 0.1)" />
         <View>
           <Text style={styles.title}>Team Management</Text>
           <Text style={styles.subtitle}>
@@ -947,13 +937,25 @@ export default function TeamScreen() {
         </View>
       </View>
 
+      {/* Add Button - Moved to header area */}
+      {userRole === 'admin' && (
+        <View style={styles.headerAddButtonContainer}>
+          <TouchableOpacity
+            style={styles.headerAddButton}
+            onPress={() => setShowAddModal(true)}
+            accessibilityLabel={`Add ${activeTab === 'our-team' ? 'Team Member' : activeTab === 'sub-contractors' ? 'Sub Contractor' : 'Vendor'}`}>
+            <Text style={styles.headerAddButtonText}>+ Add</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
       {/* Tab Navigation */}
       <View style={styles.tabContainer}>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'our-team' && styles.activeTab]}
           onPress={() => setActiveTab('our-team')}
         >
-          <Text style={[styles.tabText, activeTab === 'our-team' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'our-team' && styles.activeTabText]} numberOfLines={1}>
             Our Team
           </Text>
         </TouchableOpacity>
@@ -961,7 +963,7 @@ export default function TeamScreen() {
           style={[styles.tab, activeTab === 'sub-contractors' && styles.activeTab]}
           onPress={() => setActiveTab('sub-contractors')}
         >
-          <Text style={[styles.tabText, activeTab === 'sub-contractors' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'sub-contractors' && styles.activeTabText]} numberOfLines={1}>
             Sub Contractors
           </Text>
         </TouchableOpacity>
@@ -969,7 +971,7 @@ export default function TeamScreen() {
           style={[styles.tab, activeTab === 'vendors' && styles.activeTab]}
           onPress={() => setActiveTab('vendors')}
         >
-          <Text style={[styles.tabText, activeTab === 'vendors' && styles.activeTabText]}>
+          <Text style={[styles.tabText, activeTab === 'vendors' && styles.activeTabText]} numberOfLines={1}>
             Vendors
           </Text>
         </TouchableOpacity>
@@ -979,21 +981,22 @@ export default function TeamScreen() {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        bounces={false}
+        bounces={true}
+        alwaysBounceVertical={true}
         scrollEventThrottle={16}
         refreshControl={
           Platform.OS !== 'web' ? (
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#236ecf"
+              tintColor="#000000"
             />
           ) : undefined
         }
       >
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#236ecf" />
+            <ActivityIndicator size="large" color="#000000" />
             <Text style={styles.loadingText}>Loading...</Text>
           </View>
         ) : (
@@ -1052,15 +1055,6 @@ export default function TeamScreen() {
         )}
       </ScrollView>
 
-      {userRole === 'admin' && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => setShowAddModal(true)}
-          accessibilityLabel={`Add ${activeTab === 'our-team' ? 'Team Member' : activeTab === 'sub-contractors' ? 'Sub Contractor' : 'Vendor'}`}
-          accessibilityHint={`Add new ${activeTab === 'our-team' ? 'team member' : activeTab === 'sub-contractors' ? 'sub contractor' : 'vendor'}`}>
-          <Text style={styles.fabIconText}>+</Text>
-        </TouchableOpacity>
-      )}
 
       <Modal
         visible={showAddModal}
@@ -1222,9 +1216,9 @@ export default function TeamScreen() {
                       onPress={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
-                        <EyeOff size={20} color="#6b7280" />
+                        <EyeOff size={20} color="#000000" />
                       ) : (
-                        <Eye size={20} color="#6b7280" />
+                        <Eye size={20} color="#000000" />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -1645,31 +1639,31 @@ export default function TeamScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background
+    backgroundColor: '#ffffff', // Blue background
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#f5f5f5', // Darker blue header
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 16,
   },
   backButton: {
     padding: 4,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24', // Light yellow
+    fontSize: 14,
+    color: '#000000',
   },
   content: {
     flex: 1,
@@ -1690,7 +1684,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   employeeHeader: {
     flexDirection: 'row',
@@ -1701,7 +1695,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1746,7 +1740,7 @@ const styles = StyleSheet.create({
   },
   deleteModalCloseButtonText: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   deleteIcon: {
@@ -1774,7 +1768,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -1794,7 +1788,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,
@@ -1811,7 +1805,7 @@ const styles = StyleSheet.create({
   },
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     marginHorizontal: 16,
     marginTop: 16,
     borderRadius: 8,
@@ -1823,21 +1817,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 6,
     alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   activeTab: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   tabText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000',
+    textAlign: 'center',
   },
   activeTabText: {
-    color: '#1e40af',
+    color: '#ffffff',
   },
   jobTitle: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
   },
   employeeInfo: {
@@ -1846,12 +1845,12 @@ const styles = StyleSheet.create({
   employeeName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     marginBottom: 2,
   },
   employeePosition: {
     fontSize: 14,
-    color: '#ffcc00',
+    color: '#ffffff',
     fontWeight: '600',
   },
   employeeDetails: {
@@ -1864,24 +1863,30 @@ const styles = StyleSheet.create({
   },
   contactText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
   },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    bottom: 90,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
-    backgroundColor: '#ffcc00', // Yellow like other pages
-    justifyContent: 'center',
-    alignItems: 'center',
-    elevation: 8,
+  headerAddButtonContainer: {
+    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 8,
+  },
+  headerAddButton: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#ffffff',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 8,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.3,
-    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  headerAddButtonText: {
+    color: '#1f2937',
+    fontSize: 14,
+    fontWeight: '700',
   },
   modalContainer: {
     flex: 1,
@@ -1900,13 +1905,13 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   closeButton: {
     padding: 4,
   },
   closeButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1924,7 +1929,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1956,7 +1961,7 @@ const styles = StyleSheet.create({
     marginLeft: 4,
   },
   submitButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -1983,13 +1988,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   selectedRoleButton: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   roleButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   selectedRoleButtonText: {
     color: '#ffffff',
@@ -2004,34 +2009,43 @@ const styles = StyleSheet.create({
   },
   generatePasswordText: {
     fontSize: 12,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '500',
   },
   employeeActions: {
     flexDirection: 'row',
     gap: 8,
+    alignItems: 'center',
   },
   editButton: {
     backgroundColor: '#f0f9ff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 6,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   editButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 12,
     fontWeight: '600',
+    textAlign: 'center',
   },
   deleteButton: {
     backgroundColor: '#fef2f2',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
     borderRadius: 6,
+    minWidth: 70,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   deleteButtonText: {
     color: '#ef4444',
     fontSize: 12,
     fontWeight: '600',
+    textAlign: 'center',
   },
   loadingContainer: {
     flex: 1,
@@ -2042,7 +2056,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   emptyState: {

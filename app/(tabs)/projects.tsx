@@ -21,6 +21,7 @@ import { Swipeable, SwipeableProps } from 'react-native-gesture-handler';
 import * as Haptics from 'expo-haptics';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
+import { useTheme } from '@/contexts/ThemeContext';
 import { ProjectService } from '@/services/projectService';
 import { UserService } from '@/services/userService';
 import { InvoiceService } from '@/services/invoiceService';
@@ -28,6 +29,8 @@ import { ProposalService } from '@/services/proposalService';
 import { PermissionService } from '@/services/permissionService';
 import { Project, SubContractor } from '@/types';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import SecondaryButton from '@/components/SecondaryButton';
+import { CARD_BORDER } from '@/constants/design';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -36,6 +39,7 @@ export default function ProjectsScreen() {
   const languageContext = useLanguage();
   const t = languageContext?.t || ((key: string) => key);
   const authContext = useAuth();
+  const { theme } = useTheme();
   const userRole = authContext?.userRole || 'admin';
   const user = authContext?.user || null;
   const params = useLocalSearchParams();
@@ -49,6 +53,7 @@ export default function ProjectsScreen() {
   const [isCreatingFromProposal, setIsCreatingFromProposal] = useState(false);
   const [projectJustCreated, setProjectJustCreated] = useState(false);
   const scrollViewRef = useRef<ScrollView>(null);
+  const modalScrollViewRef = useRef<ScrollView>(null);
   const cardAnimation = useRef(new Animated.Value(1)).current;
   const swipeableRefs = useRef<{ [key: string]: Swipeable | null }>({});
   
@@ -141,6 +146,7 @@ export default function ProjectsScreen() {
   const [showWorkTitleModal, setShowWorkTitleModal] = useState(false);
   const [selectedWorkTitleFromList, setSelectedWorkTitleFromList] = useState<string>('');
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [showCancelConfirmModal, setShowCancelConfirmModal] = useState(false);
   
   // Predefined work titles list
   const predefinedWorkTitles = [
@@ -223,6 +229,15 @@ export default function ProjectsScreen() {
     }
   }, [params.fromInvoice, invoiceLoaded, userRole, clients.length]);
 
+  // Reset flags when fromProposal parameter changes (different proposal)
+  useEffect(() => {
+    if (params.fromProposal) {
+      // Reset flags when a new proposal ID comes in
+      setProjectJustCreated(false);
+      setInvoiceLoaded(false);
+    }
+  }, [params.fromProposal]);
+
   // Load proposal data if fromProposal parameter exists
   useEffect(() => {
     const fromProposalId = params.fromProposal as string;
@@ -230,9 +245,18 @@ export default function ProjectsScreen() {
     if (projectJustCreated) {
       return;
     }
-    if (fromProposalId && !invoiceLoaded && (userRole === 'admin' || userRole === 'sales')) {
+    // Don't open if modal is already open (to prevent reopening after cancel)
+    if (showCreateModal) {
+      return;
+    }
+    // Only proceed if we have a fromProposal parameter
+    if (fromProposalId && (userRole === 'admin' || userRole === 'sales')) {
+      // Reset invoiceLoaded when fromProposal parameter exists
+      setInvoiceLoaded(false);
       // Set creating from proposal mode immediately
       setIsCreatingFromProposal(true);
+      // Open modal
+      setShowCreateModal(true);
       // Load clients first if not loaded, then load proposal data
       const loadData = async () => {
         if (clients.length === 0) {
@@ -245,7 +269,33 @@ export default function ProjectsScreen() {
       };
       loadData();
     }
-  }, [params.fromProposal, invoiceLoaded, userRole, projectJustCreated]);
+  }, [params.fromProposal, userRole, projectJustCreated, showCreateModal]);
+
+  // Also check when screen comes into focus (for navigation from proposals)
+  useFocusEffect(
+    useCallback(() => {
+      const fromProposalId = params.fromProposal as string;
+      // Don't open if project was just created or modal is already open
+      if (projectJustCreated || showCreateModal) {
+        return;
+      }
+      // If fromProposal exists, ensure modal opens
+      if (fromProposalId && (userRole === 'admin' || userRole === 'sales')) {
+        setInvoiceLoaded(false);
+        setIsCreatingFromProposal(true);
+        setShowCreateModal(true); // Open modal
+        const loadData = async () => {
+          if (clients.length === 0) {
+            await loadClients();
+          }
+          setTimeout(() => {
+            loadProposalData(fromProposalId);
+          }, 100);
+        };
+        loadData();
+      }
+    }, [params.fromProposal, userRole, projectJustCreated, showCreateModal])
+  );
 
   // Mobile detection
   useEffect(() => {
@@ -388,30 +438,6 @@ export default function ProjectsScreen() {
   const cancelDeleteProject = () => {
     setShowDeleteModal(false);
     setProjectToDelete(null);
-  };
-
-  const handleSendProjectForApproval = async (projectId: string) => {
-    try {
-      // Update project status to under_review if it's pending
-      const project = projects.find(p => p.id === projectId);
-      if (!project) {
-        Alert.alert('Error', 'Project not found');
-        return;
-      }
-
-      if (project.status === 'pending') {
-        await ProjectService.updateProject(projectId, {
-          status: 'under_review',
-        });
-        await loadProjects();
-        Alert.alert('Success', 'Project sent for admin approval');
-      } else {
-        Alert.alert('Info', 'Project is already sent for approval');
-      }
-    } catch (error) {
-      console.error('Error sending project for approval:', error);
-      Alert.alert('Error', 'Failed to send project for approval');
-    }
   };
 
   // Swipe actions for mobile
@@ -762,8 +788,27 @@ export default function ProjectsScreen() {
 
   // Close modal and reset form
   const handleCloseCreateModal = () => {
-    const fromProposalId = params.fromProposal as string;
+    // Use isCreatingFromProposal state instead of params to avoid cache issues
+    if (isCreatingFromProposal) {
+      setShowCancelConfirmModal(true);
+      return;
+    }
+    
+    // If not from proposal, close directly
+    closeModalAndReset();
+  };
+
+  // Actually close modal and reset form
+  const closeModalAndReset = () => {
+    const wasFromProposal = isCreatingFromProposal;
+    const proposalId = params.fromProposal as string;
+    
+    // Immediately set flags to prevent useEffect from reopening modal
+    setInvoiceLoaded(true); // Set to true to prevent useEffect from loading again
+    setProjectJustCreated(true); // Set to true to prevent modal from reopening
     setShowCreateModal(false);
+    setShowCancelConfirmModal(false);
+    
     // Reset all form states
     setNewProject({
       title: '',
@@ -792,12 +837,12 @@ export default function ProjectsScreen() {
     setNewWorkTitle({ name: '', description: '', quantity: '', unit_price: '', price: '' });
     setSelectedClients([]);
     setClientBudget('');
-    setInvoiceLoaded(false);
     setIsCreatingFromProposal(false);
-    setProjectJustCreated(false);
-    // If came from proposal, go back to proposals page
-    if (fromProposalId) {
-      router.replace('/proposals');
+    
+    // If came from proposal, navigate back to proposal details
+    if (wasFromProposal && proposalId) {
+      // Navigate back to the proposal details page
+      router.back();
     }
   };
 
@@ -955,8 +1000,23 @@ export default function ProjectsScreen() {
     }
     
     if (finalWorkTitles.length === 0) {
+      setFieldErrors(prev => ({ ...prev, workTitles: 'At least one work title is required' }));
+      setTimeout(() => {
+        if (modalScrollViewRef.current) {
+          modalScrollViewRef.current.scrollTo({ y: 0, animated: true });
+        }
+      }, 100);
       Alert.alert('Error', 'Please add at least one work title');
       return;
+    }
+    
+    // Clear work titles error if work titles exist
+    if (fieldErrors.workTitles) {
+      setFieldErrors(prev => {
+        const newErrors = { ...prev };
+        delete newErrors.workTitles;
+        return newErrors;
+      });
     }
 
     // Collect all missing required fields and set field-level errors
@@ -1005,9 +1065,16 @@ export default function ProjectsScreen() {
 
     // Show detailed error message if any fields are missing
     if (missingFields.length > 0) {
+      // Scroll to top to show first error
+      setTimeout(() => {
+        if (modalScrollViewRef.current) {
+          modalScrollViewRef.current.scrollTo({ y: 0, animated: true });
+        }
+      }, 200);
+      
       Alert.alert(
         'Required Fields Missing',
-        `Please fill in the following required fields:\n\n• ${missingFields.join('\n• ')}`,
+        `Please fill in the following required fields:\n\n• ${missingFields.join('\n• ')}\n\nAll required fields are marked with * and highlighted in red.`,
         [{ text: 'OK' }]
       );
       return;
@@ -1149,7 +1216,7 @@ export default function ProjectsScreen() {
           pm_budgets: pmBudgets,
           gross_profit_rate: grossProfitRate,
           is_job: true,
-          status: 'active',
+          status: 'in_progress',
         });
       }
       
@@ -1212,51 +1279,60 @@ export default function ProjectsScreen() {
     }
   };
 
+  /** Normalize DB status to display status: pending | in_progress | completed */
+  const normalizeStatus = (status: string): 'pending' | 'in_progress' | 'completed' => {
+    if (status === 'in_progress' || status === 'completed') return status;
+    if (status === 'approved' || status === 'active' || status === 'under_review') return 'in_progress';
+    if (status === 'archived' || status === 'rejected') return 'completed';
+    return 'pending';
+  };
+
   const getStatusColor = (status: string) => {
-    switch (status) {
+    const s = normalizeStatus(status);
+    switch (s) {
       case 'completed': return '#059669';
       case 'in_progress': return '#0ea5e9';
       case 'pending': return '#f59e0b';
-      case 'cancelled': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
   const getStatusText = (status: string) => {
-    switch (status) {
+    const s = normalizeStatus(status);
+    switch (s) {
       case 'completed': return 'Completed';
       case 'in_progress': return 'In Progress';
       case 'pending': return 'Pending';
-      case 'cancelled': return 'Cancelled';
-      default: return status;
+      default: return 'Pending';
     }
   };
 
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#ffffff" />
         <Text style={styles.loadingText}>Loading projects...</Text>
       </View>
     );
   }
 
-  const visibleProjects = (projects || []).filter(p =>
-    activeTab === 'active' ? p.status !== 'completed' : p.status === 'completed'
-  );
+  const visibleProjects = (projects || []).filter(p => {
+    const s = normalizeStatus(p.status);
+    return activeTab === 'active' ? s !== 'completed' : s === 'completed';
+  });
 
-  const activeProjectsCount = (projects || []).filter(p => p.status !== 'completed').length;
-  const completedProjectsCount = (projects || []).filter(p => p.status === 'completed').length;
+  const activeProjectsCount = (projects || []).filter(p => normalizeStatus(p.status) !== 'completed').length;
+  const completedProjectsCount = (projects || []).filter(p => normalizeStatus(p.status) === 'completed').length;
 
   return (
     <>
       <HamburgerMenu />
-      <View style={styles.container}>
-        <View style={styles.header}>
+      <View style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.primaryDark, borderBottomColor: theme.accentLight }]}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={styles.title}>Projects</Text>
-            <Text style={styles.subtitle}>Manage all your projects</Text>
+            <Text style={[styles.title, { color: theme.text }]}>Projects</Text>
+            <Text style={[styles.subtitle, { color: theme.textMuted }]}>Manage all your projects</Text>
           </View>
           {!isMobile && canCreateProject && (
             <TouchableOpacity
@@ -1266,20 +1342,34 @@ export default function ProjectsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <View style={styles.segmented}>
+        <View style={[styles.segmented, { backgroundColor: theme.background }]}>
           <TouchableOpacity
-            style={[styles.segmentItem, activeTab === 'active' && styles.segmentActive]}
+            style={[
+              styles.segmentItem,
+              activeTab === 'active' && styles.segmentActive,
+            ]}
             onPress={() => setActiveTab('active')}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.segmentText, activeTab === 'active' && styles.segmentTextActive]}>
+            <Text style={[
+              styles.segmentText,
+              activeTab === 'active' && styles.segmentTextActive,
+            ]}>
               Active ({activeProjectsCount})
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.segmentItem, activeTab === 'completed' && styles.segmentActive]}
+            style={[
+              styles.segmentItem,
+              activeTab === 'completed' && styles.segmentActive,
+            ]}
             onPress={() => setActiveTab('completed')}
+            activeOpacity={0.8}
           >
-            <Text style={[styles.segmentText, activeTab === 'completed' && styles.segmentTextActive]}>
+            <Text style={[
+              styles.segmentText,
+              activeTab === 'completed' && styles.segmentTextActive,
+            ]}>
               Completed ({completedProjectsCount})
             </Text>
           </TouchableOpacity>
@@ -1290,9 +1380,11 @@ export default function ProjectsScreen() {
       {isMobile && canCreateProject && (
         <View style={styles.contentActions}>
           <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowCreateModal(true)}>
-            <Plus size={20} color="#1f2937" />
+            style={[styles.addButton, { backgroundColor: theme.accent }]}
+            onPress={() => setShowCreateModal(true)}
+            activeOpacity={0.85}
+          >
+            <Plus size={20} color="#ffffff" />
             <Text style={styles.addButtonText}>New Project</Text>
           </TouchableOpacity>
         </View>
@@ -1301,14 +1393,18 @@ export default function ProjectsScreen() {
       <ScrollView 
         ref={scrollViewRef}
         style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={true}
+        scrollEventThrottle={16}
         refreshControl={
           Platform.OS !== 'web' ? (
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#ffcc00"
-              colors={['#ffcc00']}
+              tintColor="#000000"
+              colors={['#000000']}
             />
           ) : undefined
         }
@@ -1336,7 +1432,7 @@ export default function ProjectsScreen() {
                     activeOpacity={0.7}>
                     <View style={styles.projectHeader}>
                       <Text style={styles.projectTitle}>{project.title}</Text>
-                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(project.status) }]}>
+                      <View style={[styles.statusBadge, { backgroundColor: getStatusColor(normalizeStatus(project.status)) }]}>
                         <Text style={styles.statusText}>{getStatusText(project.status)}</Text>
                       </View>
                     </View>
@@ -1350,17 +1446,6 @@ export default function ProjectsScreen() {
                         {project.progress_percentage}% Complete
                       </Text>
                     </View>
-                    {(userRole === 'sales' || userRole === 'pm') && (project.status === 'pending' || project.status === 'under_review') && (
-                      <TouchableOpacity
-                        style={styles.sendApprovalButton}
-                        onPress={(e) => {
-                          e.stopPropagation();
-                          handleSendProjectForApproval(project.id);
-                        }}>
-                        <Send size={16} color="#ffffff" />
-                        <Text style={styles.sendApprovalButtonText}>Send for Approval</Text>
-                      </TouchableOpacity>
-                    )}
                   </TouchableOpacity>
                 </Animated.View>
               );
@@ -1403,7 +1488,7 @@ export default function ProjectsScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Create New Project</Text>
             <TouchableOpacity onPress={handleCloseCreateModal}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -1411,11 +1496,19 @@ export default function ProjectsScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Project Title *</Text>
               <TextInput
-                style={styles.input}
+                style={[styles.input, fieldErrors.title && styles.inputError]}
                 placeholder="Enter project title"
                 value={newProject.title}
-                onChangeText={(text) => setNewProject(prev => ({ ...prev, title: text }))}
+                onChangeText={(text) => {
+                  setNewProject(prev => ({ ...prev, title: text }));
+                  if (fieldErrors.title) {
+                    setFieldErrors(prev => ({ ...prev, title: '' }));
+                  }
+                }}
               />
+              {fieldErrors.title && (
+                <Text style={styles.errorText}>{fieldErrors.title}</Text>
+              )}
             </View>
 
             {(userRole === 'admin' || userRole === 'sales') && (
@@ -1450,7 +1543,7 @@ export default function ProjectsScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Clients *</Text>
               <TouchableOpacity
-                style={styles.input}
+                style={[styles.input, fieldErrors.clients && styles.inputError]}
                 onPress={() => setShowClientSelectModal(true)}
               >
                 <Text style={[styles.inputText, selectedClients.length === 0 && styles.placeholderText]}>
@@ -1459,6 +1552,9 @@ export default function ProjectsScreen() {
                     : 'Select Clients *'}
                 </Text>
               </TouchableOpacity>
+              {fieldErrors.clients && (
+                <Text style={styles.errorText}>{fieldErrors.clients}</Text>
+              )}
               {selectedClients.length > 0 && (
                 <View style={styles.selectedClientsList}>
                   {selectedClients.map((client, index) => (
@@ -1483,7 +1579,7 @@ export default function ProjectsScreen() {
                           }
                         }}
                       >
-                        <X size={16} color="#6b7280" />
+                        <X size={16} color="#000000" />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -1519,7 +1615,7 @@ export default function ProjectsScreen() {
                     style={[styles.datePickerButton, fieldErrors.start_date && styles.inputError]}
                     onPress={() => setShowStartDatePicker(true)}
                   >
-                    <Calendar size={20} color="#6b7280" />
+                    <Calendar size={20} color="#000000" />
                     <Text style={styles.datePickerText}>
                       {newProject.start_date || 'Select Start Date'}
                     </Text>
@@ -1554,12 +1650,17 @@ export default function ProjectsScreen() {
                 <input
                   type="date"
                   value={newProject.deadline}
-                  onChange={(e) => setNewProject(prev => ({ ...prev, deadline: e.target.value }))}
+                  onChange={(e) => {
+                    setNewProject(prev => ({ ...prev, deadline: e.target.value }));
+                    if (fieldErrors.deadline) {
+                      setFieldErrors(prev => ({ ...prev, deadline: '' }));
+                    }
+                  }}
                   min={newProject.start_date || new Date().toISOString().split('T')[0]}
                   style={{
                     width: '100%',
                     padding: '12px',
-                    border: '1px solid #d1d5db',
+                    border: fieldErrors.deadline ? '1px solid #ef4444' : '1px solid #d1d5db',
                     borderRadius: '8px',
                     fontSize: '16px',
                     marginTop: '8px',
@@ -1569,10 +1670,10 @@ export default function ProjectsScreen() {
               ) : (
                 <>
                   <TouchableOpacity 
-                    style={styles.datePickerButton}
+                    style={[styles.datePickerButton, fieldErrors.deadline && styles.inputError]}
                     onPress={() => setShowDeadlinePicker(true)}
                   >
-                    <Calendar size={20} color="#6b7280" />
+                    <Calendar size={20} color="#000000" />
                     <Text style={styles.datePickerText}>
                       {newProject.deadline || 'Select Deadline'}
                     </Text>
@@ -1588,11 +1689,17 @@ export default function ProjectsScreen() {
                         if (selectedDate) {
                           const formattedDate = selectedDate.toISOString().split('T')[0];
                           setNewProject(prev => ({ ...prev, deadline: formattedDate }));
+                          if (fieldErrors.deadline) {
+                            setFieldErrors(prev => ({ ...prev, deadline: '' }));
+                          }
                         }
                       }}
                     />
                   )}
                 </>
+              )}
+              {fieldErrors.deadline && (
+                <Text style={styles.errorText}>{fieldErrors.deadline}</Text>
               )}
             </View>
 
@@ -1673,6 +1780,9 @@ export default function ProjectsScreen() {
             <View style={styles.inputGroup}>
               <Text style={styles.label}>Work Titles *</Text>
               <Text style={styles.helperText}>At least one work title is required</Text>
+              {fieldErrors.workTitles && (
+                <Text style={styles.errorText}>{fieldErrors.workTitles}</Text>
+              )}
               
               {/* Work Titles List */}
               {workTitles.length > 0 && (
@@ -2217,17 +2327,50 @@ export default function ProjectsScreen() {
             )}
 
             <View style={styles.modalActionButtons}>
-              <TouchableOpacity 
-                style={styles.cancelButton} 
+              <SecondaryButton
+                style={styles.cancelButton}
                 onPress={handleCloseCreateModal}
+                textStyle={styles.cancelButtonText}
               >
-                <Text style={styles.cancelButtonText} numberOfLines={1} adjustsFontSizeToFit>Cancel</Text>
-              </TouchableOpacity>
+                Cancel
+              </SecondaryButton>
               <TouchableOpacity style={styles.submitButton} onPress={handleCreateProject}>
                 <Text style={styles.submitButtonText} numberOfLines={1} adjustsFontSizeToFit>Create Project</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Cancel Confirmation Modal */}
+      <Modal
+        visible={showCancelConfirmModal}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setShowCancelConfirmModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModal}>
+            <Text style={styles.confirmModalTitle}>Cancel Project Creation?</Text>
+            <Text style={styles.confirmModalMessage}>
+              Are you sure you want to cancel? Any unsaved changes will be lost.
+            </Text>
+            <View style={styles.confirmModalButtons}>
+              <SecondaryButton
+                style={[styles.confirmModalButton, styles.confirmModalButtonCancel]}
+                onPress={() => setShowCancelConfirmModal(false)}
+                textStyle={styles.confirmModalButtonCancelText}
+              >
+                No, Keep Editing
+              </SecondaryButton>
+              <TouchableOpacity
+                style={[styles.confirmModalButton, styles.confirmModalButtonConfirm]}
+                onPress={closeModalAndReset}
+              >
+                <Text style={styles.confirmModalButtonConfirmText}>Yes, Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -2246,7 +2389,7 @@ export default function ProjectsScreen() {
                   setSelectedWorkTitleFromList('');
                 }
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             <ScrollView 
@@ -2300,7 +2443,7 @@ export default function ProjectsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Select Category</Text>
               <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.categoryList}>
@@ -2350,7 +2493,7 @@ export default function ProjectsScreen() {
                 setShowClientSelectModal(false);
                 setClientSearchQuery('');
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             
@@ -2384,7 +2527,7 @@ export default function ProjectsScreen() {
                 }}
               >
                 <View style={styles.clientOptionContent}>
-                  <Plus size={20} color="#236ecf" />
+                  <Plus size={20} color="#000000" />
                   <Text style={[styles.addClientText, { marginLeft: 8 }]}>
                     New Client
                   </Text>
@@ -2425,6 +2568,10 @@ export default function ProjectsScreen() {
                               client_name: ''
                             }));
                           }
+                          // Clear error if clients exist
+                          if (newSelected.length > 0 && fieldErrors.clients) {
+                            setFieldErrors(prev => ({ ...prev, clients: '' }));
+                          }
                         } else {
                           // Add client
                           const newSelected = [...selectedClients, { id: client.id, name: client.name }];
@@ -2434,6 +2581,10 @@ export default function ProjectsScreen() {
                             client_id: newSelected[0].id,
                             client_name: newSelected[0].name
                           }));
+                          // Clear error when client is added
+                          if (fieldErrors.clients) {
+                            setFieldErrors(prev => ({ ...prev, clients: '' }));
+                          }
                         }
                       }}
                     >
@@ -2496,7 +2647,7 @@ export default function ProjectsScreen() {
               setShowNewClientModal(false);
               setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2586,7 +2737,7 @@ export default function ProjectsScreen() {
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={cancelDeleteProject}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
             
             <View style={styles.deleteIcon}>
@@ -2650,15 +2801,15 @@ export default function ProjectsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff',
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header like teams
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like teams
+    borderBottomColor: '#e5e5e5',
   },
   headerTop: {
     flexDirection: 'row',
@@ -2667,14 +2818,14 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   title: {
-    fontSize: 28, // Increased font size like teams
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
+    fontSize: 14,
+    color: '#000000',
   },
   contentActions: {
     paddingHorizontal: 20,
@@ -2682,7 +2833,7 @@ const styles = StyleSheet.create({
     paddingBottom: 8,
   },
   addButton: {
-    backgroundColor: '#ffcc00', // Yellow button like teams
+    backgroundColor: '#000000',
     width: Platform.OS === 'web' ? 40 : undefined,
     height: Platform.OS === 'web' ? 40 : undefined,
     borderRadius: Platform.OS === 'web' ? 20 : 8,
@@ -2700,19 +2851,21 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
   },
   addButtonText: {
-    color: '#1f2937',
+    color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
     display: Platform.OS === 'web' ? 'none' : 'flex',
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 20,
-    paddingBottom: 100, // Extra padding for tab bar
+    paddingBottom: 120, // Extra padding for tab bar + safe area
   },
   segmented: {
     flexDirection: 'row',
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 4,
     marginTop: 12,
@@ -2725,23 +2878,23 @@ const styles = StyleSheet.create({
     borderRadius: 6,
   },
   segmentActive: {
-    backgroundColor: '#ffcc00', // Yellow active tab like teams
+    backgroundColor: '#000000',
     borderWidth: 1,
-    borderColor: '#ffcc00',
+    borderColor: '#000000',
   },
   segmentText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue
+    color: '#000000',
   },
   segmentTextActive: {
-    color: '#1f2937', // Dark text on yellow
+    color: '#ffffff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 12,
@@ -2762,15 +2915,16 @@ const styles = StyleSheet.create({
   projectCard: {
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: Platform.OS === 'web' ? 20 : 16, // Mobile: slightly less padding
+    padding: Platform.OS === 'web' ? 20 : 16,
+    ...CARD_BORDER,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
-    minHeight: Platform.OS !== 'web' ? 100 : undefined, // Mobile: minimum touch area
+    borderLeftColor: '#b0b0b0',
+    minHeight: Platform.OS !== 'web' ? 100 : undefined,
   },
   projectHeader: {
     flexDirection: 'row',
@@ -2797,12 +2951,12 @@ const styles = StyleSheet.create({
   },
   projectClient: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   projectDescription: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
     marginBottom: 12,
   },
@@ -2813,7 +2967,7 @@ const styles = StyleSheet.create({
   },
   projectDate: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
   },
   projectProgress: {
     fontSize: 12,
@@ -2821,7 +2975,7 @@ const styles = StyleSheet.create({
     color: '#059669',
   },
   sendApprovalButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -2860,7 +3014,7 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff',
   },
   modalHeader: {
     flexDirection: 'row',
@@ -2869,19 +3023,19 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#171717', // Darker blue header
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like teams
+    borderBottomColor: '#ffffff', // Yellow border like teams
   },
   modalTitle: {
     fontSize: 28, // Increased font size like teams
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#ffffff', // Yellow text like teams
   },
   modalContent: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff',
   },
   inputGroup: {
     marginBottom: 20,
@@ -2889,12 +3043,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#ffffff', // Yellow text like teams
     marginBottom: 8,
   },
   helperText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: -4,
     marginBottom: 8,
     fontStyle: 'italic',
@@ -2910,7 +3064,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   generateButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -2956,7 +3110,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   textArea: {
     height: 100,
@@ -2977,29 +3131,29 @@ const styles = StyleSheet.create({
   },
   selectedClient: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   clientText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   selectedClientText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   selectedIndicator: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     justifyContent: 'center',
     alignItems: 'center',
   },
   addClientButton: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
     borderStyle: 'dashed',
     justifyContent: 'center',
@@ -3008,7 +3162,7 @@ const styles = StyleSheet.create({
   },
   addClientText: {
     fontSize: 16,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   categoryModal: {
@@ -3042,16 +3196,16 @@ const styles = StyleSheet.create({
   },
   selectedCategory: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   categoryText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   selectedCategoryText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   // Client Selection Modal Styles
@@ -3105,7 +3259,7 @@ const styles = StyleSheet.create({
   },
   clientEmail: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   workTitlesList: {
@@ -3133,7 +3287,7 @@ const styles = StyleSheet.create({
   },
   workTitleDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   workTitlePrice: {
@@ -3147,7 +3301,7 @@ const styles = StyleSheet.create({
   },
   workTitleDetailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   subContractorInfo: {
     marginTop: 8,
@@ -3155,18 +3309,18 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f9ff',
     borderRadius: 6,
     borderLeftWidth: 3,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   subContractorLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   subContractorName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   subContractorPrice: {
     fontSize: 13,
@@ -3179,7 +3333,7 @@ const styles = StyleSheet.create({
   },
   subContractorTrade: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   clearButton: {
@@ -3275,19 +3429,19 @@ const styles = StyleSheet.create({
   priceLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   priceInput: {
     flex: 1,
   },
   addWorkTitleButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 12,
     justifyContent: 'center',
     alignItems: 'center',
-    minWidth: 44,
-    minHeight: 44,
+    minWidth: 40,
+    minHeight: 40,
   },
   workDescriptionsList: {
     marginTop: 8,
@@ -3313,7 +3467,7 @@ const styles = StyleSheet.create({
   },
   addDescriptionText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '500',
   },
   addDescriptionForm: {
@@ -3331,7 +3485,7 @@ const styles = StyleSheet.create({
   },
   addDescButton: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',
@@ -3343,13 +3497,15 @@ const styles = StyleSheet.create({
   },
   cancelDescButton: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
     paddingVertical: 8,
     borderRadius: 6,
     alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
   },
   cancelDescButtonText: {
-    color: '#6b7280',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3366,23 +3522,16 @@ const styles = StyleSheet.create({
   },
   cancelButton: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
     borderRadius: 8,
-    paddingVertical: 16,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
     minHeight: 48,
   },
   cancelButtonText: {
-    color: '#374151',
     fontSize: 16,
     fontWeight: '600',
   },
   submitButton: {
     flex: 1,
-    backgroundColor: '#ffcc00', // Yellow button like teams
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
@@ -3390,7 +3539,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   submitButtonText: {
-    color: '#1f2937', // Dark text on yellow button
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -3452,7 +3601,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -3473,7 +3622,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,
@@ -3520,12 +3669,12 @@ const styles = StyleSheet.create({
   },
   successMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     marginBottom: 24,
   },
   successButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
@@ -3543,7 +3692,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   doneButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -3558,7 +3707,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   doneButtonTextDisabled: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   checkbox: {
     width: 20,
@@ -3570,8 +3719,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   selectedClientsList: {
     flexDirection: 'row',
@@ -3592,7 +3741,7 @@ const styles = StyleSheet.create({
   },
   selectedClientTagText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '500',
   },
   sectionTitle: {
@@ -3607,7 +3756,7 @@ const styles = StyleSheet.create({
   commissionLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   commissionInput: {
@@ -3617,7 +3766,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 8,
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     backgroundColor: '#ffffff',
   },
   budgetCalculation: {
@@ -3636,12 +3785,12 @@ const styles = StyleSheet.create({
   },
   budgetLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   budgetValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   pmBudgetRow: {
     borderTopWidth: 1,
@@ -3672,26 +3821,84 @@ const styles = StyleSheet.create({
   },
   selectedPMOption: {
     backgroundColor: '#f0f9ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
   },
   pmOptionText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   selectedPMOptionText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   selectedIndicator: {
     fontSize: 16,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: 'bold',
   },
   selectedIndicatorDot: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  confirmModal: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 24,
+    width: '90%',
+    maxWidth: 400,
+    alignItems: 'center',
+  },
+  confirmModalTitle: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#111827',
+    marginBottom: 12,
+    textAlign: 'center',
+  },
+  confirmModalMessage: {
+    fontSize: 16,
+    color: '#000000',
+    textAlign: 'center',
+    marginBottom: 24,
+    lineHeight: 24,
+  },
+  confirmModalButtons: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  confirmModalButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  confirmModalButtonCancel: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+  },
+  confirmModalButtonConfirm: {
+    backgroundColor: '#dc2626',
+  },
+  confirmModalButtonCancelText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  confirmModalButtonConfirmText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
   },
 });

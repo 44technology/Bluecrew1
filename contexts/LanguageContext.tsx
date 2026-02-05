@@ -248,6 +248,28 @@ const translations = {
     // Access
     accessDenied: 'Access Denied',
     noAccess: 'You do not have access to this page',
+
+    // Company Settings
+    companySettings: 'Company Settings',
+    companySettingsSubtitle: 'Customize your company below',
+    createCompany: 'Create Company',
+    companyName: 'Company Name',
+    companyNameRequired: 'Company name is required',
+    stateProvince: 'State / Province',
+    city: 'City',
+    address: 'Address',
+    logo: 'Logo',
+    colorPalette: 'Color Palette',
+    palette: 'Palette',
+    createCompanyButton: 'Create Company',
+    companyCreated: 'Company created successfully.',
+    companyCreateError: 'Company could not be created',
+    infoSaved: 'Information saved',
+    saveFailed: 'Could not save',
+    logoUploadFailed: 'Logo could not be uploaded',
+    logoUploadMobile: 'Use file picker for logo upload on mobile.',
+    companyAdminOnly: 'Company information can only be created by an administrator.',
+    info: 'Info',
   },
   es: {
     // Navigation
@@ -487,6 +509,28 @@ const translations = {
     // Access
     accessDenied: 'Acceso Denegado',
     noAccess: 'No tienes acceso a esta página',
+
+    // Company Settings
+    companySettings: 'Configuración de la Empresa',
+    companySettingsSubtitle: 'Personaliza tu empresa a continuación',
+    createCompany: 'Crear Empresa',
+    companyName: 'Nombre de la Empresa',
+    companyNameRequired: 'El nombre de la empresa es obligatorio',
+    stateProvince: 'Estado / Provincia',
+    city: 'Ciudad',
+    address: 'Dirección',
+    logo: 'Logo',
+    colorPalette: 'Paleta de Colores',
+    palette: 'Paleta',
+    createCompanyButton: 'Crear Empresa',
+    companyCreated: 'Empresa creada correctamente.',
+    companyCreateError: 'No se pudo crear la empresa',
+    infoSaved: 'Información guardada',
+    saveFailed: 'No se pudo guardar',
+    logoUploadFailed: 'No se pudo subir el logo',
+    logoUploadMobile: 'Usa el selector de archivos para subir el logo en móvil.',
+    companyAdminOnly: 'La información de la empresa solo puede ser creada por un administrador.',
+    info: 'Info',
   },
 };
 

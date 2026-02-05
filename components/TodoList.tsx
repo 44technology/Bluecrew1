@@ -27,6 +27,7 @@ interface TodoListProps {
   canDelete: boolean; // Only admin can delete
   onCreateButtonPress?: () => void; // Callback when create button is pressed externally
   hideCreateButton?: boolean; // Hide the create button in TodoList header
+  hideHeader?: boolean; // Hide the entire header (title + create button)
 }
 
 export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoListProps>(({
@@ -36,6 +37,7 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
   canDelete,
   onCreateButtonPress,
   hideCreateButton = false,
+  hideHeader = false,
 }, ref) => {
   const authContext = useAuth();
   const user = authContext?.user || null;
@@ -282,24 +284,26 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <Text style={styles.title}>To-Do List</Text>
-        {canCreate && !hideCreateButton && (
-          <TouchableOpacity
-            onPress={() => {
-              if (onCreateButtonPress) {
-                onCreateButtonPress();
-              } else {
-                setShowCreateModal(true);
-              }
-            }}
-            style={styles.createButton}
-          >
-            <Plus size={20} color="#fff" />
-            <Text style={styles.createButtonText}>New Todo</Text>
-          </TouchableOpacity>
-        )}
-      </View>
+      {!hideHeader && (
+        <View style={styles.header}>
+          <Text style={styles.title}>To-Do List</Text>
+          {canCreate && !hideCreateButton && (
+            <TouchableOpacity
+              onPress={() => {
+                if (onCreateButtonPress) {
+                  onCreateButtonPress();
+                } else {
+                  setShowCreateModal(true);
+                }
+              }}
+              style={styles.createButton}
+            >
+              <Plus size={20} color="#fff" />
+              <Text style={styles.createButtonText}>New Todo</Text>
+            </TouchableOpacity>
+          )}
+        </View>
+      )}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         {/* Pending Todos */}
@@ -401,7 +405,7 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                 value={newTodoTitle}
                 onChangeText={setNewTodoTitle}
                 placeholder="Todo title..."
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#000000"
                 autoFocus
               />
 
@@ -412,7 +416,7 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                 value={newTodoDescription}
                 onChangeText={setNewTodoDescription}
                 placeholder="Add description..."
-                placeholderTextColor="#9ca3af"
+                placeholderTextColor="#000000"
                 multiline
                 numberOfLines={4}
               />
@@ -528,7 +532,7 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                     value={item}
                     onChangeText={(value) => handleChecklistItemChange(index, value)}
                     placeholder={`Checklist item ${index + 1}...`}
-                    placeholderTextColor="#9ca3af"
+                    placeholderTextColor="#000000"
                   />
                   {newTodoChecklist.length > 1 && (
                     <TouchableOpacity
@@ -590,6 +594,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f9fafb',
+    minHeight: 400,
   },
   header: {
     flexDirection: 'row',
@@ -621,6 +626,7 @@ const styles = StyleSheet.create({
   },
   scrollView: {
     flex: 1,
+    paddingBottom: 20,
   },
   section: {
     padding: 16,
@@ -628,7 +634,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 12,
   },
   loadingContainer: {
@@ -640,7 +646,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   emptyContainer: {
     flex: 1,
@@ -651,13 +657,13 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#000000',
     textAlign: 'center',
   },
   modalOverlay: {
@@ -715,7 +721,7 @@ const styles = StyleSheet.create({
   deadlineText: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   removeDeadlineButton: {
     padding: 4,
@@ -800,7 +806,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalCancelButtonText: {
-    color: '#374151',
+    color: '#000000',
     fontWeight: '600',
   },
   modalCreateButton: {

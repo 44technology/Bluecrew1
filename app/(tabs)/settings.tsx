@@ -8,7 +8,8 @@ import {
   Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Globe, User, Settings as SettingsIcon, Info, LogOut, ArrowLeft } from 'lucide-react-native';
+import { Globe, User, Settings as SettingsIcon, Info, LogOut } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HamburgerMenu from '@/components/HamburgerMenu';
@@ -55,24 +56,23 @@ export default function SettingsScreen() {
       <HamburgerMenu />
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => {
-              if (router.canGoBack()) {
-                router.back();
-              } else {
-                router.push('/');
-              }
-            }}
-          >
-            <ArrowLeft size={24} color="#236ecf" />
-          </TouchableOpacity>
+          <BackButton 
+            color="#000000"
+            backgroundColor="rgba(35, 110, 207, 0.1)"
+          />
           <View>
             <Text style={styles.title}>{t('settings')}</Text>
           </View>
         </View>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView 
+        style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+        bounces={true}
+        alwaysBounceVertical={true}
+        scrollEventThrottle={16}
+      >
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
             <User size={32} color="#ffffff" />
@@ -88,7 +88,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Globe size={20} color="#236ecf" />
+            <Globe size={20} color="#000000" />
             <Text style={styles.sectionTitle}>{t('language')}</Text>
           </View>
           
@@ -101,7 +101,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <SettingsIcon size={20} color="#236ecf" />
+            <SettingsIcon size={20} color="#000000" />
             <Text style={styles.sectionTitle}>App Settings</Text>
           </View>
           
@@ -127,7 +127,7 @@ export default function SettingsScreen() {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Info size={20} color="#236ecf" />
+            <Info size={20} color="#000000" />
             <Text style={styles.sectionTitle}>About</Text>
           </View>
           
@@ -149,17 +149,17 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#f5f5f5', // Darker blue header
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 16,
   },
   backButton: {
@@ -168,11 +168,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text
+    color: '#ffffff', // Yellow text
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: 20,
+    paddingBottom: 120, // Extra padding for mobile tab bar
   },
   profileCard: {
     backgroundColor: '#ffffff',
@@ -187,13 +190,13 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   avatar: {
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
@@ -204,16 +207,16 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     marginBottom: 4,
   },
   profileEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   roleBadge: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
@@ -235,7 +238,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -245,7 +248,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     marginLeft: 12,
   },
   languageContainer: {
@@ -261,21 +264,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   selectedLanguage: {
-    backgroundColor: '#236ecf20',
+    backgroundColor: '#00000020',
   },
   languageText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   selectedLanguageText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   selectedDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   settingItem: {
     paddingVertical: 12,
@@ -286,7 +289,7 @@ const styles = StyleSheet.create({
   },
   settingText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   infoContainer: {
     alignItems: 'center',
@@ -294,17 +297,17 @@ const styles = StyleSheet.create({
   appName: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     marginBottom: 4,
   },
   version: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 12,
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
   },

@@ -1,9 +1,39 @@
+/** Platform-wide: single name used by all tenant companies */
+export const PLATFORM_NAME = 'Blue Crew';
+
+/** Color palette id: 1 | 2 | 3 - company chooses one */
+export type ColorPaletteId = 1 | 2 | 3;
+
+export interface CompanyTheme {
+  primary: string;
+  primaryDark: string;
+  accent: string;
+  accentLight: string;
+  background: string;
+  cardBg: string;
+  text: string;
+  textMuted: string;
+}
+
+export interface Company {
+  id: string;
+  name: string;
+  state?: string;
+  city?: string;
+  address?: string;
+  logo_url?: string;
+  color_palette: ColorPaletteId;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface User {
   id: string;
   name: string;
   email: string;
   phone?: string;
   role: 'admin' | 'pm' | 'client' | 'sales';
+  company_id?: string; // Tenant company – user belongs to this company
   password?: string; // For authentication
   profile_picture?: string; // Profile picture URL
   created_at: string;
@@ -240,7 +270,7 @@ export interface Project {
   category: string;
   start_date: string;
   deadline: string;
-  status: 'pending' | 'under_review' | 'approved' | 'active' | 'completed' | 'archived' | 'rejected';
+  status: 'pending' | 'in_progress' | 'completed';
   client_id: string; // Required - every project must have a client (first client for backward compatibility)
   client_name: string; // For display purposes (first client name for backward compatibility)
   client_ids?: string[]; // Array of client IDs (multiple clients support)
@@ -322,6 +352,7 @@ export interface MaterialRequest {
   purchase_date?: string;
   shipping_date?: string;
   delivery_date_actual?: string;
+  delivery_address?: string; // Delivery address entered when marking as ordered
 }
 
 export interface ChangeOrderRequest {

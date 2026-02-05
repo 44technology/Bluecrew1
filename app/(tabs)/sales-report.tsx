@@ -10,7 +10,8 @@ import {
   TextInput,
   Dimensions,
 } from 'react-native';
-import { ArrowLeft, BarChart3, User, UserCheck, FileText, Receipt, Search, X, TrendingUp, TrendingDown, Clock } from 'lucide-react-native';
+import { BarChart3, User, UserCheck, FileText, Receipt, Search, X, TrendingUp, TrendingDown, Clock } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { router } from 'expo-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -66,7 +67,7 @@ export default function SalesReportScreen() {
       return { text: 'Lost', color: '#ef4444' }; // Red
     }
     // Pending: Neither won nor lost
-    return { text: 'Pending', color: '#6b7280' }; // Gray
+    return { text: 'Pending', color: '#000000' }; // Gray
   };
 
   // Calculate statistics
@@ -164,9 +165,7 @@ export default function SalesReportScreen() {
       <View style={styles.container}>
         <View style={styles.header}>
           <View style={styles.headerTop}>
-            <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-              <ArrowLeft size={24} color="#ffcc00" />
-            </TouchableOpacity>
+            <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
             <View style={styles.headerContent}>
               <Text style={styles.title}>Sales Report</Text>
               <Text style={styles.subtitle}>Overview of sales performance</Text>
@@ -203,7 +202,7 @@ export default function SalesReportScreen() {
 
               <View style={[styles.statCard, styles.statCardPending]}>
                 <View style={styles.statHeader}>
-                  <Clock size={24} color="#6b7280" />
+                  <Clock size={24} color="#000000" />
                   <Text style={styles.statTitle}>Pending</Text>
                 </View>
                 <Text style={styles.statCount}>{stats.pending.count} proposals</Text>
@@ -212,7 +211,7 @@ export default function SalesReportScreen() {
 
               <View style={[styles.statCard, styles.statCardTotal]}>
                 <View style={styles.statHeader}>
-                  <BarChart3 size={24} color="#236ecf" />
+                  <BarChart3 size={24} color="#000000" />
                   <Text style={styles.statTitle}>Total</Text>
                 </View>
                 <Text style={styles.statCount}>{stats.total.count} proposals</Text>
@@ -223,13 +222,13 @@ export default function SalesReportScreen() {
 
           <View style={styles.reportCard}>
             <View style={styles.cardHeader}>
-              <BarChart3 size={24} color="#236ecf" />
+              <BarChart3 size={24} color="#000000" />
               <Text style={styles.cardTitle}>Sales Report</Text>
               <TouchableOpacity
                 style={styles.filterButton}
                 onPress={() => setShowFilters(!showFilters)}
               >
-                <Search size={20} color="#236ecf" />
+                <Search size={20} color="#000000" />
                 <Text style={styles.filterButtonText}>Filter</Text>
               </TouchableOpacity>
             </View>
@@ -245,7 +244,7 @@ export default function SalesReportScreen() {
                       placeholder="Search proposal number..."
                       value={filters.proposal}
                       onChangeText={(text) => setFilters(prev => ({ ...prev, proposal: text }))}
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#000000"
                     />
                   </View>
                   <View style={styles.filterInputGroup}>
@@ -255,7 +254,7 @@ export default function SalesReportScreen() {
                       placeholder="Search client name..."
                       value={filters.client}
                       onChangeText={(text) => setFilters(prev => ({ ...prev, client: text }))}
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#000000"
                     />
                   </View>
                 </View>
@@ -268,7 +267,7 @@ export default function SalesReportScreen() {
                       value={filters.price}
                       onChangeText={(text) => setFilters(prev => ({ ...prev, price: text }))}
                       keyboardType="numeric"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#000000"
                     />
                   </View>
                   <View style={styles.filterInputGroup}>
@@ -278,7 +277,7 @@ export default function SalesReportScreen() {
                       placeholder="Search assigned to..."
                       value={filters.assignedTo}
                       onChangeText={(text) => setFilters(prev => ({ ...prev, assignedTo: text }))}
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#000000"
                     />
                   </View>
                 </View>
@@ -318,7 +317,7 @@ export default function SalesReportScreen() {
             
             {loading ? (
               <View style={styles.loadingContainer}>
-                <ActivityIndicator size="large" color="#236ecf" />
+                <ActivityIndicator size="large" color="#000000" />
                 <Text style={styles.loadingText}>Loading proposals...</Text>
               </View>
             ) : proposals.length === 0 ? (
@@ -415,15 +414,15 @@ export default function SalesReportScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   header: {
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
   },
   headerTop: {
     flexDirection: 'row',
@@ -439,12 +438,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#000000',
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24',
+    color: '#000000',
   },
   content: {
     flex: 1,
@@ -460,7 +459,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -487,7 +486,7 @@ const styles = StyleSheet.create({
   filterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   statsContainer: {
     flexDirection: 'row',
@@ -515,10 +514,10 @@ const styles = StyleSheet.create({
     borderLeftColor: '#ef4444',
   },
   statCardPending: {
-    borderLeftColor: '#6b7280',
+    borderLeftColor: '#000000',
   },
   statCardTotal: {
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   statHeader: {
     flexDirection: 'row',
@@ -533,7 +532,7 @@ const styles = StyleSheet.create({
   },
   statCount: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   statTotal: {
@@ -560,7 +559,7 @@ const styles = StyleSheet.create({
   filterLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 6,
   },
   filterInput: {
@@ -587,13 +586,13 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   statusFilterButtonActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   statusFilterButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   statusFilterButtonTextActive: {
     color: '#ffffff',
@@ -625,7 +624,7 @@ const styles = StyleSheet.create({
   resultsText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   emptyTableRow: {
     padding: 40,
@@ -634,12 +633,12 @@ const styles = StyleSheet.create({
   },
   emptyTableText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
   },
   placeholderText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     padding: 20,
   },
@@ -651,11 +650,11 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     padding: 40,
   },
@@ -671,11 +670,11 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 8,
     borderBottomWidth: 2,
-    borderBottomColor: '#1e40af',
+    borderBottomColor: '#171717',
   },
   tableHeaderText: {
     fontSize: 14,
@@ -770,7 +769,7 @@ const styles = StyleSheet.create({
   bottomMenuText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
     textAlign: 'center',
   },

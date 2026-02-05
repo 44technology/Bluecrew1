@@ -12,7 +12,8 @@ import {
   Platform,
   RefreshControl,
 } from 'react-native';
-import { Plus, X, CheckCircle, XCircle, Eye, FileText, DollarSign, Calendar, Trash, Download, Receipt, ArrowLeft, User, UserCheck, BarChart3, MessageSquare, Building2, Send, Edit } from 'lucide-react-native';
+import { Plus, X, CheckCircle, XCircle, Eye, FileText, DollarSign, Calendar, Trash, Download, Receipt, User, UserCheck, BarChart3, MessageSquare, Building2, Send, Edit } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router } from 'expo-router';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -60,6 +61,8 @@ export default function ProposalsScreen() {
   const [relatedProject, setRelatedProject] = useState<{ id: string; title: string } | null>(null);
   const [showInvoiceCheckModal, setShowInvoiceCheckModal] = useState(false);
   const [relatedInvoice, setRelatedInvoice] = useState<Invoice | null>(null);
+  const [showInvoiceDetailModal, setShowInvoiceDetailModal] = useState(false);
+  const [selectedInvoiceForModal, setSelectedInvoiceForModal] = useState<Invoice | null>(null);
   
   const [newProposal, setNewProposal] = useState({
     client_id: '',
@@ -547,29 +550,42 @@ export default function ProposalsScreen() {
     
     // Check if there's a work title in the form that hasn't been added yet
     let finalWorkTitles = [...workTitles];
-    if (newWorkTitle.name && newWorkTitle.quantity && newWorkTitle.unit_price && editingWorkTitleIndex === null) {
-      // Auto-add the current work title if it's valid
-      const quantity = parseFloat(newWorkTitle.quantity) || 0;
-      const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-      if (quantity > 0 && unitPrice > 0) {
-        const calculatedPrice = (quantity * unitPrice).toString();
-        finalWorkTitles.push({
-          name: newWorkTitle.name,
-          descriptions: newWorkTitle.descriptions || [],
-          quantity: newWorkTitle.quantity,
-          unit_price: newWorkTitle.unit_price,
-          price: calculatedPrice,
-        });
-      }
-    }
+    // Don't auto-add work title during validation - let user add it manually
+    // We'll validate the form work title separately if it exists
     
     // Collect all missing required fields and set field-level errors
     const missingFields: string[] = [];
     const errors: { [key: string]: string } = {};
     
-    if (finalWorkTitles.length === 0) {
+    // Check if there's a work title in the form that should be added
+    const hasIncompleteWorkTitle = newWorkTitle.name && (!newWorkTitle.quantity || !newWorkTitle.quantity.trim() || parseFloat(newWorkTitle.quantity) <= 0 || !newWorkTitle.unit_price || !newWorkTitle.unit_price.trim() || parseFloat(newWorkTitle.unit_price) <= 0);
+    
+    // Validate work titles
+    if (finalWorkTitles.length === 0 && !newWorkTitle.name) {
       missingFields.push('Work Titles (at least one required)');
       errors.workTitles = 'At least one work title is required';
+    } else {
+      // Validate each work title in the list has quantity and unit_price
+      finalWorkTitles.forEach((wt, index) => {
+        if (!wt.quantity || !wt.quantity.trim() || parseFloat(wt.quantity) <= 0) {
+          missingFields.push(`Work Title ${index + 1}: Quantity is required`);
+        }
+        if (!wt.unit_price || !wt.unit_price.trim() || parseFloat(wt.unit_price) <= 0) {
+          missingFields.push(`Work Title ${index + 1}: Unit Price is required`);
+        }
+      });
+      
+      // Also validate the form work title if it exists
+      if (newWorkTitle.name) {
+        if (!newWorkTitle.quantity || !newWorkTitle.quantity.trim() || parseFloat(newWorkTitle.quantity) <= 0) {
+          missingFields.push('Work Title: Quantity is required');
+          errors.workTitle_quantity = 'Quantity is required and must be greater than 0';
+        }
+        if (!newWorkTitle.unit_price || !newWorkTitle.unit_price.trim() || parseFloat(newWorkTitle.unit_price) <= 0) {
+          missingFields.push('Work Title: Unit Price is required');
+          errors.workTitle_unit_price = 'Unit Price is required and must be greater than 0';
+        }
+      }
     }
     if (!newProposal.client_name || !newProposal.client_name.trim()) {
       missingFields.push('Client Name');
@@ -599,12 +615,24 @@ export default function ProposalsScreen() {
       missingFields.push('Proposal Date');
       errors.proposal_date = 'Proposal Date is required';
     }
+    // Validate supervision weeks if supervision type is not 'none'
+    if (newProposal.supervision_type !== 'none') {
+      if (!newProposal.supervision_weeks || !newProposal.supervision_weeks.trim() || parseFloat(newProposal.supervision_weeks) <= 0) {
+        missingFields.push('Number of Weeks');
+        errors.supervision_weeks = 'Number of Weeks is required when supervision type is not "None"';
+      }
+    }
 
     // Set field errors
     setFieldErrors(errors);
 
     // Show detailed error message if any fields are missing
     if (missingFields.length > 0) {
+      Alert.alert(
+        'Required Fields Missing',
+        `Please fill in the following required fields:\n\n• ${missingFields.join('\n• ')}\n\nAll required fields are marked with * and highlighted in red.`,
+        [{ text: 'OK' }]
+      );
       return;
     }
 
@@ -1156,9 +1184,9 @@ export default function ProposalsScreen() {
   <style>
     @media print { body { margin: 0; padding: 20px; } }
     body { font-family: 'Arial', 'Helvetica', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #236ecf; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #000000; }
     .logo { max-width: 200px; max-height: 80px; object-fit: contain; }
-    .proposal-title { font-size: 36px; font-weight: bold; color: #236ecf; margin: 0 0 10px 0; }
+    .proposal-title { font-size: 36px; font-weight: bold; color: #000000; margin: 0 0 10px 0; }
     .proposal-number { font-size: 18px; color: #666; margin: 0; }
     .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
     .info-box { flex: 1; padding: 15px; background-color: #f9fafb; border-radius: 8px; margin-right: 15px; }
@@ -1166,19 +1194,19 @@ export default function ProposalsScreen() {
     .info-value { font-size: 16px; font-weight: 600; color: #1f2937; }
     .section-title { font-size: 20px; font-weight: bold; color: #1f2937; margin: 30px 0 15px 0; padding-bottom: 10px; border-bottom: 2px solid #e5e7eb; }
     .table { width: 100%; border-collapse: collapse; margin: 20px 0; background-color: #fff; }
-    .table thead { background-color: #236ecf; color: #fff; }
+    .table thead { background-color: #000000; color: #fff; }
     .table th { padding: 12px; text-align: left; font-weight: 600; font-size: 14px; }
     .table th.text-right { text-align: right; }
     .table td { padding: 12px; border-bottom: 1px solid #e5e7eb; font-size: 14px; }
     .table tbody tr:last-child td { border-bottom: none; }
     .text-right { text-align: right; }
     .work-item-name { font-weight: 600; color: #1f2937; margin-bottom: 4px; }
-    .work-item-desc { font-size: 12px; color: #6b7280; font-style: italic; }
-    .total-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #236ecf; }
+    .work-item-desc { font-size: 12px; color: #000000; font-style: italic; }
+    .total-section { margin-top: 20px; padding-top: 20px; border-top: 2px solid #000000; }
     .total-row { display: flex; justify-content: space-between; align-items: center; padding: 15px 0; font-size: 18px; font-weight: bold; }
     .total-label { color: #1f2937; }
     .total-value { color: #059669; font-size: 24px; }
-    .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #6b7280; font-size: 12px; }
+    .footer { margin-top: 50px; padding-top: 20px; border-top: 1px solid #e5e7eb; text-align: center; color: #000000; font-size: 12px; }
   </style>
 </head>
 <body>
@@ -1195,8 +1223,8 @@ export default function ProposalsScreen() {
     <div class="info-box">
       <div class="info-label">Client</div>
       <div class="info-value">${proposal.client_name}</div>
-      ${proposal.client_email ? `<div style="font-size: 14px; color: #6b7280; margin-top: 4px;">${proposal.client_email}</div>` : ''}
-      <div style="font-size: 14px; color: #6b7280; margin-top: 4px;">${proposal.client_address}</div>
+      ${proposal.client_email ? `<div style="font-size: 14px; color: #000000; margin-top: 4px;">${proposal.client_email}</div>` : ''}
+      <div style="font-size: 14px; color: #000000; margin-top: 4px;">${proposal.client_address}</div>
     </div>
     <div class="info-box">
       <div class="info-label">Proposal Date</div>
@@ -1398,7 +1426,7 @@ export default function ProposalsScreen() {
     </ul>
   </div>
 
-  <div style="margin-top: 50px; padding-top: 30px; border-top: 2px solid #236ecf;">
+  <div style="margin-top: 50px; padding-top: 30px; border-top: 2px solid #000000;">
     <div style="margin-top: 40px; margin-bottom: 30px;">
       <p style="font-weight: bold; margin-bottom: 10px; font-size: 16px;">Wire instructions:</p>
       <p style="margin: 5px 0; font-size: 14px;"><strong>BLUE CREW</strong></p>
@@ -1413,22 +1441,22 @@ export default function ProposalsScreen() {
     </div>
 
     <!-- Disclaimer Section -->
-    <div style="margin-top: 50px; padding: 20px; background-color: #f9fafb; border-left: 4px solid #236ecf; border-radius: 4px;">
+    <div style="margin-top: 50px; padding: 20px; background-color: #f9fafb; border-left: 4px solid #000000; border-radius: 4px;">
       <h3 style="font-size: 16px; font-weight: bold; color: #1f2937; margin-bottom: 15px;">DISCLAIMER</h3>
-      <p style="font-size: 12px; color: #6b7280; line-height: 1.6; margin-bottom: 10px;">
+      <p style="font-size: 12px; color: #000000; line-height: 1.6; margin-bottom: 10px;">
         I understand that my name, email address and limited information will be used to complete the signature process and to enhance the user experience. 
         By signing this document with an electronic signature, I agree that such signature will be as valid as handwritten signatures and considered originals 
         to the extent allowed by applicable law. This electronic signature represents my intent to sign this proposal and indicates my agreement to the terms 
         and conditions set forth herein.
       </p>
-      <p style="font-size: 12px; color: #6b7280; line-height: 1.6;">
+      <p style="font-size: 12px; color: #000000; line-height: 1.6;">
         The parties acknowledge that this proposal, when signed electronically, shall have the same legal effect as if signed in ink. 
         This proposal is subject to the terms and conditions outlined above and becomes binding upon acceptance by both parties.
       </p>
     </div>
 
     <!-- Signature Section -->
-    <div style="margin-top: 50px; padding-top: 30px; border-top: 2px solid #236ecf;">
+    <div style="margin-top: 50px; padding-top: 30px; border-top: 2px solid #000000;">
       <p style="margin-bottom: 30px; line-height: 1.6; font-size: 14px;">
         <strong>IN WITNESS WHEREOF</strong>, the parties hereto have executed this Proposal as of the day and year first above written.
       </p>
@@ -1436,7 +1464,7 @@ export default function ProposalsScreen() {
       <!-- Certified Checkbox -->
       <div style="margin-bottom: 30px; padding: 15px; background-color: #f9fafb; border-radius: 8px; border: 1px solid #e5e7eb;">
         <div style="display: flex; align-items: flex-start; gap: 10px;">
-          <div style="width: 20px; height: 20px; border: 2px solid #236ecf; border-radius: 4px; margin-top: 2px; flex-shrink: 0;"></div>
+          <div style="width: 20px; height: 20px; border: 2px solid #000000; border-radius: 4px; margin-top: 2px; flex-shrink: 0;"></div>
           <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #1f2937;">
             <strong>I certify</strong> that I have read and understood all terms and conditions of this proposal, 
             and I agree to be bound by them. I confirm that the information provided is accurate and complete.
@@ -1458,7 +1486,7 @@ export default function ProposalsScreen() {
           <div style="flex: 1;">
             <div style="border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 10px; min-height: 50px;"></div>
             <p style="margin: 0; font-weight: bold; font-size: 14px; color: #1f2937;">Print Name</p>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">${proposal.client_name}</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #000000;">${proposal.client_name}</p>
           </div>
         </div>
       </div>
@@ -1477,7 +1505,7 @@ export default function ProposalsScreen() {
           <div style="flex: 1;">
             <div style="border-bottom: 2px solid #333; padding-bottom: 8px; margin-bottom: 10px; min-height: 50px;"></div>
             <p style="margin: 0; font-weight: bold; font-size: 14px; color: #1f2937;">Print Name</p>
-            <p style="margin: 5px 0 0 0; font-size: 12px; color: #6b7280;">Blue Crew Contractors LLC</p>
+            <p style="margin: 5px 0 0 0; font-size: 12px; color: #000000;">Blue Crew Contractors LLC</p>
           </div>
         </div>
       </div>
@@ -1544,12 +1572,10 @@ export default function ProposalsScreen() {
         <HamburgerMenu />
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity 
-              onPress={() => setViewMode('select')} 
-              style={styles.backButton}
-            >
-              <ArrowLeft size={24} color="#ffcc00" />
-            </TouchableOpacity>
+            <BackButton 
+              onPress={() => setViewMode('select')}
+              color="#ffffff" 
+            />
             <View style={styles.headerContent}>
               <Text style={styles.title}>Proposal Approval</Text>
               <Text style={styles.subtitle}>Choose category</Text>
@@ -1557,13 +1583,17 @@ export default function ProposalsScreen() {
           </View>
           <ScrollView 
             style={styles.content} 
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            bounces={true}
+            alwaysBounceVertical={true}
+            scrollEventThrottle={16}
             refreshControl={
               Platform.OS !== 'web' ? (
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={onRefresh}
-                  tintColor="#236ecf"
+                  tintColor="#000000"
                 />
               ) : undefined
             }
@@ -1573,7 +1603,7 @@ export default function ProposalsScreen() {
                 style={styles.selectionCard}
                 onPress={() => setViewMode('proposal-approval-project')}
               >
-                <FileText size={48} color="#236ecf" />
+                <FileText size={48} color="#000000" />
                 <Text style={styles.selectionTitle}>Project</Text>
                 <Text style={styles.selectionDescription}>
                   Review project-related proposals
@@ -1603,12 +1633,10 @@ export default function ProposalsScreen() {
         <HamburgerMenu />
         <View style={styles.container}>
           <View style={styles.header}>
-            <TouchableOpacity 
-              onPress={() => setViewMode('select')} 
-              style={styles.backButton}
-            >
-              <ArrowLeft size={24} color="#ffcc00" />
-            </TouchableOpacity>
+            <BackButton 
+              onPress={() => setViewMode('select')}
+              color="#ffffff" 
+            />
             <View style={styles.headerContent}>
               <Text style={styles.title}>Invoice Approval</Text>
               <Text style={styles.subtitle}>Choose category</Text>
@@ -1616,13 +1644,17 @@ export default function ProposalsScreen() {
           </View>
           <ScrollView 
             style={styles.content} 
+            contentContainerStyle={styles.scrollContent}
             showsVerticalScrollIndicator={false}
+            bounces={true}
+            alwaysBounceVertical={true}
+            scrollEventThrottle={16}
             refreshControl={
               Platform.OS !== 'web' ? (
                 <RefreshControl
                   refreshing={refreshing}
                   onRefresh={onRefresh}
-                  tintColor="#236ecf"
+                  tintColor="#000000"
                 />
               ) : undefined
             }
@@ -1632,7 +1664,7 @@ export default function ProposalsScreen() {
                 style={styles.selectionCard}
                 onPress={() => setViewMode('invoice-approval-project')}
               >
-                <FileText size={48} color="#236ecf" />
+                <FileText size={48} color="#000000" />
                 <Text style={styles.selectionTitle}>Project</Text>
                 <Text style={styles.selectionDescription}>
                   Review project-related invoices
@@ -1660,7 +1692,7 @@ export default function ProposalsScreen() {
       <HamburgerMenu />
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity 
+          <BackButton
             onPress={() => {
               if (viewMode === 'proposal-approval-project' || viewMode === 'proposal-approval-sales') {
                 setViewMode('proposal-approval');
@@ -1669,11 +1701,9 @@ export default function ProposalsScreen() {
               } else {
                 router.push('/sales');
               }
-            }} 
-            style={styles.backButton}
-          >
-            <ArrowLeft size={24} color="#ffcc00" />
-          </TouchableOpacity>
+            }}
+            color="#ffffff" 
+          />
           <View style={styles.headerTop}>
             <View style={styles.headerContent}>
               <Text style={styles.title}>
@@ -1786,6 +1816,7 @@ export default function ProposalsScreen() {
               <View style={Platform.OS === 'web' ? styles.proposalsGrid : undefined}>
                 {proposals.map((proposal) => {
                   const status = getApprovalStatus(proposal);
+                  const relatedInvoice = invoices.find(inv => inv.proposal_id === proposal.id);
                   return (
                     <TouchableOpacity
                       key={proposal.id}
@@ -1797,7 +1828,22 @@ export default function ProposalsScreen() {
                     >
                       <View style={styles.cardHeader}>
                         <View style={styles.cardInfo}>
-                          <Text style={styles.cardTitle}>{proposal.proposal_number}</Text>
+                          <View style={styles.cardTitleRow}>
+                            <Text style={styles.cardTitle}>{proposal.proposal_number}</Text>
+                            {relatedInvoice && (
+                              <TouchableOpacity
+                                style={styles.attachBadge}
+                                onPress={(e) => {
+                                  e.stopPropagation();
+                                  setSelectedInvoiceForModal(relatedInvoice);
+                                  setShowInvoiceDetailModal(true);
+                                }}
+                              >
+                                <Receipt size={14} color="#059669" />
+                                <Text style={styles.attachText}>{relatedInvoice.invoice_number}</Text>
+                              </TouchableOpacity>
+                            )}
+                          </View>
                           <Text style={styles.cardSubtitle}>Client: {proposal.client_name}</Text>
                           {proposal.proposal_date && (
                             <Text style={styles.cardSubtitle}>
@@ -1855,7 +1901,7 @@ export default function ProposalsScreen() {
                 setClientSearchQuery('');
                 setFieldErrors({});
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -1868,7 +1914,7 @@ export default function ProposalsScreen() {
                     style={styles.addClientButton}
                     onPress={() => setShowNewClientModal(true)}
                   >
-                    <Plus size={16} color="#236ecf" />
+                    <Plus size={16} color="#000000" />
                     <Text style={styles.addClientButtonText}>Add New Client</Text>
                   </TouchableOpacity>
                 </View>
@@ -1943,7 +1989,7 @@ export default function ProposalsScreen() {
                               )}
                             </View>
                             {newProposal.client_id === client.id && (
-                              <CheckCircle size={20} color="#236ecf" />
+                              <CheckCircle size={20} color="#000000" />
                             )}
                           </TouchableOpacity>
                         ))}
@@ -1981,11 +2027,19 @@ export default function ProposalsScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>City *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, fieldErrors.client_city && styles.inputError]}
                   placeholder="Enter city"
                   value={newProposal.client_city}
-                  onChangeText={(text) => setNewProposal(prev => ({ ...prev, client_city: text }))}
+                  onChangeText={(text) => {
+                    setNewProposal(prev => ({ ...prev, client_city: text }));
+                    if (fieldErrors.client_city) {
+                      setFieldErrors(prev => ({ ...prev, client_city: '' }));
+                    }
+                  }}
                 />
+                {fieldErrors.client_city && (
+                  <Text style={styles.errorText}>{fieldErrors.client_city}</Text>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
@@ -2009,12 +2063,20 @@ export default function ProposalsScreen() {
               <View style={styles.inputGroup}>
                 <Text style={styles.label}>ZIP Code *</Text>
                 <TextInput
-                  style={styles.input}
+                  style={[styles.input, fieldErrors.client_zip && styles.inputError]}
                   placeholder="Enter ZIP code"
                   value={newProposal.client_zip}
-                  onChangeText={(text) => setNewProposal(prev => ({ ...prev, client_zip: text }))}
+                  onChangeText={(text) => {
+                    setNewProposal(prev => ({ ...prev, client_zip: text }));
+                    if (fieldErrors.client_zip) {
+                      setFieldErrors(prev => ({ ...prev, client_zip: '' }));
+                    }
+                  }}
                   keyboardType="numeric"
                 />
+                {fieldErrors.client_zip && (
+                  <Text style={styles.errorText}>{fieldErrors.client_zip}</Text>
+                )}
               </View>
 
               <View style={styles.inputGroup}>
@@ -2047,11 +2109,16 @@ export default function ProposalsScreen() {
                   <input
                     type="date"
                     value={newProposal.proposal_date}
-                    onChange={(e) => setNewProposal(prev => ({ ...prev, proposal_date: e.target.value }))}
+                    onChange={(e) => {
+                      setNewProposal(prev => ({ ...prev, proposal_date: e.target.value }));
+                      if (fieldErrors.proposal_date) {
+                        setFieldErrors(prev => ({ ...prev, proposal_date: '' }));
+                      }
+                    }}
                     style={{
                       width: '100%',
                       padding: '12px',
-                      border: '1px solid #d1d5db',
+                      border: fieldErrors.proposal_date ? '1px solid #ef4444' : '1px solid #d1d5db',
                       borderRadius: '8px',
                       fontSize: '16px',
                       marginTop: '8px',
@@ -2061,11 +2128,11 @@ export default function ProposalsScreen() {
                 ) : (
                   <>
                     <TouchableOpacity
-                      style={styles.input}
+                      style={[styles.input, fieldErrors.proposal_date && styles.inputError]}
                       onPress={() => setShowProposalDatePicker(true)}
                     >
                       <View style={styles.dateInputContainer}>
-                        <Calendar size={18} color="#6b7280" />
+                        <Calendar size={18} color="#000000" />
                         <Text style={[styles.dateInputText, !newProposal.proposal_date && styles.dateInputPlaceholder]}>
                           {newProposal.proposal_date 
                             ? new Date(newProposal.proposal_date).toLocaleDateString()
@@ -2083,11 +2150,17 @@ export default function ProposalsScreen() {
                           if (date) {
                             const formattedDate = date.toISOString().split('T')[0];
                             setNewProposal(prev => ({ ...prev, proposal_date: formattedDate }));
+                            if (fieldErrors.proposal_date) {
+                              setFieldErrors(prev => ({ ...prev, proposal_date: '' }));
+                            }
                           }
                         }}
                       />
                     )}
                   </>
+                )}
+                {fieldErrors.proposal_date && (
+                  <Text style={styles.errorText}>{fieldErrors.proposal_date}</Text>
                 )}
               </View>
 
@@ -2114,7 +2187,7 @@ export default function ProposalsScreen() {
                                 style={styles.editWorkTitleButton}
                                 onPress={() => handleEditWorkTitle(index)}
                               >
-                                <Edit size={16} color="#236ecf" />
+                                <Edit size={16} color="#000000" />
                               </TouchableOpacity>
                               <TouchableOpacity
                                 style={styles.removeWorkTitleButton}
@@ -2208,7 +2281,7 @@ export default function ProposalsScreen() {
                           style={styles.addDescriptionButton}
                           onPress={handleAddDescription}
                         >
-                          <Plus size={16} color="#236ecf" />
+                          <Plus size={16} color="#000000" />
                           <Text style={styles.addDescriptionButtonText}>Add Description</Text>
                         </TouchableOpacity>
                       </View>
@@ -2231,13 +2304,21 @@ export default function ProposalsScreen() {
                               const calculatedPrice = (quantity * unitPrice).toString();
                               return { ...prev, quantity: text, price: calculatedPrice };
                             });
+                            // Clear error if exists
+                            if (fieldErrors.workTitle_quantity) {
+                              setFieldErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors.workTitle_quantity;
+                                return newErrors;
+                              });
+                            }
                           }}
                           style={{
                             width: '100%',
                             padding: 12,
                             fontSize: 16,
                             borderWidth: 1,
-                            borderColor: '#d1d5db',
+                            borderColor: fieldErrors.workTitle_quantity ? '#ef4444' : '#d1d5db',
                             borderRadius: 8,
                             backgroundColor: '#ffffff',
                           }}
@@ -2246,7 +2327,7 @@ export default function ProposalsScreen() {
                         />
                       ) : (
                         <TextInput
-                          style={styles.input}
+                          style={[styles.input, fieldErrors.workTitle_quantity && styles.inputError]}
                           placeholder="0"
                           value={newWorkTitle.quantity}
                           onChangeText={(text) => {
@@ -2256,9 +2337,20 @@ export default function ProposalsScreen() {
                               const calculatedPrice = (quantity * unitPrice).toString();
                               return { ...prev, quantity: text, price: calculatedPrice };
                             });
+                            // Clear error if exists
+                            if (fieldErrors.workTitle_quantity) {
+                              setFieldErrors(prev => {
+                                const newErrors = { ...prev };
+                                delete newErrors.workTitle_quantity;
+                                return newErrors;
+                              });
+                            }
                           }}
                           keyboardType="numeric"
                         />
+                      )}
+                      {fieldErrors.workTitle_quantity && (
+                        <Text style={styles.errorText}>{fieldErrors.workTitle_quantity}</Text>
                       )}
                     </View>
                   </View>
@@ -2278,13 +2370,21 @@ export default function ProposalsScreen() {
                             const calculatedPrice = (quantity * unitPrice).toString();
                             return { ...prev, unit_price: text, price: calculatedPrice };
                           });
+                          // Clear error if exists
+                          if (fieldErrors.workTitle_unit_price) {
+                            setFieldErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.workTitle_unit_price;
+                              return newErrors;
+                            });
+                          }
                         }}
                         style={{
                           flex: 1,
                           padding: 12,
                           fontSize: 16,
                           borderWidth: 1,
-                          borderColor: '#d1d5db',
+                          borderColor: fieldErrors.workTitle_unit_price ? '#ef4444' : '#d1d5db',
                           borderRadius: 8,
                           backgroundColor: '#ffffff',
                         }}
@@ -2293,7 +2393,7 @@ export default function ProposalsScreen() {
                       />
                     ) : (
                       <TextInput
-                        style={[styles.input, styles.priceInput]}
+                        style={[styles.input, styles.priceInput, fieldErrors.workTitle_unit_price && styles.inputError]}
                         placeholder="Unit Price *"
                         value={newWorkTitle.unit_price}
                         onChangeText={(text) => {
@@ -2303,9 +2403,20 @@ export default function ProposalsScreen() {
                             const calculatedPrice = (quantity * unitPrice).toString();
                             return { ...prev, unit_price: text, price: calculatedPrice };
                           });
+                          // Clear error if exists
+                          if (fieldErrors.workTitle_unit_price) {
+                            setFieldErrors(prev => {
+                              const newErrors = { ...prev };
+                              delete newErrors.workTitle_unit_price;
+                              return newErrors;
+                            });
+                          }
                         }}
                         keyboardType="numeric"
                       />
+                    )}
+                    {fieldErrors.workTitle_unit_price && (
+                      <Text style={styles.errorText}>{fieldErrors.workTitle_unit_price}</Text>
                     )}
                     <TouchableOpacity
                       style={styles.addWorkTitleButton}
@@ -2431,13 +2542,18 @@ export default function ProposalsScreen() {
                       type="number"
                       placeholder="Enter number of weeks"
                       value={newProposal.supervision_weeks}
-                      onChange={(e) => setNewProposal(prev => ({ ...prev, supervision_weeks: e.target.value }))}
+                      onChange={(e) => {
+                        setNewProposal(prev => ({ ...prev, supervision_weeks: e.target.value }));
+                        if (fieldErrors.supervision_weeks) {
+                          setFieldErrors(prev => ({ ...prev, supervision_weeks: '' }));
+                        }
+                      }}
                       style={{
                         width: '100%',
                         padding: 12,
                         fontSize: 16,
                         borderWidth: 1,
-                        borderColor: '#d1d5db',
+                        borderColor: fieldErrors.supervision_weeks ? '#ef4444' : '#d1d5db',
                         borderRadius: 8,
                         backgroundColor: '#ffffff',
                       }}
@@ -2446,12 +2562,20 @@ export default function ProposalsScreen() {
                     />
                   ) : (
                     <TextInput
-                      style={styles.input}
+                      style={[styles.input, fieldErrors.supervision_weeks && styles.inputError]}
                       placeholder="Enter number of weeks"
                       value={newProposal.supervision_weeks}
-                      onChangeText={(text) => setNewProposal(prev => ({ ...prev, supervision_weeks: text }))}
+                      onChangeText={(text) => {
+                        setNewProposal(prev => ({ ...prev, supervision_weeks: text }));
+                        if (fieldErrors.supervision_weeks) {
+                          setFieldErrors(prev => ({ ...prev, supervision_weeks: '' }));
+                        }
+                      }}
                       keyboardType="numeric"
                     />
+                  )}
+                  {fieldErrors.supervision_weeks && (
+                    <Text style={styles.errorText}>{fieldErrors.supervision_weeks}</Text>
                   )}
                   {newProposal.supervision_weeks && parseFloat(newProposal.supervision_weeks) > 0 && (
                     <View style={styles.calculatedAmount}>
@@ -2544,7 +2668,7 @@ export default function ProposalsScreen() {
                 setRelatedProject(null);
                 setRelatedInvoice(null);
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -2559,7 +2683,7 @@ export default function ProposalsScreen() {
                           style={styles.downloadButton}
                           onPress={() => handleExportPDF(selectedProposal)}
                         >
-                          <Download size={18} color="#236ecf" />
+                          <Download size={18} color="#000000" />
                           <Text style={styles.downloadButtonText}>Download PDF</Text>
                         </TouchableOpacity>
                       )}
@@ -2677,7 +2801,7 @@ export default function ProposalsScreen() {
                             // Show comment input
                           }}
                         >
-                          <MessageSquare size={18} color="#236ecf" />
+                          <MessageSquare size={18} color="#000000" />
                           <Text style={styles.addCommentButtonText}>Add Comment</Text>
                         </TouchableOpacity>
                       )}
@@ -2722,7 +2846,9 @@ export default function ProposalsScreen() {
                   </View>
 
                   {/* Sales can edit proposal before sending for approval */}
-                  {selectedProposal.management_approval === 'pending' && userRole === 'sales' && !(selectedProposal as any).sent_for_approval_at && (
+                  {/* Admin can edit proposal if it's not approved yet */}
+                  {((selectedProposal.management_approval === 'pending' && userRole === 'sales' && !(selectedProposal as any).sent_for_approval_at) ||
+                    (selectedProposal.management_approval !== 'approved' && userRole === 'admin')) && (
                     <View style={styles.modalActions}>
                       <TouchableOpacity
                         style={styles.editButton}
@@ -2766,15 +2892,18 @@ export default function ProposalsScreen() {
                         }}>
                         <Text style={styles.editButtonText}>Edit Proposal</Text>
                       </TouchableOpacity>
-                      <TouchableOpacity
-                        style={styles.sendApprovalButton}
-                        onPress={() => {
-                          handleSendProposalForApproval(selectedProposal.id);
-                          setShowDetailModal(false);
-                        }}>
-                        <Send size={20} color="#ffffff" />
-                        <Text style={styles.sendApprovalButtonText}>Send for Approval</Text>
-                      </TouchableOpacity>
+                      {/* Only show "Send for Approval" button for sales, not for admin */}
+                      {userRole === 'sales' && (
+                        <TouchableOpacity
+                          style={styles.sendApprovalButton}
+                          onPress={() => {
+                            handleSendProposalForApproval(selectedProposal.id);
+                            setShowDetailModal(false);
+                          }}>
+                          <Send size={20} color="#ffffff" />
+                          <Text style={styles.sendApprovalButtonText}>Send for Approval</Text>
+                        </TouchableOpacity>
+                      )}
                     </View>
                   )}
 
@@ -2854,7 +2983,7 @@ export default function ProposalsScreen() {
                               setShowDetailModal(false);
                               router.push(`/(tabs)/project/${relatedProject.id}`);
                             }}>
-                            <Building2 size={18} color="#236ecf" />
+                            <Building2 size={18} color="#000000" />
                             <Text style={styles.relatedProjectText}>{relatedProject.title}</Text>
                           </TouchableOpacity>
                         </View>
@@ -2867,8 +2996,9 @@ export default function ProposalsScreen() {
                             if (relatedInvoice) {
                               if (relatedInvoice.status === 'paid' || relatedInvoice.status === 'partial-paid') {
                                 // Invoice is paid, proceed to create project
-                                router.push(`/projects?fromProposal=${selectedProposal.id}`);
                                 setShowDetailModal(false);
+                                // Navigate to projects page with fromProposal parameter
+                                router.push(`/(tabs)/projects?fromProposal=${selectedProposal.id}`);
                               } else {
                                 // Invoice not paid, show warning modal
                                 setShowInvoiceCheckModal(true);
@@ -2884,6 +3014,133 @@ export default function ProposalsScreen() {
                       )}
                     </View>
                   )}
+                </>
+              )}
+            </ScrollView>
+          </View>
+        </Modal>
+
+        {/* Invoice Detail Modal */}
+        <Modal
+          visible={showInvoiceDetailModal}
+          animationType="slide"
+          presentationStyle="pageSheet"
+          onRequestClose={() => {
+            setShowInvoiceDetailModal(false);
+            setSelectedInvoiceForModal(null);
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Invoice Details</Text>
+              <TouchableOpacity onPress={() => {
+                setShowInvoiceDetailModal(false);
+                setSelectedInvoiceForModal(null);
+              }}>
+                <X size={24} color="#000000" />
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
+              {selectedInvoiceForModal && (
+                <>
+                  <View style={styles.detailSection}>
+                    <Text style={styles.detailTitle}>{selectedInvoiceForModal.invoice_number}</Text>
+                    
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Status:</Text>
+                      <View style={[
+                        styles.statusBadge,
+                        {
+                          backgroundColor:
+                            selectedInvoiceForModal.status === 'paid' ? '#d1fae5' :
+                            selectedInvoiceForModal.status === 'partial-paid' ? '#fef3c7' :
+                            selectedInvoiceForModal.status === 'overdue' ? '#fee2e2' :
+                            '#f3f4f6'
+                        }
+                      ]}>
+                        <Text style={[
+                          styles.statusText,
+                          {
+                            color:
+                              selectedInvoiceForModal.status === 'paid' ? '#059669' :
+                              selectedInvoiceForModal.status === 'partial-paid' ? '#d97706' :
+                              selectedInvoiceForModal.status === 'overdue' ? '#dc2626' :
+                              '#000000'
+                          }
+                        ]}>
+                          {selectedInvoiceForModal.status?.toUpperCase().replace('-', ' ') || 'PENDING'}
+                        </Text>
+                      </View>
+                    </View>
+
+                    {selectedInvoiceForModal.client_name && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Client:</Text>
+                        <Text style={styles.detailValue}>{selectedInvoiceForModal.client_name}</Text>
+                      </View>
+                    )}
+
+                    {selectedInvoiceForModal.invoice_date && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Date:</Text>
+                        <Text style={styles.detailValue}>
+                          {new Date(selectedInvoiceForModal.invoice_date).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    )}
+
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Total Amount:</Text>
+                      <Text style={[styles.detailValue, { fontSize: 18, fontWeight: '700', color: '#059669' }]}>
+                        {formatCurrency(selectedInvoiceForModal.total_cost || 0)}
+                      </Text>
+                    </View>
+
+                    {(selectedInvoiceForModal.total_paid !== undefined && selectedInvoiceForModal.total_paid > 0) || (selectedInvoiceForModal.paid_amount !== undefined && selectedInvoiceForModal.paid_amount > 0) ? (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Paid:</Text>
+                        <Text style={[styles.detailValue, { color: '#059669', fontWeight: '600' }]}>
+                          {formatCurrency(selectedInvoiceForModal.total_paid || selectedInvoiceForModal.paid_amount || 0)}
+                        </Text>
+                      </View>
+                    ) : null}
+
+                    <View style={styles.detailRow}>
+                      <Text style={styles.detailLabel}>Balance:</Text>
+                      <Text style={[styles.detailValue, { color: '#dc2626', fontWeight: '600' }]}>
+                        {formatCurrency((selectedInvoiceForModal.total_cost || 0) - (selectedInvoiceForModal.total_paid || selectedInvoiceForModal.paid_amount || 0))}
+                      </Text>
+                    </View>
+
+                    {selectedInvoiceForModal.due_date && (
+                      <View style={styles.detailRow}>
+                        <Text style={styles.detailLabel}>Due Date:</Text>
+                        <Text style={[
+                          styles.detailValue,
+                          new Date(selectedInvoiceForModal.due_date) < new Date() && selectedInvoiceForModal.status !== 'paid' && { color: '#dc2626', fontWeight: '600' }
+                        ]}>
+                          {new Date(selectedInvoiceForModal.due_date).toLocaleDateString()}
+                        </Text>
+                      </View>
+                    )}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.viewFullInvoiceButton}
+                    onPress={() => {
+                      if (selectedInvoiceForModal?.id) {
+                        const invoiceId = selectedInvoiceForModal.id;
+                        setShowInvoiceDetailModal(false);
+                        setSelectedInvoiceForModal(null);
+                        // Navigate to invoice detail page
+                        router.push(`/(tabs)/invoices?id=${invoiceId}`);
+                      }
+                    }}
+                  >
+                    <Eye size={18} color="#000000" />
+                    <Text style={styles.viewFullInvoiceButtonText}>View Full Invoice</Text>
+                  </TouchableOpacity>
                 </>
               )}
             </ScrollView>
@@ -3028,7 +3285,7 @@ export default function ProposalsScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Category</Text>
                 <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
               <ScrollView 
@@ -3059,7 +3316,7 @@ export default function ProposalsScreen() {
                       {category}
                     </Text>
                     {newProposal.category === category && (
-                      <CheckCircle size={20} color="#236ecf" />
+                      <CheckCircle size={20} color="#000000" />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -3078,7 +3335,7 @@ export default function ProposalsScreen() {
               <View style={styles.modalHeader}>
                 <Text style={styles.modalTitle}>Select Supervision Type</Text>
                 <TouchableOpacity onPress={() => setShowSupervisionTypeModal(false)}>
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
               <ScrollView 
@@ -3119,7 +3376,7 @@ export default function ProposalsScreen() {
                       </Text>
                     </View>
                     {newProposal.supervision_type === option.value && (
-                      <CheckCircle size={20} color="#236ecf" />
+                      <CheckCircle size={20} color="#000000" />
                     )}
                   </TouchableOpacity>
                 ))}
@@ -3143,7 +3400,7 @@ export default function ProposalsScreen() {
                     setSelectedWorkTitleFromList('');
                   }
                 }}>
-                  <X size={24} color="#6b7280" />
+                  <X size={24} color="#000000" />
                 </TouchableOpacity>
               </View>
               <ScrollView 
@@ -3199,7 +3456,7 @@ export default function ProposalsScreen() {
                 setShowNewClientModal(false);
                 setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
 
@@ -3331,17 +3588,17 @@ export default function ProposalsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af',
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
     gap: 12,
   },
   backButton: {
@@ -3356,17 +3613,17 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#ffffff',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24',
+    fontSize: 14,
+    color: '#f5f5f5',
   },
   addButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     width: Platform.OS === 'web' ? 40 : 44,
     height: Platform.OS === 'web' ? 40 : 44,
     borderRadius: Platform.OS === 'web' ? 20 : 8,
@@ -3390,14 +3647,16 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
+  },
+  scrollContent: {
     padding: Platform.OS === 'web' ? 16 : 20,
-    paddingBottom: Platform.OS === 'web' ? 16 : 20, // No extra padding for clients (no bottom menu)
+    paddingBottom: Platform.OS === 'web' ? 16 : 120, // Extra padding for mobile tab bar
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 10,
@@ -3432,7 +3691,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderLeftColor: '#ffffff',
     ...(Platform.OS === 'web' && {
       width: 'calc(50% - 8px)',
       minWidth: 400,
@@ -3448,15 +3707,53 @@ const styles = StyleSheet.create({
   cardInfo: {
     flex: 1,
   },
+  cardTitleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: Platform.OS === 'web' ? 4 : 4,
+    flexWrap: 'wrap',
+  },
   cardTitle: {
     fontSize: Platform.OS === 'web' ? 18 : 18,
     fontWeight: '600',
     color: '#1f2937',
-    marginBottom: Platform.OS === 'web' ? 4 : 4,
+  },
+  attachBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: '#d1fae5',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  attachText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  viewFullInvoiceButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#eff6ff',
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    marginTop: 16,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+  },
+  viewFullInvoiceButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#000000',
   },
   cardSubtitle: {
     fontSize: Platform.OS === 'web' ? 14 : 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: Platform.OS === 'web' ? 2 : 2,
   },
   statusBadge: {
@@ -3485,10 +3782,10 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: Platform.OS === 'web' ? 11 : 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   sendApprovalButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -3540,7 +3837,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   generateButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
@@ -3564,12 +3861,12 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   helperText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: -4,
     marginBottom: 8,
     fontStyle: 'italic',
@@ -3586,7 +3883,7 @@ const styles = StyleSheet.create({
     borderColor: '#bfdbfe',
   },
   addClientButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3619,16 +3916,16 @@ const styles = StyleSheet.create({
   },
   selectedClient: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   clientText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   selectedClientText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   clientDropdownButton: {
@@ -3650,11 +3947,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   clientDropdownPlaceholder: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   clientDropdownArrow: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginLeft: 8,
   },
   clientDropdown: {
@@ -3707,12 +4004,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectedClientDropdownOptionText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   clientDropdownOptionEmail: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   clientDropdownEmpty: {
@@ -3721,7 +4018,7 @@ const styles = StyleSheet.create({
   },
   clientDropdownEmptyText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#000000',
   },
   categoryModal: {
     backgroundColor: '#ffffff',
@@ -3752,11 +4049,11 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   categorySelectPlaceholder: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   categorySelectArrow: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginLeft: 8,
   },
   categoryList: {
@@ -3780,17 +4077,17 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   selectedCategory: {
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     backgroundColor: '#eff6ff',
   },
   categoryText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
     flex: 1,
   },
   selectedCategoryText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   supervisionOptionContent: {
@@ -3798,7 +4095,7 @@ const styles = StyleSheet.create({
   },
   supervisionOptionDescription: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   selectedIndicator: {
@@ -3809,7 +4106,7 @@ const styles = StyleSheet.create({
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -3832,7 +4129,7 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     flexShrink: 0,
@@ -3883,7 +4180,7 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
   },
   removeDescriptionButton: {
@@ -3906,7 +4203,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   addDescriptionButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -3918,7 +4215,7 @@ const styles = StyleSheet.create({
   },
   descriptionCount: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   cancelEditButton: {
@@ -3930,13 +4227,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelEditButtonText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
   workTitleDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   workTitlePrice: {
@@ -3950,7 +4247,7 @@ const styles = StyleSheet.create({
   },
   workTitleDetailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   removeWorkTitleButton: {
     padding: 8,
@@ -3975,7 +4272,7 @@ const styles = StyleSheet.create({
   priceLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   priceInput: {
     flex: 1,
@@ -3991,7 +4288,7 @@ const styles = StyleSheet.create({
   percentageLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     minWidth: 30,
   },
   calculatedAmount: {
@@ -4008,12 +4305,12 @@ const styles = StyleSheet.create({
   calculatedAmountLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e40af',
+    color: '#171717',
   },
   calculatedAmountValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e40af',
+    color: '#171717',
   },
   calculatedPriceContainer: {
     flexDirection: 'row',
@@ -4029,12 +4326,12 @@ const styles = StyleSheet.create({
   calculatedPriceLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1e40af',
+    color: '#171717',
   },
   calculatedPriceValue: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1e40af',
+    color: '#171717',
   },
   addWorkTitleButtonText: {
     color: '#ffffff',
@@ -4042,7 +4339,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addWorkTitleButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     padding: 12,
     justifyContent: 'center',
@@ -4056,7 +4353,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   submitButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -4107,7 +4404,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   downloadButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -4120,11 +4417,11 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   detailValue: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
     textAlign: 'right',
   },
@@ -4143,7 +4440,7 @@ const styles = StyleSheet.create({
   workTitleDetailNumber: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   workTitleDetailName: {
     fontSize: 16,
@@ -4157,7 +4454,7 @@ const styles = StyleSheet.create({
   },
   workTitleDetailDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   workTitleDetailInfo: {
@@ -4166,7 +4463,7 @@ const styles = StyleSheet.create({
   },
   workTitleDetailInfoText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   workTitleDetailPrice: {
     fontSize: 16,
@@ -4267,7 +4564,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -4283,7 +4580,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -4319,7 +4616,7 @@ const styles = StyleSheet.create({
   relatedProjectText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
     textDecorationLine: 'underline',
   },
   createInvoiceButton: {
@@ -4327,7 +4624,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -4359,7 +4656,7 @@ const styles = StyleSheet.create({
   },
   rejectModalMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
   },
   rejectInput: {
@@ -4386,7 +4683,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#f3f4f6',
   },
   cancelRejectText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -4421,7 +4718,7 @@ const styles = StyleSheet.create({
   },
   invoiceCheckMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 24,
     textAlign: 'center',
     lineHeight: 22,
@@ -4440,7 +4737,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   invoiceCheckCancelText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -4450,7 +4747,7 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
@@ -4492,7 +4789,7 @@ const styles = StyleSheet.create({
   },
   selectionDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
   },
   tabContainer: {
@@ -4512,15 +4809,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     borderRadius: 6,
     gap: 8,
-    backgroundColor: 'transparent',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   activeTab: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   activeTabText: {
     color: '#ffffff',
@@ -4542,7 +4842,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sendCommentButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
@@ -4568,11 +4868,11 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   commentDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   commentText: {
     fontSize: 14,
@@ -4581,7 +4881,7 @@ const styles = StyleSheet.create({
   },
   noCommentsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
     textAlign: 'center',
     padding: 20,
@@ -4598,7 +4898,7 @@ const styles = StyleSheet.create({
     borderColor: '#bfdbfe',
   },
   addCommentButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -4612,7 +4912,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   dateInputPlaceholder: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   bottomMenu: {
     position: 'absolute',
@@ -4649,7 +4949,7 @@ const styles = StyleSheet.create({
   bottomMenuText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
     textAlign: 'center',
   },

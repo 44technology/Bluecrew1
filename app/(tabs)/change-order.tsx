@@ -13,7 +13,8 @@ import {
   RefreshControl,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, X, FileText, Calendar, Hash, User, CheckCircle, ChevronDown, ChevronRight, ArrowLeft, Eye, Edit, Send } from 'lucide-react-native';
+import { Plus, X, FileText, Calendar, Hash, User, CheckCircle, ChevronDown, ChevronRight, Eye, Edit, Send } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { useLocalSearchParams, router } from 'expo-router';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
@@ -359,7 +360,7 @@ export default function ChangeOrderScreen() {
       case 'pending': return '#f59e0b';
       case 'approved': return '#10b981';
       case 'rejected': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -382,7 +383,7 @@ export default function ChangeOrderScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading projects...</Text>
       </View>
     );
@@ -392,11 +393,11 @@ export default function ChangeOrderScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         {projectId && (
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.push(`/(tabs)/project/${projectId}`)}>
-            <ArrowLeft size={24} color="#ffcc00" />
-          </TouchableOpacity>
+          <BackButton 
+            onPress={() => router.push(`/(tabs)/project/${projectId}`)}
+            color="#000000"
+            backgroundColor="rgba(0,0,0,0.06)"
+          />
         )}
         <View style={styles.headerContent}>
           <Text style={styles.title}>Change Order Requests</Text>
@@ -404,14 +405,6 @@ export default function ChangeOrderScreen() {
             {filteredRequests.length} total requests
           </Text>
         </View>
-        {(userRole === 'pm' || userRole === 'admin') && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}>
-            <Plus size={20} color="#236ecf" />
-            <Text style={styles.addButtonText}>New Request</Text>
-          </TouchableOpacity>
-        )}
       </View>
 
       <ScrollView 
@@ -422,7 +415,7 @@ export default function ChangeOrderScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#236ecf"
+              tintColor="#000000"
             />
           ) : undefined
         }
@@ -441,7 +434,7 @@ export default function ChangeOrderScreen() {
                     setSelectedRequest(request);
                     setShowDetailModal(true);
                   }}>
-                  <Eye size={18} color="#236ecf" />
+                  <Eye size={18} color="#000000" />
                 </TouchableOpacity>
                 <View style={[styles.statusBadge, { backgroundColor: getStatusColor(request.status) + '20' }]}>
                   <Text style={[styles.statusText, { color: getStatusColor(request.status) }]}>
@@ -453,19 +446,19 @@ export default function ChangeOrderScreen() {
 
             <View style={styles.requestDetails}>
               <View style={styles.detailRow}>
-                <FileText size={16} color="#6b7280" />
+                <FileText size={16} color="#000000" />
                 <Text style={styles.detailLabel}>Description:</Text>
                 <Text style={styles.detailValue} numberOfLines={2}>{request.description}</Text>
               </View>
               
               <View style={styles.detailRow}>
-                <Calendar size={16} color="#6b7280" />
+                <Calendar size={16} color="#000000" />
                 <Text style={styles.detailLabel}>Requested:</Text>
                 <Text style={styles.detailValue}>{new Date(request.requested_date).toLocaleDateString()}</Text>
               </View>
               
               <View style={styles.detailRow}>
-                <User size={16} color="#6b7280" />
+                <User size={16} color="#000000" />
                 <Text style={styles.detailLabel}>Requested by:</Text>
                 <Text style={styles.detailValue}>{request.requested_by}</Text>
               </View>
@@ -519,9 +512,9 @@ export default function ChangeOrderScreen() {
                           style={styles.expandButton}
                           onPress={() => toggleStepExpansion(step.id)}>
                           {expandedSteps.has(step.id) ? (
-                            <ChevronDown size={20} color="#6b7280" />
+                            <ChevronDown size={20} color="#000000" />
                           ) : (
-                            <ChevronRight size={20} color="#6b7280" />
+                            <ChevronRight size={20} color="#000000" />
                           )}
                         </TouchableOpacity>
                       )}
@@ -556,7 +549,7 @@ export default function ChangeOrderScreen() {
                       setEditSteps([...request.steps]);
                       setShowEditModal(true);
                     }}>
-                    <Edit size={16} color="#236ecf" />
+                    <Edit size={16} color="#000000" />
                     <Text style={styles.editButtonText}>Edit</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -586,6 +579,14 @@ export default function ChangeOrderScreen() {
         ))}
       </ScrollView>
 
+      {(userRole === 'pm' || userRole === 'admin') && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setShowAddModal(true)}>
+          <Plus size={24} color="#000000" />
+        </TouchableOpacity>
+      )}
+
       {/* Add Request Modal */}
       <Modal
         visible={showAddModal}
@@ -595,7 +596,7 @@ export default function ChangeOrderScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>New Change Order Request</Text>
             <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -826,7 +827,7 @@ export default function ChangeOrderScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Change Order Details</Text>
             <TouchableOpacity onPress={() => setShowDetailModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -839,13 +840,13 @@ export default function ChangeOrderScreen() {
                 
                 <View style={styles.detailInfo}>
                   <View style={styles.detailRow}>
-                    <Calendar size={16} color="#6b7280" />
+                    <Calendar size={16} color="#000000" />
                     <Text style={styles.detailLabel}>Requested:</Text>
                     <Text style={styles.detailValue}>{new Date(selectedRequest.requested_date).toLocaleDateString()}</Text>
                   </View>
                   
                   <View style={styles.detailRow}>
-                    <User size={16} color="#6b7280" />
+                    <User size={16} color="#000000" />
                     <Text style={styles.detailLabel}>Requested by:</Text>
                     <Text style={styles.detailValue}>{selectedRequest.requested_by}</Text>
                   </View>
@@ -928,7 +929,7 @@ export default function ChangeOrderScreen() {
               setEditRequest(null);
               setEditSteps([]);
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -984,15 +985,15 @@ export default function ChangeOrderScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header like teams
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#b0b0b0',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
@@ -1005,27 +1006,29 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#000000',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
-  },
-  addButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#ffcc00', // Yellow button
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 8,
-    gap: 8,
-  },
-  addButtonText: {
-    color: '#236ecf', // Blue text on yellow button
     fontSize: 14,
-    fontWeight: '600',
+    color: '#000000',
+  },
+  fab: {
+    position: 'absolute',
+    bottom: Platform.OS === 'web' ? 40 : 90,
+    right: Platform.OS === 'web' ? 40 : 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   content: {
     flex: 1,
@@ -1042,8 +1045,8 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   requestHeader: {
     flexDirection: 'row',
@@ -1057,13 +1060,13 @@ const styles = StyleSheet.create({
   projectName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
     marginBottom: 4,
   },
   requestTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f2937',
+    color: '#000000',
   },
   statusBadge: {
     paddingHorizontal: 12,
@@ -1085,12 +1088,12 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     minWidth: 100,
   },
   detailValue: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   stepsSection: {
@@ -1099,7 +1102,7 @@ const styles = StyleSheet.create({
   stepsTitle: {
     fontSize: 16,
     fontWeight: '700',
-    color: '#1f2937',
+    color: '#000000',
     marginBottom: 12,
   },
   stepCard: {
@@ -1119,11 +1122,11 @@ const styles = StyleSheet.create({
   stepName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   stepDescription: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   expandButton: {
@@ -1147,11 +1150,11 @@ const styles = StyleSheet.create({
   childStepName: {
     fontSize: 13,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
   },
   childStepDescription: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   adminActions: {
@@ -1198,7 +1201,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     flex: 1,
   },
   modalContent: {
@@ -1212,7 +1215,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1223,7 +1226,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 12,
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
   },
   textArea: {
     height: 80,
@@ -1244,23 +1247,23 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   selectedProject: {
-    backgroundColor: '#f0f9ff',
-    borderColor: '#236ecf',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   projectOptionText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   selectedProjectText: {
-    color: '#236ecf',
+    color: '#ffffff',
   },
   selectedIndicator: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#ffcc00', // Yellow button
+    backgroundColor: '#ffffff',
   },
   datePickerButton: {
     flexDirection: 'row',
@@ -1276,7 +1279,7 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   addStepForm: {
@@ -1288,7 +1291,7 @@ const styles = StyleSheet.create({
   addStepButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00', // Yellow button
+    backgroundColor: '#ffffff', // Yellow button
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -1296,7 +1299,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   addStepButtonText: {
-    color: '#236ecf', // Blue text on yellow button
+    color: '#000000', // Blue text on yellow button
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1323,17 +1326,17 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   selectedParentStep: {
-    backgroundColor: '#f0f9ff',
-    borderColor: '#236ecf',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   parentStepOptionText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   selectedParentStepText: {
-    color: '#236ecf',
+    color: '#ffffff',
   },
   addSubStepButton: {
     flexDirection: 'row',
@@ -1346,7 +1349,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   addSubStepButtonText: {
-    color: '#236ecf', // Blue text on yellow button
+    color: '#000000', // Blue text on yellow button
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1357,7 +1360,7 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   submitButton: {
-    backgroundColor: '#236ecf', // Blue button
+    backgroundColor: '#000000',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -1372,12 +1375,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf', // Blue background
+    backgroundColor: '#ffffff', // Blue background
   },
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#000000',
     fontWeight: '500',
   },
   headerActions: {
@@ -1399,7 +1402,7 @@ const styles = StyleSheet.create({
   editButton: {
     backgroundColor: '#f0f9ff',
     borderWidth: 1,
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
@@ -1408,21 +1411,23 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   editButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
   sendApprovalButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     flexDirection: 'row',
     alignItems: 'center',
     gap: 6,
     paddingHorizontal: 12,
     paddingVertical: 8,
     borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   sendApprovalButtonText: {
-    color: '#ffffff',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -1432,18 +1437,18 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937',
+    color: '#000000',
     marginBottom: 8,
   },
   detailTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f2937',
+    color: '#000000',
     marginBottom: 8,
   },
   detailDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
     lineHeight: 20,
   },

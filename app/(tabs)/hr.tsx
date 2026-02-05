@@ -173,7 +173,7 @@ export default function HRScreen() {
       const overtimeByDept = Object.entries(departmentOvertime).map(([dept, data]) => ({
         department: dept,
         percentage: totalOvertime > 0 ? Math.round((data.total / totalOvertime) * 100) : 0,
-        color: dept === 'pm' ? '#fbbf24' : dept === 'sales' ? '#3b82f6' : dept === 'admin' ? '#8b5cf6' : '#06b6d4',
+        color: dept === 'pm' ? '#737373' : dept === 'sales' ? '#000000' : dept === 'admin' ? '#404040' : '#737373',
       }));
       
       // Build weekly time clock summary data
@@ -248,7 +248,7 @@ export default function HRScreen() {
           icon: 'clock',
           count: weeklyData.entries.length,
           total: weeklyData.entries.length,
-          color: '#236ecf',
+          color: '#000000',
           data: weeklyUserData,
           actionText: 'View Weekly Details',
         },
@@ -378,7 +378,7 @@ export default function HRScreen() {
       <View style={styles.widgetHeader}>
         <View style={styles.widgetTitleSection}>
           {getIcon(widget.icon, 20, widget.color)}
-          <Text style={styles.widgetTitle}>{widget.title}</Text>
+          <Text style={styles.widgetTitle} numberOfLines={2}>{widget.title}</Text>
         </View>
         <View style={styles.widgetCount}>
           <Text style={[styles.countText, { color: widget.color }]}>
@@ -429,7 +429,7 @@ export default function HRScreen() {
               style={styles.closeButton}
               onPress={() => setShowDetailModal(false)}
             >
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -492,7 +492,7 @@ export default function HRScreen() {
                     style={styles.navButton}
                     onPress={() => router.push('/payroll')}
                   >
-                    <DollarSign size={24} color="#236ecf" />
+                    <DollarSign size={24} color="#000000" />
                     <Text style={styles.navButtonText}>Payroll</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -506,7 +506,7 @@ export default function HRScreen() {
                     style={styles.navButton}
                     onPress={() => router.push('/employee?from=hr')}
                   >
-                    <Users size={24} color="#8b5cf6" />
+                    <Users size={24} color="#404040" />
                     <Text style={styles.navButtonText}>Employee</Text>
                   </TouchableOpacity>
                 </View>
@@ -515,7 +515,7 @@ export default function HRScreen() {
             </View>
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffcc00" />
+            <ActivityIndicator size="large" color="#ffffff" />
             <Text style={styles.loadingText}>Loading HR data...</Text>
           </View>
         </View>
@@ -549,22 +549,22 @@ export default function HRScreen() {
               style={styles.navButton}
               onPress={() => router.push('/payroll')}
             >
-              <DollarSign size={24} color="#236ecf" />
-              <Text style={styles.navButtonText}>Payroll</Text>
+              <DollarSign size={22} color="#000000" />
+              <Text style={styles.navButtonText} numberOfLines={1}>Payroll</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.navButton}
               onPress={() => router.push('/commission')}
             >
-              <TrendingUp size={24} color="#10b981" />
-              <Text style={styles.navButtonText}>Commission</Text>
+              <TrendingUp size={22} color="#10b981" />
+              <Text style={styles.navButtonText} numberOfLines={1}>Commission</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={styles.navButton}
               onPress={() => router.push('/employee?from=hr')}
             >
-              <Users size={24} color="#8b5cf6" />
-              <Text style={styles.navButtonText}>Employee</Text>
+              <Users size={22} color="#404040" />
+              <Text style={styles.navButtonText} numberOfLines={1}>Employee</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -589,7 +589,7 @@ export default function HRScreen() {
             setSelectedWeekStart(currentDate.toISOString().split('T')[0]);
           }}
         >
-          <ChevronLeft size={20} color="#6b7280" />
+          <ChevronLeft size={18} color="#000000" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.dateFilterInput}
@@ -614,7 +614,7 @@ export default function HRScreen() {
             }
           }}
         >
-          <Calendar size={16} color="#6b7280" />
+          <Calendar size={14} color="#000000" />
           <Text style={styles.dateFilterText}>
             {(() => {
               const start = new Date(selectedWeekStart);
@@ -632,7 +632,7 @@ export default function HRScreen() {
             setSelectedWeekStart(currentDate.toISOString().split('T')[0]);
           }}
         >
-          <ChevronRight size={20} color="#6b7280" />
+          <ChevronRight size={18} color="#000000" />
         </TouchableOpacity>
         <TouchableOpacity
           style={styles.currentWeekButton}
@@ -643,7 +643,7 @@ export default function HRScreen() {
             setSelectedWeekStart(monday.toISOString().split('T')[0]);
           }}
         >
-          <Text style={styles.currentWeekButtonText}>Current Week</Text>
+          <Text style={styles.currentWeekButtonText} numberOfLines={1}>Current</Text>
         </TouchableOpacity>
       </View>
 
@@ -651,13 +651,13 @@ export default function HRScreen() {
       {Platform.OS === 'web' && viewMode === 'table' && (
         <View style={styles.webToolbar}>
           <View style={styles.searchContainer}>
-            <Search size={20} color="#6b7280" />
+            <Search size={20} color="#000000" />
             <TextInput
               style={styles.searchInput}
               placeholder="Search..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
           </View>
           <Text style={styles.tableCount}>
@@ -707,7 +707,7 @@ export default function HRScreen() {
                     <>
                       <Text style={styles.tableCell}>{item.department || 'N/A'}</Text>
                       <Text style={styles.tableCell}>{item.percentage || 0}%</Text>
-                      <View style={[styles.colorIndicator, { backgroundColor: item.color || '#6b7280' }]} />
+                      <View style={[styles.colorIndicator, { backgroundColor: item.color || '#000000' }]} />
                     </>
                   ) : currentWidgetForTable.id === 'weekly-time-clock' ? (
                     <>
@@ -780,15 +780,15 @@ export default function HRScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header like other pages
+    backgroundColor: '#f5f5f5', // Darker blue header like other pages
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like other pages
+    borderBottomColor: '#ffffff', // Yellow border like other pages
   },
   navButtons: {
     flexDirection: 'row',
@@ -797,24 +797,26 @@ const styles = StyleSheet.create({
   },
   navButton: {
     flex: 1,
-    flexDirection: 'row',
+    flexDirection: 'column',
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: '#ffffff',
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
     borderRadius: 12,
-    gap: 8,
+    gap: 6,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minHeight: 80,
   },
   navButtonText: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: '600',
     color: '#1f2937',
+    textAlign: 'center',
   },
   headerTop: {
     flexDirection: Platform.OS === 'web' ? 'row' : 'row',
@@ -829,17 +831,17 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28, // Increased font size like other pages
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like other pages
+    color: '#ffffff', // Yellow text like other pages
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#f5f5f5', // Light yellow like other pages
   },
   headerTitle: {
     fontSize: 24,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#000000',
   },
   headerActions: {
     flexDirection: 'row',
@@ -854,7 +856,7 @@ const styles = StyleSheet.create({
   headerButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#ffcc00', // Yellow button like other pages
+    backgroundColor: '#ffffff', // Yellow button like other pages
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
@@ -868,7 +870,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 16,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   loadingText: {
     fontSize: 16,
@@ -885,7 +887,7 @@ const styles = StyleSheet.create({
   },
   matchingText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 20,
     textAlign: 'center',
   },
@@ -897,7 +899,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   widgetsGrid: {
     gap: 16,
@@ -925,7 +927,7 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   widgetTitle: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#1f2937',
     flex: 1,
@@ -940,7 +942,7 @@ const styles = StyleSheet.create({
   },
   totalText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginLeft: 2,
   },
   widgetContent: {
@@ -954,16 +956,16 @@ const styles = StyleSheet.create({
   },
   dataText: {
     fontSize: 13,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   dataSubtext: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   moreText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -974,7 +976,7 @@ const styles = StyleSheet.create({
   },
   actionText: {
     fontSize: 12,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '500',
   },
   // Modal styles
@@ -1035,7 +1037,7 @@ const styles = StyleSheet.create({
   },
   detailSubtext: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   statusBadge: {
@@ -1056,7 +1058,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   actionButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -1077,7 +1079,7 @@ const styles = StyleSheet.create({
     gap: 8,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: '#ffcc00', // Yellow button like other pages
+    backgroundColor: '#ffffff', // Yellow button like other pages
     borderRadius: 6,
     alignSelf: 'flex-start',
   },
@@ -1110,12 +1112,12 @@ const styles = StyleSheet.create({
   searchInput: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     padding: 0,
   },
   tableCount: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   // Table styles
@@ -1138,7 +1140,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -1153,10 +1155,10 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   urlCell: {
-    color: '#236ecf',
+    color: '#000000',
     fontStyle: 'italic',
   },
   tableActionButton: {
@@ -1178,24 +1180,24 @@ const styles = StyleSheet.create({
   dateFilterContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    backgroundColor: '#1e40af', // Darker blue like header
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    backgroundColor: '#f5f5f5', // Darker blue like header
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border
-    gap: 8,
+    borderBottomColor: '#ffffff', // Yellow border
+    gap: 6,
   },
   dateFilterLabel: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#ffcc00', // Yellow text
-    marginRight: 8,
+    color: '#ffffff', // Yellow text
+    marginRight: 6,
   },
   dateFilterButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: '#ffcc00', // Yellow button
+    width: 32,
+    height: 32,
+    borderRadius: 6,
+    backgroundColor: '#ffffff', // Yellow button
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -1204,25 +1206,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flex: 1,
     backgroundColor: '#ffffff',
-    borderRadius: 8,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-    minWidth: 200,
+    borderRadius: 6,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    gap: 6,
+    minWidth: 180,
+    maxWidth: 220,
   },
   dateFilterText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
-    color: '#374151',
+    color: '#000000',
   },
   currentWeekButton: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 8,
-    backgroundColor: '#ffcc00', // Yellow button
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 6,
+    backgroundColor: '#ffffff', // Yellow button
+    minWidth: 100,
   },
   currentWeekButtonText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#1f2937', // Dark text on yellow
   },

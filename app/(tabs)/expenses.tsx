@@ -823,7 +823,7 @@ export default function ExpensesScreen() {
       case 'rejected':
         return '#ef4444';
       default:
-        return '#6b7280';
+        return '#000000';
     }
   };
 
@@ -855,7 +855,7 @@ export default function ExpensesScreen() {
       case 'project':
         return <Building2 size={20} color="#ef4444" />;
       default:
-        return <DollarSign size={20} color="#6b7280" />;
+        return <DollarSign size={20} color="#000000" />;
     }
   };
 
@@ -870,7 +870,7 @@ export default function ExpensesScreen() {
       case 'project':
         return '#ef4444';
       default:
-        return '#6b7280';
+        return '#000000';
     }
   };
 
@@ -914,7 +914,7 @@ export default function ExpensesScreen() {
           <Text style={styles.headerTitle}>Expenses</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
         </View>
       </View>
     );
@@ -962,20 +962,20 @@ export default function ExpensesScreen() {
         {/* Search Bar */}
         <View style={styles.searchContainer}>
           <View style={styles.searchInputContainer}>
-            <Search size={20} color="#6b7280" style={styles.searchIcon} />
+            <Search size={20} color="#000000" style={styles.searchIcon} />
             <TextInput
               style={styles.searchInput}
               placeholder="Search by invoice number, description, amount, vendor, subcontractor, project..."
               value={searchQuery}
               onChangeText={setSearchQuery}
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
             {searchQuery.length > 0 && (
               <TouchableOpacity
                 onPress={() => setSearchQuery('')}
                 style={styles.searchClearButton}
               >
-                <X size={18} color="#6b7280" />
+                <X size={18} color="#000000" />
               </TouchableOpacity>
             )}
           </View>
@@ -985,15 +985,15 @@ export default function ExpensesScreen() {
         <View style={styles.summaryContainer}>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Total Expenses</Text>
-            <Text style={styles.summaryAmount}>${totalExpenses.toLocaleString()}</Text>
+            <Text style={styles.summaryAmount} numberOfLines={1}>${totalExpenses.toLocaleString()}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Project Expenses</Text>
-            <Text style={[styles.summaryAmount, { color: '#ef4444' }]}>${projectExpenses.toLocaleString()}</Text>
+            <Text style={[styles.summaryAmount, { color: '#ef4444' }]} numberOfLines={1}>${projectExpenses.toLocaleString()}</Text>
           </View>
           <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>Office Expenses</Text>
-            <Text style={[styles.summaryAmount, { color: '#f59e0b' }]}>${officeExpenses.toLocaleString()}</Text>
+            <Text style={[styles.summaryAmount, { color: '#f59e0b' }]} numberOfLines={1}>${officeExpenses.toLocaleString()}</Text>
           </View>
         </View>
 
@@ -1004,19 +1004,19 @@ export default function ExpensesScreen() {
               style={[styles.filterTab, filterType === 'all' && styles.filterTabActive]}
               onPress={() => setFilterType('all')}
             >
-              <Text style={[styles.filterTabText, filterType === 'all' && styles.filterTabTextActive]}>All</Text>
+              <Text style={[styles.filterTabText, filterType === 'all' && styles.filterTabTextActive]} numberOfLines={1}>All</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, filterType === 'project' && styles.filterTabActive]}
               onPress={() => setFilterType('project')}
             >
-              <Text style={[styles.filterTabText, filterType === 'project' && styles.filterTabTextActive]}>Projects</Text>
+              <Text style={[styles.filterTabText, filterType === 'project' && styles.filterTabTextActive]} numberOfLines={1}>Projects</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, filterType === 'office' && styles.filterTabActive]}
               onPress={() => setFilterType('office')}
             >
-              <Text style={[styles.filterTabText, filterType === 'office' && styles.filterTabTextActive]}>Office</Text>
+              <Text style={[styles.filterTabText, filterType === 'office' && styles.filterTabTextActive]} numberOfLines={1}>Office</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1028,31 +1028,31 @@ export default function ExpensesScreen() {
               style={[styles.filterTab, statusFilter === 'all' && styles.filterTabActive]}
               onPress={() => setStatusFilter('all')}
             >
-              <Text style={[styles.filterTabText, statusFilter === 'all' && styles.filterTabTextActive]}>All Status</Text>
+              <Text style={[styles.filterTabText, statusFilter === 'all' && styles.filterTabTextActive]} numberOfLines={1}>All Status</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, statusFilter === 'pending' && styles.filterTabActive]}
               onPress={() => setStatusFilter('pending')}
             >
-              <Text style={[styles.filterTabText, statusFilter === 'pending' && styles.filterTabTextActive]}>Pending</Text>
+              <Text style={[styles.filterTabText, statusFilter === 'pending' && styles.filterTabTextActive]} numberOfLines={1}>Pending</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, statusFilter === 'approved' && styles.filterTabActive]}
               onPress={() => setStatusFilter('approved')}
             >
-              <Text style={[styles.filterTabText, statusFilter === 'approved' && styles.filterTabTextActive]}>Approved</Text>
+              <Text style={[styles.filterTabText, statusFilter === 'approved' && styles.filterTabTextActive]} numberOfLines={1}>Approved</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, statusFilter === 'paid' && styles.filterTabActive]}
               onPress={() => setStatusFilter('paid')}
             >
-              <Text style={[styles.filterTabText, statusFilter === 'paid' && styles.filterTabTextActive]}>Paid</Text>
+              <Text style={[styles.filterTabText, statusFilter === 'paid' && styles.filterTabTextActive]} numberOfLines={1}>Paid</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.filterTab, statusFilter === 'rejected' && styles.filterTabActive]}
               onPress={() => setStatusFilter('rejected')}
             >
-              <Text style={[styles.filterTabText, statusFilter === 'rejected' && styles.filterTabTextActive]}>Rejected</Text>
+              <Text style={[styles.filterTabText, statusFilter === 'rejected' && styles.filterTabTextActive]} numberOfLines={1}>Rejected</Text>
             </TouchableOpacity>
           </ScrollView>
         </View>
@@ -1064,14 +1064,14 @@ export default function ExpensesScreen() {
               <RefreshControl
                 refreshing={refreshing}
                 onRefresh={onRefresh}
-                tintColor="#236ecf"
+                tintColor="#000000"
               />
             ) : undefined
           }
         >
           {filteredExpenses.length === 0 ? (
             <View style={styles.emptyContainer}>
-              <DollarSign size={48} color="#9ca3af" />
+              <DollarSign size={48} color="#000000" />
               <Text style={styles.emptyText}>No expenses found</Text>
             </View>
           ) : (
@@ -1102,7 +1102,7 @@ export default function ExpensesScreen() {
                       )}
                       {expense.total_paid !== undefined && expense.total_paid > 0 && (
                         <View style={styles.paymentSummary}>
-                          <Text style={styles.paymentSummaryText}>
+                          <Text style={styles.paymentSummaryText} numberOfLines={1}>
                             Paid: ${expense.total_paid.toLocaleString()} / ${expense.amount.toLocaleString()}
                           </Text>
                           {expense.payments && expense.payments.length > 0 && (
@@ -1125,7 +1125,7 @@ export default function ExpensesScreen() {
                 </Text>
                 {expense.invoice_number && (
                   <View style={styles.invoiceNumberContainer}>
-                    <FileText size={14} color="#236ecf" />
+                    <FileText size={14} color="#000000" />
                     <Text style={styles.invoiceNumberText}>Invoice: {expense.invoice_number}</Text>
                   </View>
                 )}
@@ -1137,18 +1137,18 @@ export default function ExpensesScreen() {
                       </View>
                     ) : expense.project_name ? (
                       <View style={styles.projectBadge}>
-                        <Building2 size={12} color="#236ecf" />
+                        <Building2 size={12} color="#000000" />
                         <Text style={styles.projectBadgeText}>{expense.project_name}</Text>
                       </View>
                     ) : null}
                     {expense.subcontractor_name && (
-                      <Text style={styles.expenseMetaText}>Sub: {expense.subcontractor_name}</Text>
+                      <Text style={styles.expenseMetaText} numberOfLines={1}>Sub: {expense.subcontractor_name}</Text>
                     )}
                     {expense.vendor_name && (
-                      <Text style={styles.expenseMetaText}>Vendor: {expense.vendor_name}</Text>
+                      <Text style={styles.expenseMetaText} numberOfLines={1}>Vendor: {expense.vendor_name}</Text>
                     )}
                     {expense.step_name && (
-                      <Text style={styles.expenseMetaText}>Work Title: {expense.step_name}</Text>
+                      <Text style={styles.expenseMetaText} numberOfLines={1}>Work: {expense.step_name}</Text>
                     )}
                   </View>
                   <Text style={styles.expenseDate}>
@@ -1168,7 +1168,7 @@ export default function ExpensesScreen() {
                             }}
                           >
                             <CheckCircle size={16} color="#10b981" />
-                            <Text style={styles.approveButtonText}>Approve</Text>
+                            <Text style={styles.approveButtonText} numberOfLines={1}>Approve</Text>
                           </TouchableOpacity>
                           <TouchableOpacity
                             style={[styles.actionButton, styles.rejectButton]}
@@ -1179,7 +1179,7 @@ export default function ExpensesScreen() {
                             }}
                           >
                             <XCircle size={16} color="#ef4444" />
-                            <Text style={styles.rejectButtonText}>Reject</Text>
+                            <Text style={styles.rejectButtonText} numberOfLines={1}>Reject</Text>
                           </TouchableOpacity>
                         </>
                       )}
@@ -1193,7 +1193,7 @@ export default function ExpensesScreen() {
                           }}
                         >
                           <CreditCard size={16} color="#3b82f6" />
-                          <Text style={styles.payButtonText}>Record Payment</Text>
+                          <Text style={styles.payButtonText} numberOfLines={1}>Record Payment</Text>
                         </TouchableOpacity>
                       )}
                     </View>
@@ -1230,7 +1230,7 @@ export default function ExpensesScreen() {
               setShowCreateModal(false);
               resetNewExpense();
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -1390,7 +1390,7 @@ export default function ExpensesScreen() {
                 <Text style={styles.label}>Work Title (Optional)</Text>
                 {loadingSteps ? (
                   <View style={styles.loadingStepsContainer}>
-                    <ActivityIndicator size="small" color="#236ecf" />
+                    <ActivityIndicator size="small" color="#000000" />
                     <Text style={styles.loadingStepsText}>Loading work titles...</Text>
                   </View>
                 ) : (
@@ -1571,7 +1571,7 @@ export default function ExpensesScreen() {
                 <Text style={styles.dateText}>
                   {new Date(newExpense.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                 </Text>
-                <Calendar size={20} color="#6b7280" />
+                <Calendar size={20} color="#000000" />
               </TouchableOpacity>
               {showDatePicker && (
                 <DateTimePicker
@@ -1600,7 +1600,7 @@ export default function ExpensesScreen() {
                   onPress={handlePickImage}
                   disabled={uploadingDocument}
                 >
-                  <Paperclip size={18} color="#236ecf" />
+                  <Paperclip size={18} color="#000000" />
                   <Text style={styles.documentButtonText}>Add Image</Text>
                 </TouchableOpacity>
                 <TouchableOpacity
@@ -1608,13 +1608,13 @@ export default function ExpensesScreen() {
                   onPress={handlePickDocument}
                   disabled={uploadingDocument}
                 >
-                  <FileText size={18} color="#236ecf" />
+                  <FileText size={18} color="#000000" />
                   <Text style={styles.documentButtonText}>Add Document</Text>
                 </TouchableOpacity>
               </View>
               {uploadingDocument && (
                 <View style={styles.uploadingContainer}>
-                  <ActivityIndicator size="small" color="#236ecf" />
+                  <ActivityIndicator size="small" color="#000000" />
                   <Text style={styles.uploadingText}>Uploading...</Text>
                 </View>
               )}
@@ -1622,7 +1622,7 @@ export default function ExpensesScreen() {
                 <View style={styles.documentsList}>
                   {uploadedDocuments.map((doc) => (
                     <View key={doc.id} style={styles.documentItem}>
-                      <FileText size={16} color="#6b7280" />
+                      <FileText size={16} color="#000000" />
                       <Text style={styles.documentName} numberOfLines={1}>{doc.name}</Text>
                       <TouchableOpacity
                         style={styles.removeDocumentButton}
@@ -1653,7 +1653,7 @@ export default function ExpensesScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Expense Details</Text>
             <TouchableOpacity onPress={() => setShowDetailModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
           {selectedExpense && (
@@ -1821,7 +1821,7 @@ export default function ExpensesScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Record Payment</Text>
             <TouchableOpacity onPress={() => setShowPaymentModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
           {selectedExpense && (
@@ -1863,7 +1863,7 @@ export default function ExpensesScreen() {
                   <Text style={styles.dateText}>
                     {new Date(newPayment.payment_date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
                   </Text>
-                  <Calendar size={20} color="#6b7280" />
+                  <Calendar size={20} color="#000000" />
                 </TouchableOpacity>
               </View>
 
@@ -2066,7 +2066,7 @@ export default function ExpensesScreen() {
                 setShowPaymentDetailModal(false);
                 setSelectedPayment(null);
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.paymentDetailBody}>
@@ -2128,7 +2128,7 @@ export default function ExpensesScreen() {
                         onPress={handlePickPaymentImage}
                         disabled={uploadingPaymentDocument}
                       >
-                        <Upload size={18} color="#236ecf" />
+                        <Upload size={18} color="#000000" />
                         <Text style={styles.documentButtonText}>Add Image</Text>
                       </TouchableOpacity>
                       <TouchableOpacity
@@ -2136,13 +2136,13 @@ export default function ExpensesScreen() {
                         onPress={handlePickPaymentDocument}
                         disabled={uploadingPaymentDocument}
                       >
-                        <FileText size={18} color="#236ecf" />
+                        <FileText size={18} color="#000000" />
                         <Text style={styles.documentButtonText}>Add Document</Text>
                       </TouchableOpacity>
                     </View>
                     {uploadingPaymentDocument && (
                       <View style={styles.uploadingContainer}>
-                        <ActivityIndicator size="small" color="#236ecf" />
+                        <ActivityIndicator size="small" color="#000000" />
                         <Text style={styles.uploadingText}>Uploading...</Text>
                       </View>
                     )}
@@ -2150,7 +2150,7 @@ export default function ExpensesScreen() {
                       <View style={styles.documentsList}>
                         {paymentDocuments.map((doc) => (
                           <View key={doc.id} style={styles.documentItem}>
-                            <FileText size={16} color="#6b7280" />
+                            <FileText size={16} color="#000000" />
                             <Text style={styles.documentName} numberOfLines={1}>{doc.name}</Text>
                             <TouchableOpacity
                               onPress={() => {
@@ -2160,7 +2160,7 @@ export default function ExpensesScreen() {
                               }}
                               style={styles.viewDocumentButton}
                             >
-                              <Eye size={16} color="#236ecf" />
+                              <Eye size={16} color="#000000" />
                             </TouchableOpacity>
                             <TouchableOpacity
                               style={styles.removeDocumentButton}
@@ -2188,12 +2188,12 @@ export default function ExpensesScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingTop: Platform.OS === 'ios' ? 50 : 20,
     paddingHorizontal: 20,
     paddingBottom: 20,
@@ -2213,23 +2213,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00',
+    color: '#ffffff',
     marginBottom: 4,
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24',
+    fontSize: 14,
+    color: '#f5f5f5',
   },
   headerTitle: {
     flex: 1,
-    fontSize: 24,
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#000000',
   },
   addButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     width: Platform.OS === 'web' ? 40 : 44,
     height: Platform.OS === 'web' ? 40 : 44,
     borderRadius: Platform.OS === 'web' ? 20 : 8,
@@ -2255,25 +2255,29 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
     borderRadius: 12,
-    padding: 16,
+    padding: 12,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
-    borderColor: '#ffcc00', // Yellow border like other pages
+    borderColor: '#ffffff', // Yellow border like other pages
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
+    minHeight: 80,
   },
   summaryLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginBottom: 8,
+    fontSize: 11,
+    color: '#000000',
+    marginBottom: 6,
+    textAlign: 'center',
   },
   summaryAmount: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
     color: '#1f2937',
+    textAlign: 'center',
   },
   searchContainer: {
     paddingHorizontal: 16,
@@ -2303,27 +2307,31 @@ const styles = StyleSheet.create({
     marginLeft: 8,
   },
   filterContainer: {
-    flexDirection: 'row',
+    paddingVertical: 12,
     paddingHorizontal: 16,
-    paddingBottom: 16,
-    gap: 8,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
   },
   filterTab: {
-    paddingHorizontal: 20,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#e5e7eb',
+    marginRight: 8,
+    minWidth: 80,
   },
   filterTabActive: {
-    backgroundColor: '#ffcc00', // Yellow active tab like other pages
-    borderColor: '#ffcc00',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   filterTabText: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
+    textAlign: 'center',
   },
   filterTabTextActive: {
     color: '#ffffff',
@@ -2351,7 +2359,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow left border like notifications
+    borderLeftColor: '#ffffff', // Yellow left border like notifications
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -2375,25 +2383,25 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   expenseType: {
-    fontSize: 14,
+    fontSize: 12,
     fontWeight: '600',
     color: '#1f2937',
     marginBottom: 4,
   },
   expenseCategory: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: 11,
+    color: '#000000',
   },
   expenseAmountContainer: {
     alignItems: 'flex-end',
   },
   expenseAmount: {
-    fontSize: 20,
+    fontSize: 16,
     fontWeight: 'bold',
   },
   expenseDescription: {
-    fontSize: 14,
-    color: '#374151',
+    fontSize: 12,
+    color: '#000000',
     marginBottom: 8,
   },
   invoiceNumberContainer: {
@@ -2409,19 +2417,21 @@ const styles = StyleSheet.create({
   },
   invoiceNumberText: {
     fontSize: 12,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   expenseFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+    marginTop: 8,
   },
   expenseMeta: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
     flex: 1,
+    flexWrap: 'wrap',
   },
   officeBadge: {
     backgroundColor: '#fef3c7',
@@ -2446,15 +2456,16 @@ const styles = StyleSheet.create({
   projectBadgeText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   expenseMetaText: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: 11,
+    color: '#000000',
   },
   expenseDate: {
-    fontSize: 12,
-    color: '#9ca3af',
+    fontSize: 11,
+    color: '#000000',
+    marginLeft: 8,
   },
   expenseActions: {
     flexDirection: 'row',
@@ -2491,18 +2502,18 @@ const styles = StyleSheet.create({
   actionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 6,
-    paddingHorizontal: 12,
+    gap: 4,
+    paddingHorizontal: 10,
     paddingVertical: 6,
     borderRadius: 6,
     borderWidth: 1,
   },
   approveButton: {
-    backgroundColor: '#ffcc00', // Yellow button
-    borderColor: '#ffcc00',
+    backgroundColor: '#ffffff', // Yellow button
+    borderColor: '#ffffff',
   },
   approveButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#1f2937', // Dark text on yellow
   },
@@ -2511,16 +2522,18 @@ const styles = StyleSheet.create({
     borderColor: '#ef4444',
   },
   rejectButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#ef4444',
   },
   payButton: {
-    backgroundColor: '#ffcc00', // Yellow button
-    borderColor: '#ffcc00',
+    backgroundColor: '#ffffff', // Yellow button
+    borderColor: '#ffffff',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
   },
   payButtonText: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: '#1f2937', // Dark text on yellow
   },
@@ -2556,7 +2569,7 @@ const styles = StyleSheet.create({
   paymentInfoLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   paymentInfoValue: {
     fontSize: 14,
@@ -2577,13 +2590,13 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   paymentMethodButtonActive: {
-    backgroundColor: '#ffcc00', // Yellow active like other pages
-    borderColor: '#ffcc00',
+    backgroundColor: '#ffffff', // Yellow active like other pages
+    borderColor: '#ffffff',
   },
   paymentMethodButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   paymentMethodButtonTextActive: {
     color: '#1f2937', // Dark text on yellow
@@ -2618,7 +2631,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -2652,13 +2665,13 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   typeButtonActive: {
-    backgroundColor: '#ffcc00', // Yellow active like other pages
-    borderColor: '#ffcc00',
+    backgroundColor: '#ffffff', // Yellow active like other pages
+    borderColor: '#ffffff',
   },
   typeButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   typeButtonTextActive: {
     color: '#1f2937', // Dark text on yellow
@@ -2676,16 +2689,16 @@ const styles = StyleSheet.create({
     marginRight: 8,
   },
   categoryButtonActive: {
-    backgroundColor: '#ffcc00', // Yellow active like other pages
-    borderColor: '#ffcc00',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   categoryButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   categoryButtonTextActive: {
-    color: '#1f2937', // Dark text on yellow
+    color: '#ffffff',
   },
   radioButton: {
     flexDirection: 'row',
@@ -2697,7 +2710,7 @@ const styles = StyleSheet.create({
     height: 20,
     borderRadius: 10,
     borderWidth: 2,
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     marginRight: 12,
     justifyContent: 'center',
     alignItems: 'center',
@@ -2706,11 +2719,11 @@ const styles = StyleSheet.create({
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   radioLabel: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
   },
   projectList: {
     maxHeight: 200,
@@ -2725,13 +2738,13 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   projectOptionActive: {
-    backgroundColor: '#ffcc0020', // Light yellow background
+    backgroundColor: '#ffffff20', // Light yellow background
     borderLeftWidth: 3,
-    borderLeftColor: '#ffcc00', // Yellow left border
+    borderLeftColor: '#ffffff', // Yellow left border
   },
   projectOptionText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
   },
   projectOptionTextActive: {
     color: '#1f2937',
@@ -2742,7 +2755,7 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   submitButton: {
-    backgroundColor: '#ffcc00', // Yellow button like other pages
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 14,
     alignItems: 'center',
@@ -2766,7 +2779,7 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   detailValue: {
     fontSize: 14,
@@ -2795,7 +2808,7 @@ const styles = StyleSheet.create({
   },
   deleteModalText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 24,
   },
   deleteModalButtons: {
@@ -2817,7 +2830,7 @@ const styles = StyleSheet.create({
   deleteModalButtonCancelText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   deleteModalButtonDeleteText: {
     fontSize: 16,
@@ -2848,7 +2861,7 @@ const styles = StyleSheet.create({
   },
   paymentHistoryDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   paymentHistoryAmount: {
@@ -2859,12 +2872,12 @@ const styles = StyleSheet.create({
   },
   paymentHistoryMethod: {
     fontSize: 12,
-    color: '#374151',
+    color: '#000000',
     marginBottom: 4,
   },
   paymentHistoryPaidBy: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: '#000000',
   },
   paymentHistoryFooter: {
     flexDirection: 'row',
@@ -2881,7 +2894,7 @@ const styles = StyleSheet.create({
   paymentHistoryFooterLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   paymentHistoryFooterAmount: {
     fontSize: 16,
@@ -2902,19 +2915,22 @@ const styles = StyleSheet.create({
   documentItemText: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   paymentSummary: {
     marginTop: 4,
   },
   paymentSummaryText: {
-    fontSize: 12,
+    fontSize: 11,
     color: '#10b981',
     fontWeight: '600',
   },
   paymentCountText: {
+    fontSize: 10,
+    color: '#000000',
+    marginTop: 2,
     fontSize: 11,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
   },
   loadingStepsContainer: {
@@ -2928,7 +2944,7 @@ const styles = StyleSheet.create({
   },
   loadingStepsText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
   },
   paymentDetailOverlay: {
     flex: 1,
@@ -2977,7 +2993,7 @@ const styles = StyleSheet.create({
   documentButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#236ecf',
+    color: '#000000',
   },
   uploadingContainer: {
     flexDirection: 'row',
@@ -2990,7 +3006,7 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
   },
   documentsList: {
     marginTop: 8,
@@ -2998,7 +3014,7 @@ const styles = StyleSheet.create({
   documentName: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     marginLeft: 8,
   },
   viewDocumentButton: {

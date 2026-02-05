@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { View, StyleSheet, TouchableOpacity, Text, Modal, Dimensions, Image, Platform } from 'react-native';
+import { View, StyleSheet, TouchableOpacity, Text, Modal, Dimensions, Image as RNImage, Platform } from 'react-native';
 import Svg, { Path } from 'react-native-svg';
 import { X, Trash2 } from 'lucide-react-native';
 

@@ -389,7 +389,7 @@ export default function ReportsScreen() {
             </View>
           </View>
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#ffcc00" />
+            <ActivityIndicator size="large" color="#ffffff" />
             <Text style={styles.loadingText}>Loading reports...</Text>
           </View>
         </View>
@@ -440,12 +440,15 @@ export default function ReportsScreen() {
         showsVerticalScrollIndicator={true}
         showsHorizontalScrollIndicator={true}
         contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+        bounces={true}
+        alwaysBounceVertical={true}
+        scrollEventThrottle={16}
         refreshControl={
           Platform.OS !== 'web' ? (
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#236ecf"
+              tintColor="#000000"
             />
           ) : undefined
         }
@@ -604,7 +607,7 @@ export default function ReportsScreen() {
                 <View key={index} style={styles.monthlyCard}>
                   <View style={styles.monthlyHeader}>
                     <View style={styles.monthInfo}>
-                      <Calendar size={16} color="#6b7280" />
+                      <Calendar size={16} color="#000000" />
                       <Text style={styles.monthName}>{report.month}</Text>
                     </View>
                     <Text style={styles.monthProjects}>
@@ -648,15 +651,15 @@ export default function ReportsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header like other pages
+    backgroundColor: '#f5f5f5', // Darker blue header like other pages
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like other pages
+    borderBottomColor: '#ffffff', // Yellow border like other pages
   },
   headerTop: {
     flexDirection: 'row',
@@ -672,7 +675,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     color: '#ffffff',
@@ -685,12 +688,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28, // Increased font size like other pages
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like other pages
+    color: '#ffffff', // Yellow text like other pages
     marginBottom: 4,
   },
   subtitle: {
     fontSize: 16,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#f5f5f5', // Light yellow like other pages
   },
   content: {
     flex: 1,
@@ -710,7 +713,7 @@ const styles = StyleSheet.create({
   controlLabel: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#6b7280',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 0.6,
     marginBottom: 10,
@@ -731,12 +734,12 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   segmentItemActive: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   segmentText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: '#000000',
   },
   segmentTextActive: {
     color: '#ffffff',
@@ -757,13 +760,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   yearChipActive: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   yearChipText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#374151',
+    color: '#000000',
   },
   yearChipTextActive: {
     color: '#ffffff',
@@ -773,12 +776,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   accessDeniedText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffcc00', // Yellow text like other pages
+    color: '#ffffff', // Yellow text like other pages
     textAlign: 'center',
   },
   yearSelector: {
@@ -787,7 +790,7 @@ const styles = StyleSheet.create({
   yearLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 12,
   },
   yearButtons: {
@@ -804,13 +807,13 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedYearButton: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   yearButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   selectedYearButtonText: {
     color: '#ffffff',
@@ -848,7 +851,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   monthlyContainer: {
@@ -894,7 +897,7 @@ const styles = StyleSheet.create({
   },
   monthProjects: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   monthlyStats: {
@@ -915,7 +918,7 @@ const styles = StyleSheet.create({
   },
   monthlyStatLabel: {
     fontSize: 10,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   // Web-specific styles
@@ -927,7 +930,7 @@ const styles = StyleSheet.create({
   exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00', // Yellow button like other pages
+    backgroundColor: '#ffffff', // Yellow button like other pages
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -970,7 +973,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
@@ -985,7 +988,7 @@ const styles = StyleSheet.create({
   tableCell: {
     flex: 1,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   chartCell: {
     flex: 1,

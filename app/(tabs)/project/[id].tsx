@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, router, useNavigation } from 'expo-router';
-import { ArrowLeft, Pencil, Trash2, Clock, User, Plus, X, ChevronDown, ChevronRight, ChevronUp, Check, Package, FileText, Settings, ArrowRight, Folder, Database, CheckCircle2, MessageSquare } from 'lucide-react-native';
+import { Pencil, Trash2, Clock, User, Plus, X, ChevronDown, ChevronRight, ChevronUp, Check, Package, FileText, Settings, ArrowRight, Folder, Database, CheckCircle2, MessageSquare } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { useFocusEffect } from '@react-navigation/native';
 import { ProjectTimeline } from '@/components/ProjectTimeline';
 import { TodoList } from '@/components/TodoList';
@@ -26,6 +27,7 @@ import { ProjectService } from '@/services/projectService';
 import { CommentService } from '@/services/commentService';
 import { UserService } from '@/services/userService';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import SecondaryButton from '@/components/SecondaryButton';
 
 // Project will be loaded from Firebase
 
@@ -186,10 +188,10 @@ export default function ProjectDetailScreen() {
   
   const getCompletionStatusColor = (status?: string) => {
     switch (status) {
-      case 'pending': return '#6b7280'; // Gray
+      case 'pending': return '#000000'; // Gray
       case 'in_progress': return '#f59e0b'; // Orange
       case 'finished': return '#10b981'; // Green
-      default: return '#6b7280'; // Gray
+      default: return '#000000'; // Gray
     }
   };
   
@@ -251,6 +253,15 @@ export default function ProjectDetailScreen() {
       
       const projectData = await ProjectService.getProjectById(id as string);
       if (projectData) {
+        // Normalize status to pending | in_progress | completed (legacy approved/under_review etc.)
+        const normalizedStatus = (() => {
+          const s = projectData.status as string;
+          if (s === 'in_progress' || s === 'completed') return s;
+          if (s === 'approved' || s === 'active' || s === 'under_review') return 'in_progress';
+          if (s === 'archived' || s === 'rejected') return 'completed';
+          return 'pending';
+        })();
+        projectData.status = normalizedStatus as Project['status'];
         // Calculate and update progress based on work titles
         const calculatedProgress = calculateProjectProgress(projectData);
         projectData.progress_percentage = calculatedProgress;
@@ -731,7 +742,7 @@ export default function ProjectDetailScreen() {
       case 'client': return '#16a34a'; // Green
       case 'sales': return '#d97706'; // Orange
       case 'office': return '#7c3aed'; // Purple
-      default: return '#6b7280'; // Gray
+      default: return '#000000'; // Gray
     }
   };
 
@@ -1487,13 +1498,13 @@ export default function ProjectDetailScreen() {
     const getBorderColor = (status: string) => {
       switch (status) {
         case 'pending':
-          return '#9ca3af'; // Grey for pending
+          return '#000000'; // Grey for pending
         case 'in_progress':
           return '#f97316'; // Orange for in progress
         case 'finished':
           return '#22c55e'; // Green for finished
         default:
-          return '#9ca3af'; // Default grey
+          return '#000000'; // Default grey
       }
     };
     
@@ -1543,9 +1554,9 @@ export default function ProjectDetailScreen() {
                 style={styles.expandButton}
                 onPress={() => toggleStepExpansion(step.id)}>
                 {isExpanded ? (
-                  <ChevronDown size={20} color="#6b7280" />
+                  <ChevronDown size={20} color="#000000" />
                 ) : (
-                  <ChevronRight size={20} color="#6b7280" />
+                  <ChevronRight size={20} color="#000000" />
                 )}
               </TouchableOpacity>
             )}
@@ -1621,7 +1632,7 @@ export default function ProjectDetailScreen() {
                   }}
                   disabled={userRole === 'client'}
                   activeOpacity={0.7}>
-                  <Text style={getStatusTextStyle()}>
+                  <Text style={getStatusTextStyle()} numberOfLines={1}>
                     {t(status)}
                   </Text>
                 </TouchableOpacity>
@@ -1634,13 +1645,15 @@ export default function ProjectDetailScreen() {
                 <View style={styles.reorderButtons}>
                   <TouchableOpacity
                     style={styles.reorderButton}
-                    onPress={() => moveStepUp(step.id)}>
-                    <ChevronUp size={16} color="#6b7280" />
+                    onPress={() => moveStepUp(step.id)}
+                    activeOpacity={0.7}>
+                    <ChevronUp size={18} color="#000000" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.reorderButton}
-                    onPress={() => moveStepDown(step.id)}>
-                    <ChevronDown size={16} color="#6b7280" />
+                    onPress={() => moveStepDown(step.id)}
+                    activeOpacity={0.7}>
+                    <ChevronDown size={18} color="#000000" />
                   </TouchableOpacity>
                   <TouchableOpacity
                     style={[styles.reorderButton, styles.moveToPositionButton]}
@@ -1691,7 +1704,7 @@ export default function ProjectDetailScreen() {
               setSelectedParentStepId(step.id);
               setShowAddChildStepModal(true);
             }}>
-            <Plus size={16} color="#236ecf" />
+            <Plus size={16} color="#000000" />
             <Text style={styles.addChildStepText}>Add Work Description</Text>
           </TouchableOpacity>
           
@@ -1731,13 +1744,14 @@ export default function ProjectDetailScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#236ecf" />
-          </TouchableOpacity>
+          <BackButton 
+            color="#000000"
+            backgroundColor="rgba(35, 110, 207, 0.1)"
+          />
           <Text style={styles.headerTitle}>Project Details</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading project details...</Text>
         </View>
       </View>
@@ -1748,9 +1762,10 @@ export default function ProjectDetailScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={24} color="#236ecf" />
-          </TouchableOpacity>
+          <BackButton 
+            color="#000000"
+            backgroundColor="rgba(35, 110, 207, 0.1)"
+          />
           <Text style={styles.headerTitle}>Project Details</Text>
         </View>
         <View style={styles.errorContainer}>
@@ -1762,16 +1777,13 @@ export default function ProjectDetailScreen() {
 
   return (
     <View style={styles.container}>
+      <HamburgerMenu />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <View style={styles.backButtonInner}>
-            <ArrowLeft size={20} color="#ffffff" />
-          </View>
-        </TouchableOpacity>
+        <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
         <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle}>{project?.title || 'Project Details'}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>{project?.title || 'Project Details'}</Text>
           {project?.title && (
-            <Text style={styles.headerSubtitle}>Project Details</Text>
+            <Text style={styles.headerSubtitle} numberOfLines={1}>Project Details</Text>
           )}
         </View>
         <View style={styles.headerRightContainer}>
@@ -1855,7 +1867,7 @@ export default function ProjectDetailScreen() {
             }}
           >
             <View style={styles.headerButtonInner}>
-              <Pencil size={18} color="#ffffff" />
+              <Pencil size={18} color="#000000" />
             </View>
           </TouchableOpacity>
           )}
@@ -1865,13 +1877,10 @@ export default function ProjectDetailScreen() {
               onPress={() => setShowTodoModal(true)}
             >
               <View style={styles.headerButtonInner}>
-                <CheckCircle2 size={18} color="#ffffff" />
+                <CheckCircle2 size={18} color="#000000" />
               </View>
             </TouchableOpacity>
           )}
-          <View style={styles.hamburgerMenuContainer}>
-            <HamburgerMenu />
-          </View>
         </View>
       </View>
 
@@ -1897,25 +1906,41 @@ export default function ProjectDetailScreen() {
         style={styles.content} 
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContent}
-        bounces={false}
+        bounces={true}
         scrollEventThrottle={16}
+        contentInsetAdjustmentBehavior="automatic"
+        alwaysBounceVertical={true}
       >
         <View style={styles.projectCard}>
           <View style={styles.projectHeader}>
-            <Text style={styles.title}>{project?.title || 'Loading...'}</Text>
+            <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap', gap: 8 }}>
+              <Text style={styles.title}>{project?.title || 'Loading...'}</Text>
+              {project?.status && (
+                <View style={[styles.statusBadge, { backgroundColor: (() => {
+                  const s = project.status;
+                  if (s === 'completed') return '#059669';
+                  if (s === 'in_progress') return '#0ea5e9';
+                  return '#f59e0b';
+                })() }]}>
+                  <Text style={styles.statusBadgeText}>
+                    {project.status === 'completed' ? 'Completed' : project.status === 'in_progress' ? 'In Progress' : 'Pending'}
+                  </Text>
+                </View>
+              )}
+            </View>
             <Text style={styles.category}>{t(project?.category || '')}</Text>
             <Text style={styles.description}>{project?.description || ''}</Text>
             
             {/* Client and PM Information */}
             <View style={styles.projectInfoSection}>
               <View style={styles.infoRow}>
-                <User size={16} color="#6b7280" />
+                <User size={16} color="#000000" />
                 <Text style={styles.infoLabel}>Client:</Text>
                 <Text style={styles.infoValue}>{project?.client_name || 'N/A'}</Text>
               </View>
               
               <View style={styles.infoRow}>
-                <User size={16} color="#6b7280" />
+                <User size={16} color="#000000" />
                 <Text style={styles.infoLabel}>Project Manager:</Text>
                 <Text style={styles.infoValue}>
                   {project?.assigned_pms && project.assigned_pms.length > 0 
@@ -1950,7 +1975,7 @@ export default function ProjectDetailScreen() {
               </View>
               
               <View style={styles.infoRow}>
-                <Clock size={16} color="#6b7280" />
+                <Clock size={16} color="#000000" />
                 <Text style={styles.infoLabel}>Timeline:</Text>
                 <Text style={styles.infoValue}>
                   {project?.start_date ? formatDate(project.start_date) : 'N/A'} - {project?.deadline ? formatDate(project.deadline) : 'N/A'}
@@ -2058,17 +2083,17 @@ export default function ProjectDetailScreen() {
 
           <View style={styles.detailsGrid}>
             <View style={styles.detailCard}>
-              <Clock size={20} color="#236ecf" />
+              <Clock size={20} color="#000000" />
               <Text style={styles.detailLabel}>Start Date</Text>
               <Text style={styles.detailValue}>{project?.start_date ? formatDate(project.start_date) : 'N/A'}</Text>
             </View>
 
             <View style={styles.detailCard}>
-              <Clock size={20} color={isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#236ecf'} />
+              <Clock size={20} color={isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#000000'} />
               <Text style={styles.detailLabel}>Deadline</Text>
               <Text style={[
                 styles.detailValue,
-                { color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#236ecf' }
+                { color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#000000' }
               ]}>
                 {project?.deadline ? formatDate(project.deadline) : 'N/A'}
               </Text>
@@ -2089,7 +2114,7 @@ export default function ProjectDetailScreen() {
                 <TouchableOpacity
                   style={styles.addStepButton}
                   onPress={() => setShowAddStepModal(true)}>
-                  <Plus size={16} color="#236ecf" />
+                  <Plus size={16} color="#000000" />
                   <Text style={styles.addStepText}>Add Work Title</Text>
                 </TouchableOpacity>
               )}
@@ -2125,7 +2150,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.timelineSection}>
             <Text style={styles.sectionTitle}>Approved Change Orders</Text>
             <View style={{ gap: 8 }}>
-              <Text style={{ color: '#374151', fontWeight: '600' }}>
+              <Text style={{ color: '#000000', fontWeight: '600' }}>
                 Total Approved: ${approvedChangeOrdersTotal.toLocaleString()}
               </Text>
               {changeOrders
@@ -2142,7 +2167,7 @@ export default function ProjectDetailScreen() {
                         <View style={{ flex: 1 }}>
                           <Text style={{ color: '#1f2937', fontWeight: '700' }}>{o.title}</Text>
                           {o.description ? (
-                            <Text style={{ color: '#6b7280', marginTop: 2 }}>{o.description}</Text>
+                            <Text style={{ color: '#000000', marginTop: 2 }}>{o.description}</Text>
                           ) : null}
                         </View>
                         <View style={{ backgroundColor: `${statusColor}20`, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 12 }}>
@@ -2151,7 +2176,7 @@ export default function ProjectDetailScreen() {
                           </Text>
                         </View>
                       </View>
-                      <Text style={{ color: '#374151', marginTop: 6, fontWeight: '600' }}>Amount: ${amount.toLocaleString()}</Text>
+                      <Text style={{ color: '#000000', marginTop: 6, fontWeight: '600' }}>Amount: ${amount.toLocaleString()}</Text>
                       {/* Work Titles list styled like project work items */}
                       {(o.steps || []).filter(s => s.step_type === 'parent').map(parent => (
                         <View key={parent.id} style={styles.stepCard}>
@@ -2179,30 +2204,30 @@ export default function ProjectDetailScreen() {
                         </View>
                       ))}
                       <View style={{ marginTop: 8, gap: 4 }}>
-                        <Text style={{ color: '#6b7280' }}>Requested: {o.requested_date ? new Date(o.requested_date).toLocaleDateString() : '-'}</Text>
-                        <Text style={{ color: '#6b7280' }}>Requested by: {o.requested_by || '-'}</Text>
-                        <Text style={{ color: '#6b7280' }}>Approved: {o.approved_at ? new Date(o.approved_at).toLocaleDateString() : '-'}</Text>
-                        {o.approved_by ? <Text style={{ color: '#6b7280' }}>Approved by: {o.approved_by}</Text> : null}
-                        <Text style={{ color: '#6b7280' }}>Items: {(o.steps || []).filter(s => s.step_type === 'parent').length}</Text>
+                        <Text style={{ color: '#000000' }}>Requested: {o.requested_date ? new Date(o.requested_date).toLocaleDateString() : '-'}</Text>
+                        <Text style={{ color: '#000000' }}>Requested by: {o.requested_by || '-'}</Text>
+                        <Text style={{ color: '#000000' }}>Approved: {o.approved_at ? new Date(o.approved_at).toLocaleDateString() : '-'}</Text>
+                        {o.approved_by ? <Text style={{ color: '#000000' }}>Approved by: {o.approved_by}</Text> : null}
+                        <Text style={{ color: '#000000' }}>Items: {(o.steps || []).filter(s => s.step_type === 'parent').length}</Text>
                       </View>
                     </View>
                   );
                 })}
             </View>
-            <Text style={{ marginTop: 8, color: '#6b7280', fontStyle: 'italic' }}>Pending change orders are not included.</Text>
+            <Text style={{ marginTop: 8, color: '#000000', fontStyle: 'italic' }}>Pending change orders are not included.</Text>
           </View>
         )}
 
         {/* Chat Section */}
         <View style={styles.chatSection}>
           <View style={styles.chatSectionHeader}>
-            <MessageSquare size={20} color="#236ecf" />
+            <MessageSquare size={20} color="#000000" />
             <Text style={styles.sectionTitle}>Project Chat</Text>
           </View>
 
           {commentsLoading ? (
             <View style={styles.loadingComments}>
-              <ActivityIndicator size="small" color="#236ecf" />
+              <ActivityIndicator size="small" color="#000000" />
               <Text style={styles.loadingCommentsText}>Loading messages...</Text>
             </View>
           ) : comments && comments.length > 0 ? (
@@ -2264,12 +2289,27 @@ export default function ProjectDetailScreen() {
           <View style={styles.todoModalContent}>
             <View style={styles.todoModalHeader}>
               <Text style={styles.todoModalTitle}>To-Do List</Text>
-              <TouchableOpacity
-                onPress={() => setShowTodoModal(false)}
-                style={styles.todoModalCloseButton}
-              >
-                <X size={24} color="#374151" />
-              </TouchableOpacity>
+              <View style={styles.todoModalHeaderButtons}>
+                {userRole === 'admin' && (
+                  <TouchableOpacity
+                    onPress={() => {
+                      if (todoListRef.current) {
+                        todoListRef.current.openCreateModal();
+                      }
+                    }}
+                    style={styles.todoModalNewButton}
+                  >
+                    <Plus size={20} color="#ffffff" />
+                    <Text style={styles.todoModalNewButtonText}>New Todo</Text>
+                  </TouchableOpacity>
+                )}
+                <TouchableOpacity
+                  onPress={() => setShowTodoModal(false)}
+                  style={styles.todoModalCloseButton}
+                >
+                  <X size={24} color="#000000" />
+                </TouchableOpacity>
+              </View>
             </View>
             {id && (
               <View style={styles.todoModalBody}>
@@ -2279,7 +2319,8 @@ export default function ProjectDetailScreen() {
                   canCreate={userRole === 'admin'}
                   canEdit={userRole === 'admin' || userRole === 'pm'}
                   canDelete={userRole === 'admin'}
-                  hideCreateButton={false}
+                  hideCreateButton={true}
+                  hideHeader={true}
                 />
               </View>
             )}
@@ -2289,47 +2330,62 @@ export default function ProjectDetailScreen() {
 
       {/* Bottom Project Menu */}
       {id && (
-        <View style={styles.bottomMenu}>
+        <View 
+          style={styles.bottomMenu}
+          onStartShouldSetResponder={() => true}
+          onMoveShouldSetResponder={() => true}>
           <View style={styles.bottomMenuContainer}>
             <TouchableOpacity
               style={styles.bottomMenuItem}
-              onPress={() => id && router.push(`/(tabs)/project/${id}/schedule`)}>
+              onPress={() => id && router.push(`/(tabs)/project/${id}/schedule`)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Clock size={24} color="#059669" />
               <Text style={styles.bottomMenuText}>Schedule</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.bottomMenuItem}
-              onPress={() => id && router.push(`/(tabs)/project/${id}/materials`)}>
+              onPress={() => id && router.push(`/(tabs)/project/${id}/materials`)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Package size={24} color="#f59e0b" />
               <Text style={styles.bottomMenuText}>Materials</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.bottomMenuItem}
-              onPress={() => id && router.push(`/(tabs)/change-order?projectId=${id}`)}>
+              onPress={() => id && router.push(`/(tabs)/change-order?projectId=${id}`)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <FileText size={24} color="#8b5cf6" />
               <Text style={styles.bottomMenuText}>Change Orders</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.bottomMenuItem}
-              onPress={() => id && router.push(`/(tabs)/project/${id}/daily-logs`)}>
+              onPress={() => id && router.push(`/(tabs)/project/${id}/daily-logs`)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Clock size={24} color="#f59e0b" />
               <Text style={styles.bottomMenuText}>Daily Logs</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.bottomMenuItem}
-              onPress={() => id && router.push(`/(tabs)/project/${id}/documents`)}>
+              onPress={() => id && router.push(`/(tabs)/project/${id}/documents`)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
               <Folder size={24} color="#059669" />
               <Text style={styles.bottomMenuText}>Documents</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.bottomMenuItem}
-              onPress={() => setShowProjectSettingsModal(true)}>
-              <Settings size={24} color="#6b7280" />
+              onPress={() => setShowProjectSettingsModal(true)}
+              activeOpacity={0.7}
+              hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}>
+              <Settings size={24} color="#000000" />
               <Text style={styles.bottomMenuText}>Settings</Text>
             </TouchableOpacity>
           </View>
@@ -2353,7 +2409,7 @@ export default function ProjectDetailScreen() {
                   setSelectedWorkTitleFromList('');
                 }
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             
@@ -2427,7 +2483,7 @@ export default function ProjectDetailScreen() {
               setNewStep({ name: '', description: '', price: '' });
               setSelectedWorkTitleFromList('');
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2495,7 +2551,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Work Description</Text>
             <TouchableOpacity onPress={() => setShowAddChildStepModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2568,7 +2624,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Edit Notes</Text>
             <TouchableOpacity onPress={() => setShowEditNotesModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2603,7 +2659,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Edit Step</Text>
             <TouchableOpacity onPress={() => setShowEditStepModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2657,7 +2713,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Edit Work Description</Text>
             <TouchableOpacity onPress={() => setShowEditChildStepModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2700,7 +2756,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Send Message</Text>
             <TouchableOpacity onPress={() => setShowCommentModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2762,7 +2818,7 @@ export default function ProjectDetailScreen() {
               setShowPMAssignmentModal(false);
               setSelectedPMs([]);
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2811,8 +2867,8 @@ export default function ProjectDetailScreen() {
                       ]}
                       onPress={() => handleTogglePM(pm.id)}>
                       <View style={styles.pmInfo}>
-                        <Text style={styles.pmName}>{pm.name}</Text>
-                        <Text style={styles.pmEmail}>{pm.email}</Text>
+                        <Text style={[styles.pmName, isSelected && styles.selectedPMOptionText]}>{pm.name}</Text>
+                        <Text style={[styles.pmEmail, isSelected && styles.selectedPMOptionText]}>{pm.email}</Text>
                         {isCurrentlyAssigned && (
                           <Text style={styles.currentlyAssignedText}>Currently assigned</Text>
                         )}
@@ -2833,14 +2889,16 @@ export default function ProjectDetailScreen() {
           </ScrollView>
 
           <View style={styles.modalFooter}>
-            <TouchableOpacity
+            <SecondaryButton
               style={[styles.modalButton, styles.cancelButton]}
               onPress={() => {
                 setShowPMAssignmentModal(false);
                 setSelectedPMs([]);
-              }}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+              }}
+              textStyle={styles.cancelButtonText}
+            >
+              Cancel
+            </SecondaryButton>
             <TouchableOpacity
               style={[styles.modalButton, styles.confirmButton]}
               onPress={handleSavePMAssignment}>
@@ -2859,7 +2917,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Assign Client</Text>
             <TouchableOpacity onPress={() => setShowClientAssignmentModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -2907,11 +2965,13 @@ export default function ProjectDetailScreen() {
           </View>
 
           <View style={styles.modalFooter}>
-            <TouchableOpacity
+            <SecondaryButton
               style={[styles.modalButton, styles.cancelButton]}
-              onPress={() => setShowClientAssignmentModal(false)}>
-              <Text style={styles.cancelButtonText}>Cancel</Text>
-            </TouchableOpacity>
+              onPress={() => setShowClientAssignmentModal(false)}
+              textStyle={styles.cancelButtonText}
+            >
+              Cancel
+            </SecondaryButton>
             <TouchableOpacity
               style={[
                 styles.modalButton,
@@ -2948,22 +3008,22 @@ export default function ProjectDetailScreen() {
               <Text style={styles.deleteIconText}>⚠</Text>
             </View>
             
-            <Text style={styles.deleteTitle}>Silmek istediğinizden emin misiniz?</Text>
+            <Text style={styles.deleteTitle}>Are you sure you want to delete?</Text>
             <Text style={styles.deleteMessage}>
-              Bu adımı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              Are you sure you want to delete this step? This action cannot be undone.
             </Text>
             
             <View style={styles.deleteButtons}>
               <TouchableOpacity 
                 style={styles.cancelDeleteButton}
                 onPress={cancelDelete}>
-                <Text style={styles.cancelDeleteText}>İptal</Text>
+                <Text style={styles.cancelDeleteText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.confirmDeleteButton}
                 onPress={confirmDelete}>
-                <Text style={styles.confirmDeleteText}>Sil</Text>
+                <Text style={styles.confirmDeleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -2979,7 +3039,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Project Settings</Text>
             <TouchableOpacity onPress={() => setShowProjectSettingsModal(false)}>
-              <X size={24} color="#ffcc00" />
+              <X size={24} color="#ffffff" />
             </TouchableOpacity>
           </View>
 
@@ -3001,13 +3061,13 @@ export default function ProjectDetailScreen() {
                     setShowPMAssignmentModal(true);
                   }}>
                   <View style={styles.settingsItemIcon}>
-                    <User size={24} color="#236ecf" />
+                    <User size={24} color="#000000" />
                   </View>
                   <View style={styles.settingsItemContent}>
                     <Text style={styles.settingsItemTitle}>Assign Project Manager</Text>
                     <Text style={styles.settingsItemDescription}>Assign or change project manager</Text>
                   </View>
-                  <ArrowRight size={20} color="#6b7280" />
+                  <ArrowRight size={20} color="#000000" />
                 </TouchableOpacity>
               )}
 
@@ -3026,7 +3086,7 @@ export default function ProjectDetailScreen() {
                     <Text style={styles.settingsItemTitle}>Assign Client</Text>
                     <Text style={styles.settingsItemDescription}>Assign or change project client</Text>
                   </View>
-                  <ArrowRight size={20} color="#6b7280" />
+                  <ArrowRight size={20} color="#000000" />
                 </TouchableOpacity>
               )}
 
@@ -3055,7 +3115,40 @@ export default function ProjectDetailScreen() {
               
               <View style={styles.infoItem}>
                 <Text style={styles.infoLabel}>Status:</Text>
-                <Text style={styles.infoValue}>{project?.status}</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+                  <View style={[styles.statusBadge, { backgroundColor: (() => {
+                    const s = project?.status;
+                    if (s === 'completed') return '#059669';
+                    if (s === 'in_progress') return '#0ea5e9';
+                    return '#f59e0b';
+                  })() }]}>
+                    <Text style={styles.statusBadgeText}>
+                      {project?.status === 'completed' ? 'Completed' : project?.status === 'in_progress' ? 'In Progress' : 'Pending'}
+                    </Text>
+                  </View>
+                  {userRole === 'admin' && project?.status !== 'completed' && (
+                    <View style={{ flexDirection: 'row', gap: 6 }}>
+                      {(['pending', 'in_progress'] as const).map((st) => (
+                        <TouchableOpacity
+                          key={st}
+                          style={[styles.statusChangeButton, project?.status === st && styles.statusChangeButtonActive]}
+                          onPress={async () => {
+                            if (!project?.id || project.status === st) return;
+                            try {
+                              await ProjectService.updateProject(project.id, { status: st });
+                              setProject(prev => prev ? { ...prev, status: st } : null);
+                            } catch (e) {
+                              Alert.alert('Error', 'Failed to update status');
+                            }
+                          }}>
+                          <Text style={[styles.statusChangeButtonText, project?.status === st && styles.statusChangeButtonTextActive]}>
+                            {st === 'in_progress' ? 'In Progress' : 'Pending'}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </View>
+                  )}
+                </View>
               </View>
               
               <View style={styles.infoItem}>
@@ -3082,7 +3175,7 @@ export default function ProjectDetailScreen() {
             <TouchableOpacity 
               style={styles.closeButton}
               onPress={() => setShowDeleteProjectModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
             
             <View style={styles.deleteIcon}>
@@ -3181,7 +3274,7 @@ export default function ProjectDetailScreen() {
               });
               setEditWorkTitles([]);
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -3258,7 +3351,7 @@ export default function ProjectDetailScreen() {
                           }
                         }}
                       >
-                        <X size={16} color="#6b7280" />
+                        <X size={16} color="#000000" />
                       </TouchableOpacity>
                     </View>
                   ))}
@@ -3289,7 +3382,7 @@ export default function ProjectDetailScreen() {
                     style={styles.datePickerButton}
                     onPress={() => setShowEditStartDatePicker(true)}
                   >
-                    <Clock size={20} color="#6b7280" />
+                    <Clock size={20} color="#000000" />
                     <Text style={styles.datePickerText}>
                       {editProjectForm.start_date || 'Select Start Date'}
                     </Text>
@@ -3336,7 +3429,7 @@ export default function ProjectDetailScreen() {
                     style={styles.datePickerButton}
                     onPress={() => setShowEditDeadlinePicker(true)}
                   >
-                    <Clock size={20} color="#6b7280" />
+                    <Clock size={20} color="#000000" />
                     <Text style={styles.datePickerText}>
                       {editProjectForm.deadline || 'Select Deadline'}
                     </Text>
@@ -3856,7 +3949,7 @@ export default function ProjectDetailScreen() {
                 setShowClientSelectModal(false);
                 setClientSearchQuery('');
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             
@@ -3977,7 +4070,7 @@ export default function ProjectDetailScreen() {
                 setShowMoveStepModal(false);
                 setStepToMove(null);
               }}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             <View style={styles.modalContent}>
@@ -4019,14 +4112,16 @@ export default function ProjectDetailScreen() {
               </ScrollView>
             </View>
             <View style={styles.modalFooter}>
-              <TouchableOpacity
+              <SecondaryButton
                 style={[styles.modalButton, styles.cancelButton]}
                 onPress={() => {
                   setShowMoveStepModal(false);
                   setStepToMove(null);
-                }}>
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+                }}
+                textStyle={styles.cancelButtonText}
+              >
+                Cancel
+              </SecondaryButton>
             </View>
           </View>
         </View>
@@ -4041,7 +4136,7 @@ export default function ProjectDetailScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Work Titles</Text>
             <TouchableOpacity onPress={() => setShowWorkTitlesListModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
@@ -4064,7 +4159,7 @@ export default function ProjectDetailScreen() {
                       )}
                       <View style={[
                         styles.workTitleModalStatus,
-                        { backgroundColor: step.status === 'finished' ? '#10b981' : step.status === 'in_progress' ? '#f59e0b' : '#6b7280' }
+                        { backgroundColor: step.status === 'finished' ? '#10b981' : step.status === 'in_progress' ? '#f59e0b' : '#000000' }
                       ]}>
                         <Text style={styles.workTitleModalStatusText}>
                           {step.status === 'finished' ? 'Finished' : step.status === 'in_progress' ? 'In Progress' : 'Pending'}
@@ -4096,15 +4191,16 @@ export default function ProjectDetailScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background
+    backgroundColor: '#ffffff', // Blue background
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header like teams
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 16,
+    paddingRight: 60,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like teams
+    borderBottomColor: '#ffffff', // Yellow border like teams
     flexDirection: 'row',
     alignItems: 'center',
     shadowColor: '#000',
@@ -4117,9 +4213,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   backButtonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255, 255, 255, 0.2)',
     justifyContent: 'center',
     alignItems: 'center',
@@ -4128,15 +4224,16 @@ const styles = StyleSheet.create({
   },
   headerTitleContainer: {
     flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff',
+    color: '#000000',
   },
   headerSubtitle: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.7)',
+    fontSize: 11,
+    color: '#000000',
     marginTop: 2,
   },
   headerRightContainer: {
@@ -4148,14 +4245,14 @@ const styles = StyleSheet.create({
     marginRight: 0,
   },
   headerButtonInner: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(0, 0, 0, 0.06)',
     justifyContent: 'center',
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    borderColor: '#b0b0b0',
   },
   headerTodoButton: {
     marginRight: 0,
@@ -4165,6 +4262,8 @@ const styles = StyleSheet.create({
   },
   hamburgerMenuContainer: {
     marginLeft: 4,
+    zIndex: 10001,
+    elevation: 11,
   },
   todoModalOverlay: {
     flex: 1,
@@ -4176,6 +4275,9 @@ const styles = StyleSheet.create({
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '90%',
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: -2 },
     shadowOpacity: 0.25,
@@ -4197,6 +4299,26 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: '700',
     color: '#111827',
+    flex: 1,
+  },
+  todoModalHeaderButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+  },
+  todoModalNewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#3b82f6',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 8,
+  },
+  todoModalNewButtonText: {
+    color: '#ffffff',
+    fontWeight: '600',
+    fontSize: 14,
   },
   todoModalCloseButton: {
     width: 36,
@@ -4208,7 +4330,7 @@ const styles = StyleSheet.create({
   },
   todoModalBody: {
     flex: 1,
-    maxHeight: '85%',
+    minHeight: 400,
   },
   saveChangesBar: {
     backgroundColor: '#f59e0b',
@@ -4232,7 +4354,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   saveChangesButtonDisabled: {
-    backgroundColor: '#6b7280',
+    backgroundColor: '#000000',
   },
   saveChangesButtonText: {
     color: '#ffffff',
@@ -4242,7 +4364,7 @@ const styles = StyleSheet.create({
   headerTitleOld: {
     fontSize: 28, // Increased font size like teams
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#ffffff', // Yellow text like teams
     flex: 1,
   },
   headerActions: {
@@ -4252,16 +4374,14 @@ const styles = StyleSheet.create({
   actionButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#236ecf', // Blue button on dark blue header
+    backgroundColor: '#ffffff', // Blue button on dark blue header
   },
   content: {
     flex: 1,
-    padding: 20,
-    paddingBottom: 100, // Extra padding for mobile bottom menu
   },
   scrollContent: {
-    flexGrow: 1,
-    paddingBottom: 20,
+    padding: 20,
+    paddingBottom: 120, // Extra padding for mobile bottom menu + safe area
   },
   projectCard: {
     backgroundColor: '#ffffff',
@@ -4273,7 +4393,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   projectHeader: {
     marginBottom: 20,
@@ -4286,14 +4406,14 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 12,
-    color: '#ffcc00', // Yellow like teams
+    color: '#ffffff', // Yellow like teams
     fontWeight: '600',
     textTransform: 'uppercase',
     marginBottom: 8,
   },
   description: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     lineHeight: 24,
   },
   progressSection: {
@@ -4309,35 +4429,35 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   progressBar: {
     flex: 1,
     height: 12,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#d1d5db',
     borderRadius: 6,
     overflow: 'hidden',
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#ffcc00', // Yellow like teams
+    backgroundColor: '#000000',
     borderRadius: 6,
   },
   progressText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#1f2937', // Dark text on white background
+    color: '#000000',
     minWidth: 60,
     textAlign: 'right',
   },
   clientInfo: {
-    backgroundColor: '#ffffff', // White card like teams
+    backgroundColor: '#ffffff',
     padding: 12,
     borderRadius: 8,
     marginBottom: 16,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -4346,13 +4466,13 @@ const styles = StyleSheet.create({
   },
   clientLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
     marginBottom: 4,
   },
   clientName: {
     fontSize: 16,
-    color: '#1f2937',
+    color: '#000000',
     fontWeight: '600',
   },
   detailsGrid: {
@@ -4362,12 +4482,12 @@ const styles = StyleSheet.create({
   },
   detailCard: {
     flex: 1,
-    backgroundColor: '#ffffff', // White card like teams
+    backgroundColor: '#ffffff',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -4376,14 +4496,14 @@ const styles = StyleSheet.create({
   },
   detailLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 8,
     marginBottom: 4,
   },
   detailValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#1f2937',
+    color: '#000000',
     textAlign: 'center',
   },
   timelineSection: {
@@ -4396,13 +4516,13 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 4,
     elevation: 3,
-    borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1f2937', // Dark text on white background
+    color: '#000000',
     marginBottom: 16,
   },
   stepsSection: {
@@ -4417,7 +4537,7 @@ const styles = StyleSheet.create({
   addStepButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00', // Yellow button like teams
+    backgroundColor: '#ffffff', // Yellow button like teams
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
@@ -4434,7 +4554,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -4452,26 +4572,27 @@ const styles = StyleSheet.create({
   stepName: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     flex: 1,
     lineHeight: 18,
   },
   statusButtons: {
     flexDirection: 'row',
-    gap: 8,
+    gap: 6,
     flexWrap: 'wrap',
     alignItems: 'center',
   },
   statusButton: {
-    paddingHorizontal: 14,
-    paddingVertical: 10,
+    flex: 1,
+    paddingHorizontal: 10,
+    paddingVertical: 8,
     borderRadius: 8,
     backgroundColor: '#ffffff',
-    minWidth: 90,
+    minWidth: 100,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.1,
@@ -4479,35 +4600,39 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   activeStatusButton: {
-    backgroundColor: '#236ecf', // Mavi - pending
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff', // Mavi - pending
+    borderColor: '#000000',
   },
   activeStatusButtonText: {
     color: '#ffffff',
   },
   statusButtonText: {
-    fontSize: 13,
-    color: '#6b7280',
+    fontSize: 12,
+    color: '#000000',
     fontWeight: '700',
     textAlign: 'center',
   },
   // Status specific colors - Active (pressed/selected)
   pendingButton: {
-    backgroundColor: '#9ca3af', // Grey
-    borderColor: '#9ca3af',
+    flex: 1,
+    backgroundColor: '#000000', // Grey
+    borderColor: '#000000',
     borderWidth: 2,
-    shadowColor: '#9ca3af',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
+    minWidth: 100,
   },
   pendingButtonText: {
     color: '#ffffff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   inProgressButton: {
+    flex: 1,
     backgroundColor: '#f97316', // Orange
     borderColor: '#f97316',
     borderWidth: 2,
@@ -4516,13 +4641,16 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
+    minWidth: 100,
   },
   inProgressButtonText: {
     color: '#ffffff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   finishedButton: {
+    flex: 1,
     backgroundColor: '#22c55e', // Green
     borderColor: '#22c55e',
     borderWidth: 2,
@@ -4531,25 +4659,28 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 4,
     elevation: 4,
+    minWidth: 100,
   },
   finishedButtonText: {
     color: '#ffffff',
-    fontSize: 13,
+    fontSize: 12,
     fontWeight: '700',
+    textAlign: 'center',
   },
   clientStatusButton: {
+    flex: 1,
     backgroundColor: '#f3f4f6',
     borderColor: '#d1d5db',
     borderWidth: 1,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     paddingVertical: 8,
     borderRadius: 8,
-    minWidth: 80,
+    minWidth: 100,
     alignItems: 'center',
     justifyContent: 'center',
   },
   clientStatusButtonText: {
-    color: '#6b7280',
+    color: '#000000',
     fontSize: 12,
     fontWeight: '600',
     textAlign: 'center',
@@ -4577,12 +4708,12 @@ const styles = StyleSheet.create({
   },
   stepDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     lineHeight: 20,
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   modalHeader: {
     flexDirection: 'row',
@@ -4591,19 +4722,19 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border
+    borderBottomColor: '#b0b0b0',
   },
   modalTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#000000',
   },
   modalContent: {
     flex: 1,
     padding: 20,
-    backgroundColor: '#236ecf', // Blue background
+    backgroundColor: '#ffffff', // Blue background
   },
   modalScrollContent: {
     paddingBottom: 20,
@@ -4630,7 +4761,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#ffcc00', // Yellow button like teams
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
@@ -4669,8 +4800,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   stepCheckboxChecked: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   stepCheckboxDisabled: {
     opacity: 0.5,
@@ -4679,7 +4810,7 @@ const styles = StyleSheet.create({
     width: 16,
     height: 16,
     borderRadius: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
@@ -4692,31 +4823,31 @@ const styles = StyleSheet.create({
     borderColor: '#d1d5db',
   },
   disabledChildStepIndicator: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: '#000000',
     opacity: 0.5,
   },
   childStepName: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   childStepDescription: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#000000',
   },
   addChildStepButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 8,
     paddingVertical: 6,
     paddingHorizontal: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     borderRadius: 6,
-    alignSelf: 'flex-start',
   },
   addChildStepText: {
     fontSize: 12,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
     marginLeft: 4,
   },
@@ -4729,7 +4860,7 @@ const styles = StyleSheet.create({
   budgetPercentage: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
     backgroundColor: '#f0f9ff',
     paddingHorizontal: 8,
     paddingVertical: 2,
@@ -4755,12 +4886,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#f0f9ff',
     borderRadius: 8,
     borderLeftWidth: 4,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   budgetLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 4,
   },
   budgetAmount: {
@@ -4777,32 +4908,37 @@ const styles = StyleSheet.create({
   stepBudgetLabel: {
     fontSize: 12,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   stepBudgetAmount: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   stepActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
+    flexWrap: 'wrap',
   },
   editDeleteButtons: {
     flexDirection: 'row',
     gap: 4,
+    alignItems: 'center',
+    flexWrap: 'wrap',
   },
   editButton: {
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 4,
   },
   editButtonText: {
     fontSize: 10,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   deleteButton: {
@@ -4827,7 +4963,7 @@ const styles = StyleSheet.create({
   budgetSummaryTitle: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   budgetTotal: {
@@ -4859,7 +4995,7 @@ const styles = StyleSheet.create({
   },
   addCommentText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
     marginLeft: 4,
   },
@@ -4880,15 +5016,15 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
   },
   commentDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   commentText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
   },
   emptyComments: {
@@ -4899,12 +5035,12 @@ const styles = StyleSheet.create({
   },
   emptyCommentsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
   },
   emptyCommentsSubtext: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
     marginTop: 4,
   },
   loadingComments: {
@@ -4916,7 +5052,7 @@ const styles = StyleSheet.create({
   },
   loadingCommentsText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   chatSection: {
     margin: 20,
@@ -4948,7 +5084,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     borderLeftWidth: 3,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   chatMessageHeader: {
     marginBottom: 12,
@@ -4993,18 +5129,18 @@ const styles = StyleSheet.create({
   },
   chatMessageDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   chatMessageText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
   },
   chatInputButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 14,
     paddingHorizontal: 20,
     borderRadius: 12,
@@ -5018,7 +5154,7 @@ const styles = StyleSheet.create({
   },
   mentionHint: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
     marginBottom: 8,
   },
@@ -5033,7 +5169,7 @@ const styles = StyleSheet.create({
   mentionSuggestionsTitle: {
     fontSize: 13,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   mentionSuggestions: {
@@ -5105,7 +5241,7 @@ const styles = StyleSheet.create({
   },
   changeOrderDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 12,
     lineHeight: 20,
   },
@@ -5114,11 +5250,11 @@ const styles = StyleSheet.create({
   },
   changeOrderDetail: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   detailLabel: {
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   statusBadge: {
     paddingHorizontal: 8,
@@ -5128,6 +5264,31 @@ const styles = StyleSheet.create({
   statusText: {
     fontSize: 12,
     fontWeight: '600',
+  },
+  statusBadgeText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  statusChangeButton: {
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e5e5e5',
+    backgroundColor: '#ffffff',
+  },
+  statusChangeButtonActive: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  statusChangeButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000000',
+  },
+  statusChangeButtonTextActive: {
+    color: '#ffffff',
   },
   requestActions: {
     flexDirection: 'row',
@@ -5162,7 +5323,7 @@ const styles = StyleSheet.create({
   },
   emptyChangeOrdersText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
   },
   changeOrderPrice: {
@@ -5182,7 +5343,7 @@ const styles = StyleSheet.create({
   },
   changeOrderStepName: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   changeOrderStepPrice: {
@@ -5199,7 +5360,7 @@ const styles = StyleSheet.create({
   },
   assignPMButtonText: {
     fontSize: 12,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   assignClientButton: {
@@ -5233,8 +5394,8 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   selectedClientOption: {
-    backgroundColor: '#10b981',
-    borderColor: '#10b981',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   clientInfo: {
     flex: 1,
@@ -5247,12 +5408,12 @@ const styles = StyleSheet.create({
   },
   clientCompany: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   clientEmail: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: '#000000',
   },
   selectedClientText: {
     color: '#ffffff',
@@ -5266,7 +5427,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   selectedIndicatorText: {
-    color: '#10b981',
+    color: '#ffffff',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -5282,8 +5443,8 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   selectedPMOption: {
-    borderColor: '#236ecf',
-    backgroundColor: '#f0f9ff',
+    borderColor: '#000000',
+    backgroundColor: '#000000',
   },
   currentlyAssignedPM: {
     borderColor: '#10b981',
@@ -5295,12 +5456,15 @@ const styles = StyleSheet.create({
   pmName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 4,
   },
   pmEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
+  },
+  selectedPMOptionText: {
+    color: '#ffffff',
   },
   currentlyAssignedText: {
     fontSize: 12,
@@ -5319,12 +5483,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   checkboxSelected: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   helperText: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 16,
     fontStyle: 'italic',
   },
@@ -5337,7 +5501,7 @@ const styles = StyleSheet.create({
   assignedSectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 12,
   },
   assignedPMCard: {
@@ -5362,7 +5526,7 @@ const styles = StyleSheet.create({
   },
   assignedPMEmail: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   removePMButton: {
     padding: 8,
@@ -5385,15 +5549,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f3f4f6',
+    flex: 1,
   },
   cancelButtonText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
   },
   confirmButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
   },
   confirmButtonText: {
     fontSize: 16,
@@ -5404,7 +5567,7 @@ const styles = StyleSheet.create({
     width: 12,
     height: 12,
     borderRadius: 6,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   notesContainer: {
     marginTop: 12,
@@ -5412,34 +5575,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#f8fafc',
     borderRadius: 8,
     borderLeftWidth: 3,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   notesLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
     marginBottom: 4,
   },
   notesText: {
     fontSize: 13,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 18,
   },
   parentStepActions: {
     flexDirection: 'row',
+    alignItems: 'center',
     marginTop: 12,
     gap: 8,
   },
   editNotesButton: {
     paddingVertical: 6,
     paddingHorizontal: 8,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     borderRadius: 6,
-    alignSelf: 'flex-start',
   },
   editNotesText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '600',
   },
   expandButton: {
@@ -5455,21 +5620,31 @@ const styles = StyleSheet.create({
   },
   reorderButtons: {
     flexDirection: 'row',
-    marginRight: 8,
+    gap: 4,
+    alignItems: 'center',
   },
   reorderButton: {
-    padding: 4,
-    marginHorizontal: 2,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 4,
+    width: 32,
+    height: 32,
+    padding: 0,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
+    borderRadius: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   moveToPositionButton: {
     paddingHorizontal: 8,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
+    borderRadius: 6,
   },
   moveToPositionText: {
     fontSize: 12,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   moveStepModal: {
@@ -5494,7 +5669,7 @@ const styles = StyleSheet.create({
   },
   currentPositionOption: {
     backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     borderWidth: 2,
     opacity: 0.6,
   },
@@ -5504,12 +5679,12 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   currentPositionText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   currentPositionLabel: {
     fontSize: 12,
-    color: '#236ecf',
+    color: '#000000',
     fontStyle: 'italic',
     marginTop: 4,
   },
@@ -5543,7 +5718,7 @@ const styles = StyleSheet.create({
   },
   closeButtonText: {
     fontSize: 18,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   deleteIcon: {
@@ -5571,7 +5746,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -5591,7 +5766,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,
@@ -5615,7 +5790,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   errorContainer: {
     flex: 1,
@@ -5659,14 +5834,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelButton: {
-    backgroundColor: '#f3f4f6',
+    flex: 1,
   },
   cancelButtonText: {
-    color: '#374151',
     fontWeight: '500',
+    fontSize: 16,
   },
   confirmButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
   },
   disabledButton: {
     backgroundColor: '#d1d5db',
@@ -5676,7 +5851,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   disabledButtonText: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   projectInfoSection: {
     marginTop: 16,
@@ -5693,12 +5868,12 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     minWidth: 120,
   },
   infoValue: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
   },
   // Bottom Menu Styles
@@ -5712,6 +5887,8 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
     paddingBottom: 20,
     paddingTop: 10,
+    zIndex: 1,
+    elevation: 1,
   },
   bottomMenuContainer: {
     flexDirection: 'row',
@@ -5728,11 +5905,13 @@ const styles = StyleSheet.create({
     minWidth: 50,
     flex: 1,
     maxWidth: 80,
+    zIndex: 2,
+    elevation: 2,
   },
   bottomMenuText: {
     fontSize: 10,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
     textAlign: 'center',
   },
@@ -5743,7 +5922,7 @@ const styles = StyleSheet.create({
   settingsSectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text on blue background
+    color: '#ffffff', // Yellow text on blue background
     marginBottom: 16,
   },
   settingsItem: {
@@ -5760,7 +5939,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   dangerItem: {
     backgroundColor: '#fef2f2',
@@ -5789,7 +5968,7 @@ const styles = StyleSheet.create({
   },
   settingsItemDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   dangerText: {
     color: '#ef4444',
@@ -5809,7 +5988,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   // Date Picker Styles
   datePickerButton: {
@@ -5863,7 +6042,7 @@ const styles = StyleSheet.create({
   completeProjectHint: {
     marginTop: 12,
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     fontStyle: 'italic',
   },
@@ -5882,7 +6061,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     marginBottom: 24,
   },
@@ -5901,7 +6080,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,
@@ -5965,12 +6144,12 @@ const styles = StyleSheet.create({
   },
   successMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     marginBottom: 24,
   },
   successButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 32,
     paddingVertical: 12,
     borderRadius: 8,
@@ -5998,7 +6177,7 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -6019,7 +6198,7 @@ const styles = StyleSheet.create({
   },
   workTitleModalDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   workTitleModalPrice: {
@@ -6117,8 +6296,8 @@ const styles = StyleSheet.create({
     borderColor: '#e5e7eb',
   },
   selectedCategory: {
-    backgroundColor: '#eff6ff',
-    borderColor: '#236ecf',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
     borderWidth: 2,
   },
   categoryText: {
@@ -6127,14 +6306,14 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectedCategoryText: {
-    color: '#236ecf',
+    color: '#ffffff',
     fontWeight: '600',
   },
   selectedIndicator: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
@@ -6143,10 +6322,10 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   closeModalButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
@@ -6164,7 +6343,7 @@ const styles = StyleSheet.create({
     borderTopColor: '#e5e7eb',
   },
   doneButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 24,
     borderRadius: 8,
@@ -6179,7 +6358,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   doneButtonTextDisabled: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   checkbox: {
     width: 20,
@@ -6191,8 +6370,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   checkboxChecked: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   selectedClientsList: {
     flexDirection: 'row',
@@ -6213,7 +6392,7 @@ const styles = StyleSheet.create({
   },
   selectedClientTagText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '500',
   },
   percentageInputRow: {
@@ -6258,7 +6437,7 @@ const styles = StyleSheet.create({
   priceLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   priceInput: {
     flex: 1,

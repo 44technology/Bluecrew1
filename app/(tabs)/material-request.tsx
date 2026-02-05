@@ -14,7 +14,8 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, X, Calendar, User, Package, Hash, FileText, ShoppingCart, Truck, MapPin, CheckCircle, ArrowLeft, Eye, Edit, Send } from 'lucide-react-native';
+import { Plus, X, Calendar, User, Package, Hash, FileText, ShoppingCart, Truck, MapPin, CheckCircle, Eye, Edit, Send } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { MaterialRequest, Project, Vendor } from '@/types';
@@ -371,7 +372,7 @@ export default function MaterialRequestScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading material requests...</Text>
       </View>
     );
@@ -381,12 +382,10 @@ export default function MaterialRequestScreen() {
     <View style={styles.container}>
       <View style={styles.header}>
         <View style={styles.headerLeft}>
-          <TouchableOpacity 
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <ArrowLeft size={24} color="#236ecf" />
-          </TouchableOpacity>
+          <BackButton 
+            color="#000000"
+            backgroundColor="rgba(35, 110, 207, 0.1)"
+          />
           <View>
             <Text style={styles.title}>Material Requests</Text>
             {selectedProject && (
@@ -399,7 +398,7 @@ export default function MaterialRequestScreen() {
         </View>
         {(userRole === 'pm' || userRole === 'admin') && (
           <TouchableOpacity style={styles.addButton} onPress={() => setShowAddModal(true)}>
-            <Plus size={20} color="#236ecf" />
+            <Plus size={20} color="#ffffff" />
             <Text style={styles.addButtonText}>Add Request</Text>
           </TouchableOpacity>
         )}
@@ -413,7 +412,7 @@ export default function MaterialRequestScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#236ecf"
+              tintColor="#000000"
             />
           ) : undefined
         }
@@ -437,7 +436,7 @@ export default function MaterialRequestScreen() {
                       setSelectedRequest(request);
                       setShowDetailModal(true);
                     }}>
-                    <Eye size={18} color="#236ecf" />
+                    <Eye size={18} color="#000000" />
                   </TouchableOpacity>
                   <View style={[styles.statusBadge, styles[`${request.status}Badge`]]}>
                     <Text style={[styles.statusText, styles[`${request.status}Text`]]}>
@@ -449,23 +448,23 @@ export default function MaterialRequestScreen() {
 
             <View style={styles.requestDetails}>
               <View style={styles.detailRow}>
-                  <Package size={16} color="#6b7280" />
+                  <Package size={16} color="#000000" />
                   <Text style={styles.detailText}>Quantity: {request.quantity}</Text>
               </View>
               
               <View style={styles.detailRow}>
-                  <Hash size={16} color="#6b7280" />
+                  <Hash size={16} color="#000000" />
                   <Text style={styles.detailText}>Project: {request.project_name}</Text>
               </View>
               
               <View style={styles.detailRow}>
-                <Calendar size={16} color="#6b7280" />
+                <Calendar size={16} color="#000000" />
                   <Text style={styles.detailText}>Delivery: {request.delivery_date}</Text>
               </View>
               
                 {request.sub_contractor && (
               <View style={styles.detailRow}>
-                    <User size={16} color="#6b7280" />
+                    <User size={16} color="#000000" />
                     <Text style={styles.detailText}>
                       Vendor: {request.sub_contractor}
                     </Text>
@@ -474,7 +473,7 @@ export default function MaterialRequestScreen() {
               
                 {request.purchase_status && (
                 <View style={styles.detailRow}>
-                  <ShoppingCart size={16} color="#6b7280" />
+                  <ShoppingCart size={16} color="#000000" />
                     <Text style={styles.detailText}>
                       Status: {request.purchase_status.charAt(0).toUpperCase() + request.purchase_status.slice(1)}
                   </Text>
@@ -483,21 +482,21 @@ export default function MaterialRequestScreen() {
               
               {request.purchase_date && (
                 <View style={styles.detailRow}>
-                  <Calendar size={16} color="#6b7280" />
+                  <Calendar size={16} color="#000000" />
                     <Text style={styles.detailText}>Ordered: {new Date(request.purchase_date).toLocaleDateString()}</Text>
                 </View>
               )}
               
               {request.shipping_date && (
                 <View style={styles.detailRow}>
-                  <Truck size={16} color="#6b7280" />
+                  <Truck size={16} color="#000000" />
                     <Text style={styles.detailText}>Shipped: {new Date(request.shipping_date).toLocaleDateString()}</Text>
                   </View>
                 )}
                 
                 {request.delivery_date_actual && (
                   <View style={styles.detailRow}>
-                    <MapPin size={16} color="#6b7280" />
+                    <MapPin size={16} color="#000000" />
                     <Text style={styles.detailText}>Delivered: {new Date(request.delivery_date_actual).toLocaleDateString()}</Text>
                 </View>
               )}
@@ -511,9 +510,15 @@ export default function MaterialRequestScreen() {
                     style={[styles.actionButton, styles.editButton]}
                     onPress={() => {
                       setEditingRequest(request);
+                      setEditRequest({
+                        quantity: request.quantity,
+                        description: request.description,
+                        delivery_date: request.delivery_date,
+                        vendor_id: request.vendor_id || '',
+                      });
                       setShowEditModal(true);
                     }}>
-                    <Edit size={16} color="#236ecf" />
+                    <Edit size={16} color="#000000" />
                     <Text style={styles.editButtonText}>Edit</Text>
                   </TouchableOpacity>
                   <TouchableOpacity
@@ -523,6 +528,25 @@ export default function MaterialRequestScreen() {
                     <Text style={styles.sendApprovalButtonText}>Send for Approval</Text>
                   </TouchableOpacity>
                 </>
+              )}
+              
+              {/* Admin can edit any pending or approved request */}
+              {userRole === 'admin' && (request.status === 'pending' || request.status === 'approved') && !request.change_request_at && (
+                <TouchableOpacity
+                  style={[styles.actionButton, styles.editButton]}
+                  onPress={() => {
+                    setEditingRequest(request);
+                    setEditRequest({
+                      quantity: request.quantity,
+                      description: request.description,
+                      delivery_date: request.delivery_date,
+                      vendor_id: request.vendor_id || '',
+                    });
+                    setShowEditModal(true);
+                  }}>
+                  <Edit size={16} color="#000000" />
+                  <Text style={styles.editButtonText}>Edit</Text>
+                </TouchableOpacity>
               )}
               
               {/* Admin can request changes - only if status is pending and no change request exists */}
@@ -559,7 +583,7 @@ export default function MaterialRequestScreen() {
                         style={[styles.actionButton, styles.approveButton]}
                         onPress={() => handleApproveRequest(request.id)}
                       >
-                        <CheckCircle size={16} color="#236ecf" />
+                        <CheckCircle size={16} color="#000000" />
                         <Text style={styles.approveButtonText}>Approve</Text>
                       </TouchableOpacity>
                       
@@ -567,7 +591,7 @@ export default function MaterialRequestScreen() {
                         style={[styles.actionButton, styles.rejectButton]}
                         onPress={() => handleRejectRequest(request.id)}
                       >
-                        <X size={16} color="#236ecf" />
+                        <X size={16} color="#000000" />
                         <Text style={styles.rejectButtonText}>Reject</Text>
                       </TouchableOpacity>
                     </>
@@ -582,7 +606,7 @@ export default function MaterialRequestScreen() {
                           style={styles.orderedButton}
                           onPress={() => handleMarkAsOrdered(request.id)}
                         >
-                          <ShoppingCart size={16} color="#236ecf" />
+                          <ShoppingCart size={16} color="#000000" />
                           <Text style={styles.orderedButtonText}>Ordered</Text>
                     </TouchableOpacity>
                   )}
@@ -592,7 +616,7 @@ export default function MaterialRequestScreen() {
                           style={styles.shippedButton}
                           onPress={() => handleMarkAsShipped(request.id)}
                         >
-                          <Truck size={16} color="#236ecf" />
+                          <Truck size={16} color="#000000" />
                           <Text style={styles.shippedButtonText}>Shipped</Text>
                     </TouchableOpacity>
                   )}
@@ -602,7 +626,7 @@ export default function MaterialRequestScreen() {
                           style={styles.deliveredButton}
                           onPress={() => handleMarkAsDelivered(request.id)}
                         >
-                          <MapPin size={16} color="#236ecf" />
+                          <MapPin size={16} color="#000000" />
                           <Text style={styles.deliveredButtonText}>Delivered</Text>
                     </TouchableOpacity>
                   )}
@@ -628,7 +652,7 @@ export default function MaterialRequestScreen() {
               setShowAddModal(false);
               setFieldErrors({});
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -735,7 +759,7 @@ export default function MaterialRequestScreen() {
                     }
                   }}
                 >
-                  <Calendar size={20} color="#6b7280" />
+                  <Calendar size={20} color="#000000" />
                   <Text style={styles.datePickerText}>
                     {newRequest.delivery_date || 'Select date'}
                   </Text>
@@ -828,7 +852,7 @@ export default function MaterialRequestScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Material Request Details</Text>
             <TouchableOpacity onPress={() => setShowDetailModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -840,20 +864,20 @@ export default function MaterialRequestScreen() {
                 
                 <View style={styles.detailInfo}>
                   <View style={styles.detailRow}>
-                    <Package size={16} color="#6b7280" />
+                    <Package size={16} color="#000000" />
                     <Text style={styles.detailLabel}>Quantity:</Text>
                     <Text style={styles.detailValue}>{selectedRequest.quantity}</Text>
                   </View>
                   
                   <View style={styles.detailRow}>
-                    <Calendar size={16} color="#6b7280" />
+                    <Calendar size={16} color="#000000" />
                     <Text style={styles.detailLabel}>Delivery Date:</Text>
                     <Text style={styles.detailValue}>{selectedRequest.delivery_date}</Text>
                   </View>
 
                   {selectedRequest.sub_contractor && (
                     <View style={styles.detailRow}>
-                      <User size={16} color="#6b7280" />
+                      <User size={16} color="#000000" />
                       <Text style={styles.detailLabel}>Vendor:</Text>
                       <Text style={styles.detailValue}>
                         {selectedRequest.sub_contractor}
@@ -863,7 +887,7 @@ export default function MaterialRequestScreen() {
 
                   {selectedRequest.purchase_status && (
                     <View style={styles.detailRow}>
-                      <ShoppingCart size={16} color="#6b7280" />
+                      <ShoppingCart size={16} color="#000000" />
                       <Text style={styles.detailLabel}>Purchase Status:</Text>
                       <Text style={styles.detailValue}>
                         {selectedRequest.purchase_status.charAt(0).toUpperCase() + selectedRequest.purchase_status.slice(1)}
@@ -873,7 +897,7 @@ export default function MaterialRequestScreen() {
 
                   {selectedRequest.purchase_date && (
                     <View style={styles.detailRow}>
-                      <Calendar size={16} color="#6b7280" />
+                      <Calendar size={16} color="#000000" />
                       <Text style={styles.detailLabel}>Ordered:</Text>
                       <Text style={styles.detailValue}>{new Date(selectedRequest.purchase_date).toLocaleDateString()}</Text>
                     </View>
@@ -881,7 +905,7 @@ export default function MaterialRequestScreen() {
 
                   {selectedRequest.shipping_date && (
                     <View style={styles.detailRow}>
-                      <Truck size={16} color="#6b7280" />
+                      <Truck size={16} color="#000000" />
                       <Text style={styles.detailLabel}>Shipped:</Text>
                       <Text style={styles.detailValue}>{new Date(selectedRequest.shipping_date).toLocaleDateString()}</Text>
                     </View>
@@ -889,7 +913,7 @@ export default function MaterialRequestScreen() {
 
                   {selectedRequest.delivery_date_actual && (
                     <View style={styles.detailRow}>
-                      <MapPin size={16} color="#6b7280" />
+                      <MapPin size={16} color="#000000" />
                       <Text style={styles.detailLabel}>Delivered:</Text>
                       <Text style={styles.detailValue}>{new Date(selectedRequest.delivery_date_actual).toLocaleDateString()}</Text>
                     </View>
@@ -901,18 +925,18 @@ export default function MaterialRequestScreen() {
                       <View style={styles.changeRequestSection}>
                         <Text style={styles.changeRequestSectionTitle}>Change Request Details</Text>
                         <View style={styles.detailRow}>
-                          <User size={16} color="#6b7280" />
+                          <User size={16} color="#000000" />
                           <Text style={styles.detailLabel}>Requested by:</Text>
                           <Text style={styles.detailValue}>{selectedRequest.change_request_by_name || 'Admin'}</Text>
                         </View>
                         <View style={styles.detailRow}>
-                          <Calendar size={16} color="#6b7280" />
+                          <Calendar size={16} color="#000000" />
                           <Text style={styles.detailLabel}>Requested on:</Text>
                           <Text style={styles.detailValue}>{new Date(selectedRequest.change_request_at).toLocaleDateString()}</Text>
                         </View>
                         {selectedRequest.change_request_reason && (
                           <View style={styles.detailRow}>
-                            <FileText size={16} color="#6b7280" />
+                            <FileText size={16} color="#000000" />
                             <Text style={styles.detailLabel}>Reason:</Text>
                             <Text style={styles.detailValue}>{selectedRequest.change_request_reason}</Text>
                           </View>
@@ -933,7 +957,7 @@ export default function MaterialRequestScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   header: {
     flexDirection: 'row',
@@ -942,9 +966,9 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header like teams
+    backgroundColor: '#f5f5f5', // Darker blue header like teams
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
   },
   headerLeft: {
     flexDirection: 'row',
@@ -958,29 +982,29 @@ const styles = StyleSheet.create({
   projectName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fbbf24',
+    color: '#f5f5f5',
     marginBottom: 4,
   },
   title: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#ffffff',
   },
   subtitle: {
-    fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
+    fontSize: 14,
+    color: '#f5f5f5',
     marginTop: 4,
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00', // Yellow button
+    backgroundColor: '#000000',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
   },
   addButtonText: {
-    color: '#236ecf', // Blue text on yellow button
+    color: '#000000', // Blue text on yellow button
     fontWeight: '600',
     marginLeft: 8,
   },
@@ -1000,7 +1024,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   requestHeader: {
     flexDirection: 'row',
@@ -1052,7 +1076,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   adminActions: {
     flexDirection: 'row',
@@ -1092,7 +1116,7 @@ const styles = StyleSheet.create({
   deleteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#6b7280',
+    backgroundColor: '#000000',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -1112,12 +1136,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#000000',
     textAlign: 'center',
   },
   modalContainer: {
@@ -1148,7 +1172,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1175,14 +1199,14 @@ const styles = StyleSheet.create({
   },
   selectedProject: {
     backgroundColor: '#dbeafe',
-    borderColor: '#236ecf',
+    borderColor: '#000000',
   },
   projectText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
   },
   selectedProjectText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   datePickerButton: {
@@ -1196,7 +1220,7 @@ const styles = StyleSheet.create({
   },
   datePickerText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     marginLeft: 8,
   },
   webDateInput: {
@@ -1208,7 +1232,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fff',
   },
   submitButton: {
-    backgroundColor: '#236ecf', // Blue button
+    backgroundColor: '#000000',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -1232,15 +1256,15 @@ const styles = StyleSheet.create({
   },
   dropdownText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   dropdownIcon: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginLeft: 8,
   },
   modalOverlay: {
@@ -1271,7 +1295,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 24,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   dropdownList: {
@@ -1290,16 +1314,16 @@ const styles = StyleSheet.create({
   },
   vendorRepName: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 2,
   },
   vendorEmail: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
   },
   noVendorsText: {
     fontSize: 14,
-    color: '#9ca3af',
+    color: '#000000',
     textAlign: 'center',
     padding: 20,
     fontStyle: 'italic',
@@ -1308,7 +1332,7 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf', // Blue background
+    backgroundColor: '#ffffff', // Blue background
   },
   loadingText: {
     marginTop: 10,
@@ -1391,15 +1415,15 @@ const styles = StyleSheet.create({
   editButton: {
     backgroundColor: '#f0f9ff',
     borderWidth: 1,
-    borderColor: '#236ecf',
+    borderColor: '#000000',
   },
   editButtonText: {
-    color: '#236ecf',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },
   sendApprovalButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   sendApprovalButtonText: {
     color: '#ffffff',
@@ -1428,12 +1452,12 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginLeft: 8,
   },
   detailValue: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
     marginLeft: 8,
   },
@@ -1506,7 +1530,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   cancelChangeRequestButtonText: {
-    color: '#374151',
+    color: '#000000',
     fontSize: 14,
     fontWeight: '600',
   },

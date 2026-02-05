@@ -21,13 +21,13 @@ export const ProjectTimeline: React.FC<ProjectTimelineProps> = ({
   const getStepColor = (status: ProjectStep['status']) => {
     switch (status) {
       case 'pending':
-        return '#9ca3af'; // Grey for pending
+        return '#000000'; // Grey for pending
       case 'in_progress':
         return '#f97316'; // Orange for in progress
       case 'finished':
         return '#22c55e'; // Green for finished
       default:
-        return '#9ca3af'; // Default grey
+        return '#000000'; // Default grey
     }
   };
 
@@ -266,7 +266,7 @@ const styles = StyleSheet.create({
   progressLabel: {
     fontSize: 9,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 2,
     textAlign: 'center',
   },

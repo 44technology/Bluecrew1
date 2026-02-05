@@ -16,7 +16,7 @@ export const UserRoleSelector: React.FC = () => {
           userRole === 'client' ? styles.activeButton : styles.inactiveButton
         ]}
         onPress={() => setUserRole('client')}>
-        <User size={16} color={userRole === 'client' ? '#ffffff' : '#6b7280'} />
+        <User size={16} color={userRole === 'client' ? '#ffffff' : '#000000'} />
         <Text style={[
           styles.roleText,
           userRole === 'client' ? styles.activeText : styles.inactiveText
@@ -31,7 +31,7 @@ export const UserRoleSelector: React.FC = () => {
           userRole === 'pm' ? styles.activeButton : styles.inactiveButton
         ]}
         onPress={() => setUserRole('pm')}>
-        <Settings size={16} color={userRole === 'pm' ? '#ffffff' : '#6b7280'} />
+        <Settings size={16} color={userRole === 'pm' ? '#ffffff' : '#000000'} />
         <Text style={[
           styles.roleText,
           userRole === 'pm' ? styles.activeText : styles.inactiveText
@@ -59,7 +59,7 @@ const styles = StyleSheet.create({
     marginHorizontal: 2,
   },
   activeButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   inactiveButton: {
     backgroundColor: 'transparent',
@@ -73,6 +73,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
   },
   inactiveText: {
-    color: '#6b7280',
+    color: '#000000',
   },
 });

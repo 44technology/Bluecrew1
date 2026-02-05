@@ -14,6 +14,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<boolean>;
   logout: () => Promise<void>;
   register: (userData: Omit<User, 'id' | 'created_at'>) => Promise<boolean>;
+  refreshUser: () => Promise<void>;
   isLoading: boolean;
 }
 
@@ -67,6 +68,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
               name: userProfile.name,
               email: userProfile.email,
               role: userProfile.role,
+              company_id: userProfile.company_id,
               created_at: userProfile.created_at,
             };
             
@@ -95,6 +97,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                     name: userProfile.name,
                     email: userProfile.email,
                     role: userProfile.role,
+                    company_id: userProfile.company_id,
                     created_at: userProfile.created_at,
                   };
                   
@@ -161,16 +164,37 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       await AuthService.signUp(userData.email, userData.password!, {
         name: userData.name,
         role: userData.role as 'admin' | 'pm' | 'client',
-        company: userData.company || undefined, // Only include if has value
-        phone: userData.phone || undefined, // Only include if has value
+        company: userData.company || undefined,
+        phone: userData.phone || undefined,
       });
       
-      // Firebase auth state listener will handle the rest
       router.replace('/projects');
       return true;
     } catch (error) {
       console.error('Registration error:', error);
       return false;
+    }
+  };
+
+  const refreshUser = async () => {
+    const firebaseUser = auth.currentUser;
+    if (!firebaseUser) return;
+    try {
+      const userProfile = await AuthService.getUserProfile(firebaseUser.uid);
+      const userData: User = {
+        id: userProfile.id,
+        name: userProfile.name,
+        email: userProfile.email,
+        role: userProfile.role,
+        company_id: userProfile.company_id,
+        created_at: userProfile.created_at,
+      };
+      setUser(userData);
+      setUserRole(userProfile.role);
+      await AsyncStorage.setItem('user', JSON.stringify(userData));
+      await AsyncStorage.setItem('userRole', userProfile.role);
+    } catch (e) {
+      console.error('Refresh user error:', e);
     }
   };
 
@@ -192,6 +216,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
       login,
       logout,
       register,
+      refreshUser,
       isLoading 
     }}>
       {children}

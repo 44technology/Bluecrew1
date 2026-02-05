@@ -28,6 +28,7 @@ import {
   Clock,
   AlertCircle,
 } from 'lucide-react-native';
+import SecondaryButton from '@/components/SecondaryButton';
 import { TodoItem, TodoComment, TodoChecklistItem } from '@/types';
 import { TodoService } from '@/services/todoService';
 import { ImageDrawing } from './ImageDrawing';
@@ -255,6 +256,23 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     }
   };
 
+  const handleStatusChange = async (newStatus: 'pending' | 'in_progress' | 'completed') => {
+    try {
+      if (newStatus === 'completed') {
+        await TodoService.completeTodo(
+          todo.id,
+          user?.id || '',
+          user?.name || 'Unknown'
+        );
+      } else {
+        await TodoService.updateTodo(todo.id, { status: newStatus });
+      }
+      onUpdate();
+    } catch (error) {
+      Alert.alert('Error', 'Failed to update todo status');
+    }
+  };
+
   const handleOpenDrawing = (imageUrl: string, existingDrawingData?: string) => {
     setDrawingImageUrl(imageUrl);
     setDrawingData(existingDrawingData);
@@ -282,7 +300,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const totalChecklistCount = todo.checklist?.length || 0;
   
   // PM can only toggle checklist items, not add or delete
-  const canManageChecklist = userRole === 'admin';
+  const canManageChecklist = canDelete || userRole === 'admin';
   const canToggleChecklist = canEdit; // Both admin and PM can toggle
   const canEditDescription = userRole === 'admin'; // Only admin can edit description
   const canManageImages = userRole === 'admin'; // Only admin can add/delete images
@@ -307,7 +325,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                 styles.deadlineBadge,
                 new Date(todo.deadline) < new Date() && todo.status !== 'completed' && styles.deadlineOverdue
               ]}>
-                <Clock size={12} color={new Date(todo.deadline) < new Date() && todo.status !== 'completed' ? "#ef4444" : "#6b7280"} />
+                <Clock size={12} color={new Date(todo.deadline) < new Date() && todo.status !== 'completed' ? "#ef4444" : "#000000"} />
                 <Text style={[
                   styles.deadlineText,
                   new Date(todo.deadline) < new Date() && todo.status !== 'completed' && styles.deadlineTextOverdue
@@ -329,6 +347,39 @@ export const TodoCard: React.FC<TodoCardProps> = ({
         )}
       </View>
 
+      {/* Status Buttons */}
+      {canEdit && (
+        <View style={styles.statusButtonsContainer}>
+          {['pending', 'in_progress', 'completed'].map((status) => {
+            const isActive = todo.status === status;
+            return (
+              <TouchableOpacity
+                key={status}
+                style={[
+                  styles.statusButton,
+                  isActive && status === 'pending' && styles.statusButtonPendingActive,
+                  isActive && status === 'in_progress' && styles.statusButtonInProgressActive,
+                  isActive && status === 'completed' && styles.statusButtonCompletedActive,
+                ]}
+                onPress={() => handleStatusChange(status as 'pending' | 'in_progress' | 'completed')}
+                activeOpacity={0.7}
+              >
+                <Text
+                  style={[
+                    styles.statusButtonText,
+                    isActive && status === 'pending' && styles.statusButtonTextPendingActive,
+                    isActive && status === 'in_progress' && styles.statusButtonTextInProgressActive,
+                    isActive && status === 'completed' && styles.statusButtonTextCompletedActive,
+                  ]}
+                >
+                  {status === 'pending' ? 'Pending' : status === 'in_progress' ? 'In Progress' : 'Completed'}
+                </Text>
+              </TouchableOpacity>
+            );
+          })}
+        </View>
+      )}
+
       {/* Description */}
       <View style={styles.section}>
         {editingDescription && canEditDescription ? (
@@ -339,7 +390,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               onChangeText={setDescription}
               multiline
               placeholder="Add description..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
             <View style={styles.editButtons}>
               <TouchableOpacity
@@ -348,15 +399,16 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               >
                 <Text style={styles.saveButtonText}>Save</Text>
               </TouchableOpacity>
-              <TouchableOpacity
+              <SecondaryButton
                 onPress={() => {
                   setEditingDescription(false);
                   setDescription(todo.description || '');
                 }}
                 style={styles.cancelButton}
+                textStyle={styles.cancelButtonText}
               >
-                <Text style={styles.cancelButtonText}>Cancel</Text>
-              </TouchableOpacity>
+                Cancel
+              </SecondaryButton>
             </View>
           </View>
         ) : (
@@ -369,7 +421,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                 onPress={() => setEditingDescription(true)}
                 style={styles.editIcon}
               >
-                <Pencil size={16} color="#6b7280" />
+                <Pencil size={16} color="#000000" />
               </TouchableOpacity>
             )}
           </View>
@@ -463,7 +515,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
                   {item.completed ? (
                     <CheckSquare size={20} color="#10b981" />
                   ) : (
-                    <Square size={20} color="#6b7280" />
+                    <Square size={20} color="#000000" />
                   )}
                 </TouchableOpacity>
                 <Text
@@ -555,7 +607,7 @@ export const TodoCard: React.FC<TodoCardProps> = ({
               onChangeText={setNewComment}
               multiline
               placeholder="Write a comment..."
-              placeholderTextColor="#9ca3af"
+              placeholderTextColor="#000000"
             />
             <View style={styles.modalButtons}>
               <TouchableOpacity
@@ -600,6 +652,8 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 16,
     marginBottom: 16,
+    borderWidth: 1,
+    borderColor: '#b0b0b0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -642,7 +696,7 @@ const styles = StyleSheet.create({
   },
   deadlineText: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   deadlineOverdue: {
@@ -665,6 +719,53 @@ const styles = StyleSheet.create({
     color: '#065f46',
     fontWeight: '600',
   },
+  statusButtonsContainer: {
+    flexDirection: 'row',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  statusButton: {
+    flex: 1,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    backgroundColor: '#f3f4f6',
+    borderWidth: 2,
+    borderColor: '#e5e7eb',
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 36,
+  },
+  statusButtonPendingActive: {
+    backgroundColor: '#000000',
+    borderColor: '#000000',
+  },
+  statusButtonInProgressActive: {
+    backgroundColor: '#f97316',
+    borderColor: '#f97316',
+  },
+  statusButtonCompletedActive: {
+    backgroundColor: '#22c55e',
+    borderColor: '#22c55e',
+  },
+  statusButtonText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#000000',
+    textAlign: 'center',
+  },
+  statusButtonTextPendingActive: {
+    color: '#ffffff',
+  },
+  statusButtonTextInProgressActive: {
+    color: '#ffffff',
+  },
+  statusButtonTextCompletedActive: {
+    color: '#ffffff',
+  },
   section: {
     marginBottom: 16,
   },
@@ -677,7 +778,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   addButton: {
     flexDirection: 'row',
@@ -700,7 +801,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
   },
   editIcon: {
@@ -731,14 +832,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   cancelButton: {
-    backgroundColor: '#e5e7eb',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 6,
   },
   cancelButtonText: {
-    color: '#374151',
     fontWeight: '600',
+    fontSize: 14,
   },
   imagesContainer: {
     marginTop: 8,
@@ -792,12 +892,12 @@ const styles = StyleSheet.create({
   },
   checklistText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
   },
   checklistTextCompleted: {
     textDecorationLine: 'line-through',
-    color: '#9ca3af',
+    color: '#000000',
   },
   deleteChecklistButton: {
     padding: 4,
@@ -814,21 +914,21 @@ const styles = StyleSheet.create({
   commentAuthor: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 4,
   },
   commentText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   commentDate: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: '#000000',
   },
   emptyText: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
     fontStyle: 'italic',
   },
   footer: {
@@ -840,7 +940,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     fontSize: 11,
-    color: '#9ca3af',
+    color: '#000000',
   },
   modalOverlay: {
     flex: 1,
@@ -889,7 +989,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   modalCancelButtonText: {
-    color: '#374151',
+    color: '#000000',
     fontWeight: '600',
   },
   modalSaveButton: {

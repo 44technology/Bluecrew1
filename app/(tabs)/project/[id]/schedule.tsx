@@ -13,7 +13,9 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, Calendar, Clock, MapPin, CheckCircle, X, ArrowLeft, Search, User } from 'lucide-react-native';
+import { Plus, Calendar, Clock, MapPin, CheckCircle, X, Search, User } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
+import HamburgerMenu from '@/components/HamburgerMenu';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { PMSchedule, Project } from '@/types';
@@ -204,7 +206,7 @@ export default function ProjectScheduleScreen() {
       case 'in_progress': return '#0ea5e9';
       case 'pending': return '#f59e0b';
       case 'cancelled': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -221,7 +223,7 @@ export default function ProjectScheduleScreen() {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#ffcc00" />
+        <ActivityIndicator size="large" color="#000000" />
         <Text style={styles.loadingText}>Loading schedule...</Text>
       </View>
     );
@@ -231,11 +233,7 @@ export default function ProjectScheduleScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}>
-            <ArrowLeft size={24} color="#ffcc00" />
-          </TouchableOpacity>
+          <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
           <Text style={styles.headerTitle}>Schedule</Text>
         </View>
         <View style={styles.errorContainer}>
@@ -247,29 +245,23 @@ export default function ProjectScheduleScreen() {
 
   return (
     <View style={styles.container}>
+      <HamburgerMenu />
       <View style={styles.header}>
-        <TouchableOpacity
-          style={styles.backButton}
-          onPress={() => router.push(`/(tabs)/project/${id}`)}>
-          <ArrowLeft size={24} color="#ffcc00" />
-        </TouchableOpacity>
+        <BackButton 
+          onPress={() => router.push(`/(tabs)/project/${id}`)}
+          color="#000000"
+          backgroundColor="rgba(0,0,0,0.06)"
+        />
         <View style={styles.headerInfo}>
-          <Text style={styles.headerTitle}>Schedule</Text>
-          <Text style={styles.headerSubtitle}>{project.title}</Text>
+          <Text style={styles.headerTitle} numberOfLines={1}>Schedule</Text>
+          <Text style={styles.headerSubtitle} numberOfLines={1}>{project.title}</Text>
         </View>
-        {(userRole === 'admin' || userRole === 'pm') && (
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}>
-            <Plus size={24} color="#ffcc00" />
-          </TouchableOpacity>
-        )}
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {schedules.length === 0 ? (
           <View style={styles.emptyState}>
-            <Calendar size={48} color="#ffffff" />
+            <Calendar size={48} color="#000000" />
             <Text style={styles.emptyText}>No schedules found</Text>
             <Text style={styles.emptySubtext}>Add a new schedule to get started</Text>
           </View>
@@ -288,27 +280,27 @@ export default function ProjectScheduleScreen() {
                 
                 <View style={styles.scheduleDetails}>
                   <View style={styles.detailRow}>
-                    <Clock size={16} color="#6b7280" />
+                    <Clock size={16} color="#000000" />
                     <Text style={styles.detailText}>
                       {new Date(schedule.date).toLocaleDateString()}
                     </Text>
                   </View>
                   
                   <View style={styles.detailRow}>
-                    <Calendar size={16} color="#6b7280" />
+                    <Calendar size={16} color="#000000" />
                     <Text style={styles.detailText}>
                       {new Date(schedule.date).toLocaleDateString()}
                     </Text>
                   </View>
                   
                   <View style={styles.detailRow}>
-                    <User size={16} color="#6b7280" />
+                    <User size={16} color="#000000" />
                     <Text style={styles.detailText}>PM: {schedule.pm_name}</Text>
                   </View>
                   
                   {schedule.start_date && schedule.end_date && (
                     <View style={styles.detailRow}>
-                      <Calendar size={16} color="#6b7280" />
+                      <Calendar size={16} color="#000000" />
                       <Text style={styles.detailText}>
                         {new Date(schedule.start_date).toLocaleDateString()} - {new Date(schedule.end_date).toLocaleDateString()}
                       </Text>
@@ -338,6 +330,14 @@ export default function ProjectScheduleScreen() {
         )}
       </ScrollView>
 
+      {(userRole === 'admin' || userRole === 'pm') && (
+        <TouchableOpacity
+          style={styles.fab}
+          onPress={() => setShowAddModal(true)}>
+          <Plus size={24} color="#000000" />
+        </TouchableOpacity>
+      )}
+
       {/* Add Schedule Modal */}
       <Modal
         visible={showAddModal}
@@ -347,7 +347,7 @@ export default function ProjectScheduleScreen() {
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Schedule</Text>
             <TouchableOpacity onPress={() => setShowAddModal(false)}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -360,7 +360,7 @@ export default function ProjectScheduleScreen() {
                 <Text style={[styles.selectButtonText, !selectedPM && styles.placeholderText]}>
                   {selectedPM ? selectedPM.name : 'Select PM'}
                 </Text>
-                <User size={20} color="#6b7280" />
+                <User size={20} color="#000000" />
               </TouchableOpacity>
               {errors.pm_id && (
                 <Text style={styles.errorText}>{errors.pm_id}</Text>
@@ -429,7 +429,7 @@ export default function ProjectScheduleScreen() {
                         style={[styles.datePickerButton, errors.start_date && styles.inputError]}
                         onPress={() => setShowStartDatePicker(true)}
                       >
-                        <Calendar size={20} color="#6b7280" />
+                        <Calendar size={20} color="#000000" />
                         <Text style={styles.datePickerText}>
                           {newSchedule.start_date ? new Date(newSchedule.start_date).toLocaleDateString() : 'Select start date'}
                         </Text>
@@ -488,7 +488,7 @@ export default function ProjectScheduleScreen() {
                         style={[styles.datePickerButton, errors.end_date && styles.inputError]}
                         onPress={() => setShowEndDatePicker(true)}
                       >
-                        <Calendar size={20} color="#6b7280" />
+                        <Calendar size={20} color="#000000" />
                         <Text style={styles.datePickerText}>
                           {newSchedule.end_date ? new Date(newSchedule.end_date).toLocaleDateString() : 'Select end date'}
                         </Text>
@@ -527,32 +527,6 @@ export default function ProjectScheduleScreen() {
         </View>
       </Modal>
 
-      {/* Date Picker Modal - Only for mobile when not using inline picker */}
-      {Platform.OS !== 'web' && showDatePicker && (
-        <Modal
-          visible={showDatePicker}
-          transparent={true}
-          animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.datePickerModal}>
-              <DateTimePicker
-                value={newSchedule.date ? new Date(newSchedule.date) : new Date()}
-                mode="date"
-                display={Platform.OS === 'ios' ? 'spinner' : 'default'}
-                onChange={(event, selectedDate) => {
-                  setShowDatePicker(false);
-                  if (selectedDate) {
-                    const formattedDate = selectedDate.toISOString().split('T')[0];
-                    setNewSchedule(prev => ({ ...prev, date: formattedDate }));
-                  }
-                }}
-                minimumDate={new Date()}
-              />
-            </View>
-          </View>
-        </Modal>
-      )}
-
       {/* PM Selection Modal */}
       <Modal
         visible={showPMModal}
@@ -565,7 +539,7 @@ export default function ProjectScheduleScreen() {
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setShowPMModal(false)}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             <ScrollView style={styles.modalContent}>
@@ -583,11 +557,11 @@ export default function ProjectScheduleScreen() {
                     ]}
                     onPress={() => handlePMSelect(pm)}>
                     <View style={styles.pmInfo}>
-                      <Text style={styles.pmName}>{pm.name}</Text>
-                      <Text style={styles.pmEmail}>{pm.email}</Text>
+                      <Text style={[styles.pmName, selectedPM?.id === pm.id && styles.selectedPMOptionText]}>{pm.name}</Text>
+                      <Text style={[styles.pmEmail, selectedPM?.id === pm.id && styles.selectedPMOptionText]}>{pm.email}</Text>
                     </View>
                     {selectedPM?.id === pm.id && (
-                      <CheckCircle size={20} color="#236ecf" />
+                      <CheckCircle size={20} color="#ffffff" />
                     )}
                   </TouchableOpacity>
                 ))
@@ -614,22 +588,22 @@ export default function ProjectScheduleScreen() {
               <Text style={styles.deleteIconText}>⚠</Text>
             </View>
             
-            <Text style={styles.deleteTitle}>Silmek istediğinizden emin misiniz?</Text>
+            <Text style={styles.deleteTitle}>Are you sure you want to delete?</Text>
             <Text style={styles.deleteMessage}>
-              {scheduleToDelete?.title} adlı zamanlamayı silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              Are you sure you want to delete the schedule "{scheduleToDelete?.title}"? This action cannot be undone.
             </Text>
             
             <View style={styles.deleteButtons}>
               <TouchableOpacity
                 style={styles.cancelDeleteButton}
                 onPress={cancelDelete}>
-                <Text style={styles.cancelDeleteText}>İptal</Text>
+                <Text style={styles.cancelDeleteText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity
                 style={styles.confirmDeleteButton}
                 onPress={confirmDelete}>
-                <Text style={styles.confirmDeleteText}>Sil</Text>
+                <Text style={styles.confirmDeleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -642,17 +616,18 @@ export default function ProjectScheduleScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
+    paddingRight: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border
+    borderBottomColor: '#b0b0b0',
   },
   backButton: {
     marginRight: 16,
@@ -660,29 +635,33 @@ const styles = StyleSheet.create({
   },
   headerInfo: {
     flex: 1,
+    minWidth: 0,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#000000',
   },
   headerSubtitle: {
-    fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
+    fontSize: 14,
+    color: '#000000',
     marginTop: 4,
   },
-  addButton: {
-    backgroundColor: '#236ecf',
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  fab: {
+    position: 'absolute',
+    bottom: Platform.OS === 'web' ? 40 : 90,
+    right: Platform.OS === 'web' ? 40 : 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   content: {
     flex: 1,
@@ -692,12 +671,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#000000',
   },
   errorContainer: {
     flex: 1,
@@ -708,7 +687,7 @@ const styles = StyleSheet.create({
   errorText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff', // White text on blue background
+    color: '#000000',
     textAlign: 'center',
   },
   emptyState: {
@@ -717,18 +696,18 @@ const styles = StyleSheet.create({
   },
   emptyStateText: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
   },
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue background
+    color: '#000000',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like teams
+    color: '#000000',
     marginTop: 4,
   },
   schedulesList: {
@@ -744,7 +723,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   scheduleHeader: {
     flexDirection: 'row',
@@ -771,7 +750,7 @@ const styles = StyleSheet.create({
   },
   scheduleDescription: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -786,7 +765,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   scheduleActions: {
     flexDirection: 'row',
@@ -843,7 +822,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   modalContent: {
     flex: 1,
@@ -856,7 +835,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -893,7 +872,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   dateRangeContainer: {
     gap: 12,
@@ -904,7 +883,7 @@ const styles = StyleSheet.create({
   dateLabel: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 8,
   },
   searchContainer: {
@@ -925,7 +904,7 @@ const styles = StyleSheet.create({
   },
   inputText: {
     fontSize: 16,
-    color: '#374151',
+    color: '#000000',
   },
   textArea: {
     height: 80,
@@ -952,8 +931,11 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedPMOption: {
-    borderColor: '#236ecf',
-    backgroundColor: '#f0f9ff',
+    borderColor: '#000000',
+    backgroundColor: '#000000',
+  },
+  selectedPMOptionText: {
+    color: '#ffffff',
   },
   pmInfo: {
     flex: 1,
@@ -965,18 +947,18 @@ const styles = StyleSheet.create({
   },
   pmEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   selectedIndicator: {
     width: 20,
     height: 20,
     borderRadius: 10,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
   },
   submitButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingVertical: 16,
     borderRadius: 8,
     alignItems: 'center',
@@ -1035,7 +1017,7 @@ const styles = StyleSheet.create({
   closeButtonText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#6b7280',
+    color: '#000000',
   },
   deleteIcon: {
     width: 64,
@@ -1061,7 +1043,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 20,
     marginBottom: 24,
@@ -1081,7 +1063,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,

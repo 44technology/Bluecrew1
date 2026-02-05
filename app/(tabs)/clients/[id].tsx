@@ -12,7 +12,6 @@ import {
   Platform,
 } from 'react-native';
 import { 
-  ArrowLeft, 
   Mail, 
   Phone, 
   MapPin, 
@@ -27,6 +26,7 @@ import {
   Building,
   DollarSign,
 } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { router, useLocalSearchParams } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
@@ -203,7 +203,7 @@ export default function ClientDetailScreen() {
       <>
         <HamburgerMenu />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading client...</Text>
         </View>
       </>
@@ -329,7 +329,7 @@ export default function ClientDetailScreen() {
                 >
                   <View style={styles.invoiceCardHeader}>
                     <View style={styles.invoiceCardLeft}>
-                      <Receipt size={20} color="#236ecf" />
+                      <Receipt size={20} color="#000000" />
                       <View style={styles.invoiceCardInfo}>
                         <Text style={styles.invoiceNumber}>{invoice.invoice_number}</Text>
                         <Text style={styles.invoiceDate}>
@@ -390,9 +390,7 @@ export default function ClientDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-            <ArrowLeft size={20} color="#ffffff" />
-          </TouchableOpacity>
+          <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
           <Text style={styles.headerTitle}>Clients</Text>
           <TouchableOpacity style={styles.actionsButton}>
             <MoreVertical size={20} color="#ffffff" />
@@ -418,39 +416,39 @@ export default function ClientDetailScreen() {
                 style={styles.quickAction}
                 onPress={() => setShowNoteModal(true)}
               >
-                <MessageSquare size={20} color="#236ecf" />
+                <MessageSquare size={20} color="#000000" />
                 <Text style={styles.quickActionText}>Note</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.quickAction}
                 onPress={handleSendEmail}
               >
-                <Mail size={20} color="#236ecf" />
+                <Mail size={20} color="#000000" />
                 <Text style={styles.quickActionText}>Email</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.quickAction}
                 onPress={handleCall}
               >
-                <Phone size={20} color="#236ecf" />
+                <Phone size={20} color="#000000" />
                 <Text style={styles.quickActionText}>Call</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.quickAction}
                 onPress={handleCreateProposal}
               >
-                <FileText size={20} color="#236ecf" />
+                <FileText size={20} color="#000000" />
                 <Text style={styles.quickActionText}>Proposal</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 style={styles.quickAction}
                 onPress={handleCreateInvoice}
               >
-                <Receipt size={20} color="#236ecf" />
+                <Receipt size={20} color="#000000" />
                 <Text style={styles.quickActionText}>Invoice</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.quickAction}>
-                <MoreVertical size={20} color="#236ecf" />
+                <MoreVertical size={20} color="#000000" />
                 <Text style={styles.quickActionText}>More</Text>
               </TouchableOpacity>
             </View>
@@ -460,27 +458,27 @@ export default function ClientDetailScreen() {
               <View style={styles.sectionHeader}>
                 <Text style={styles.sectionTitle}>About this contact</Text>
                 <TouchableOpacity>
-                  <MoreVertical size={16} color="#6b7280" />
+                  <MoreVertical size={16} color="#000000" />
                 </TouchableOpacity>
               </View>
               <View style={styles.infoRow}>
-                <Mail size={16} color="#6b7280" />
+                <Mail size={16} color="#000000" />
                 <Text style={styles.infoText}>{client.email}</Text>
               </View>
               {client.phone && (
                 <View style={styles.infoRow}>
-                  <Phone size={16} color="#6b7280" />
+                  <Phone size={16} color="#000000" />
                   <Text style={styles.infoText}>{client.phone}</Text>
                 </View>
               )}
               {client.address && (
                 <View style={styles.infoRow}>
-                  <MapPin size={16} color="#6b7280" />
+                  <MapPin size={16} color="#000000" />
                   <Text style={styles.infoText}>{client.address}</Text>
                 </View>
               )}
               <View style={styles.infoRow}>
-                <Calendar size={16} color="#6b7280" />
+                <Calendar size={16} color="#000000" />
                 <Text style={styles.infoText}>
                   Created: {new Date(client.created_at).toLocaleDateString()}
                 </Text>
@@ -564,7 +562,7 @@ export default function ClientDetailScreen() {
                     <TextInput
                       style={styles.searchInput}
                       placeholder="Search activities"
-                      placeholderTextColor="#9ca3af"
+                      placeholderTextColor="#000000"
                     />
                     <TouchableOpacity
                       style={styles.createNoteButton}
@@ -586,7 +584,7 @@ export default function ClientDetailScreen() {
                         <View key={note.id || index} style={styles.activityItem}>
                           <View style={styles.activityHeader}>
                             <View style={styles.activityIcon}>
-                              <MessageSquare size={16} color="#236ecf" />
+                              <MessageSquare size={16} color="#000000" />
                             </View>
                             <Text style={styles.activityTitle}>
                               Note by {note.created_by_name}
@@ -626,7 +624,7 @@ export default function ClientDetailScreen() {
                         style={styles.recordCard}
                         onPress={() => router.push(`/proposals?id=${proposal.id}`)}
                       >
-                        <FileText size={20} color="#236ecf" />
+                        <FileText size={20} color="#000000" />
                         <View style={styles.recordInfo}>
                           <Text style={styles.recordTitle}>{proposal.proposal_number}</Text>
                           <Text style={styles.recordSubtitle}>
@@ -692,7 +690,7 @@ export default function ClientDetailScreen() {
                     style={styles.recordItem}
                     onPress={() => router.push(`/proposals?id=${proposal.id}`)}
                   >
-                    <FileText size={16} color="#6b7280" />
+                    <FileText size={16} color="#000000" />
                     <Text style={styles.recordItemText}>{proposal.proposal_number}</Text>
                   </TouchableOpacity>
                 ))
@@ -715,7 +713,7 @@ export default function ClientDetailScreen() {
                     style={styles.recordItem}
                     onPress={() => router.push(`/invoices?id=${invoice.id}`)}
                   >
-                    <Receipt size={16} color="#6b7280" />
+                    <Receipt size={16} color="#000000" />
                     <Text style={styles.recordItemText}>{invoice.invoice_number}</Text>
                   </TouchableOpacity>
                 ))
@@ -738,7 +736,7 @@ export default function ClientDetailScreen() {
               setNewNote({ note: '', contact_date: '' });
               setShowDatePicker(false);
             }}>
-              <X size={24} color="#6b7280" />
+              <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
 
@@ -754,7 +752,7 @@ export default function ClientDetailScreen() {
                     ? new Date(newNote.contact_date).toLocaleDateString()
                     : 'Select date or leave empty for today'}
                 </Text>
-                <Calendar size={18} color="#6b7280" />
+                <Calendar size={18} color="#000000" />
               </TouchableOpacity>
               {showDatePicker && (
                 <DateTimePicker
@@ -808,7 +806,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   header: {
     flexDirection: 'row',
@@ -817,9 +815,9 @@ const styles = StyleSheet.create({
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 16,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00',
+    borderBottomColor: '#ffffff',
   },
   backButton: {
     padding: 8,
@@ -827,7 +825,7 @@ const styles = StyleSheet.create({
   headerTitle: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000',
   },
   actionsButton: {
     padding: 8,
@@ -854,7 +852,7 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
@@ -873,7 +871,7 @@ const styles = StyleSheet.create({
   },
   clientEmail: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
   },
   quickActions: {
@@ -895,7 +893,7 @@ const styles = StyleSheet.create({
   },
   quickActionText: {
     fontSize: 12,
-    color: '#374151',
+    color: '#000000',
     fontWeight: '500',
   },
   aboutSection: {
@@ -910,7 +908,7 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   infoRow: {
     flexDirection: 'row',
@@ -920,7 +918,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   mainContent: {
     flex: 1,
@@ -939,15 +937,15 @@ const styles = StyleSheet.create({
     borderBottomColor: 'transparent',
   },
   tabActive: {
-    borderBottomColor: '#236ecf',
+    borderBottomColor: '#000000',
   },
   tabText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   tabTextActive: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   tabContent: {
@@ -969,7 +967,7 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   infoValue: {
     fontSize: 14,
@@ -996,7 +994,7 @@ const styles = StyleSheet.create({
   createNoteButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -1015,7 +1013,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 16,
     borderLeftWidth: 3,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
   },
   activityHeader: {
     flexDirection: 'row',
@@ -1039,11 +1037,11 @@ const styles = StyleSheet.create({
   },
   activityDate: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   activityContent: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
   },
   proposalsContent: {
@@ -1056,7 +1054,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -1088,7 +1086,7 @@ const styles = StyleSheet.create({
   },
   recordSubtitle: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   recordAmount: {
     fontSize: 16,
@@ -1101,7 +1099,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   rightSidebar: {
     width: 300,
@@ -1132,7 +1130,7 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   statValue: {
     fontSize: 14,
@@ -1153,16 +1151,16 @@ const styles = StyleSheet.create({
   recordsTitle: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   addLink: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '500',
   },
   recordsEmpty: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontStyle: 'italic',
   },
   recordItem: {
@@ -1175,7 +1173,7 @@ const styles = StyleSheet.create({
   },
   recordItemText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   modalContainer: {
     flex: 1,
@@ -1206,7 +1204,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1224,7 +1222,7 @@ const styles = StyleSheet.create({
     textAlignVertical: 'top',
   },
   submitButton: {
-    backgroundColor: '#ffcc00',
+    backgroundColor: '#000000',
     borderRadius: 8,
     paddingVertical: 16,
     alignItems: 'center',
@@ -1253,7 +1251,7 @@ const styles = StyleSheet.create({
   },
   dateInputPlaceholder: {
     fontSize: 16,
-    color: '#9ca3af',
+    color: '#000000',
   },
 });
 

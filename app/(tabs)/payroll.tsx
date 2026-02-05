@@ -405,7 +405,7 @@ export default function PayrollScreen() {
       case 'approved': return '#10b981';
       case 'rejected': return '#ef4444';
       case 'pending': return '#f59e0b';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -417,7 +417,7 @@ export default function PayrollScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading payroll data...</Text>
         </View>
       </View>
@@ -433,11 +433,11 @@ export default function PayrollScreen() {
           style={styles.backButton}
           onPress={() => router.push('/hr')}
         >
-          <ArrowLeft size={24} color="#236ecf" />
+          <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <View style={styles.headerContent}>
           <View style={styles.titleRow}>
-            <DollarSign size={28} color="#236ecf" />
+            <DollarSign size={28} color="#000000" />
             <Text style={styles.title}>Payroll</Text>
           </View>
           <Text style={styles.subtitle}>
@@ -453,7 +453,7 @@ export default function PayrollScreen() {
             style={styles.weekNavButton}
             onPress={() => navigateWeek('prev')}
           >
-            <ChevronLeft size={20} color="#236ecf" />
+            <ChevronLeft size={20} color="#000000" />
           </TouchableOpacity>
           <View style={styles.weekInfo}>
             <Text style={styles.weekText}>
@@ -464,7 +464,7 @@ export default function PayrollScreen() {
             style={styles.weekNavButton}
             onPress={() => navigateWeek('next')}
           >
-            <ChevronRight size={20} color="#236ecf" />
+            <ChevronRight size={20} color="#000000" />
           </TouchableOpacity>
         </View>
 
@@ -472,7 +472,7 @@ export default function PayrollScreen() {
         <ScrollView style={styles.entriesContainer} showsVerticalScrollIndicator={false}>
           {payrollEntries.length === 0 ? (
             <View style={styles.emptyStateCard}>
-              <Clock size={32} color="#6b7280" />
+              <Clock size={32} color="#000000" />
               <Text style={styles.emptyCardTitle}>No payroll entries</Text>
               <Text style={styles.emptyCardSubtext}>
                 Entries are created automatically from time clock data.
@@ -490,7 +490,7 @@ export default function PayrollScreen() {
               >
                 <View style={styles.entryHeader}>
                   <View style={styles.entryUserInfo}>
-                    <User size={20} color="#236ecf" />
+                    <User size={20} color="#000000" />
                     <Text style={styles.entryUserName}>{entry.user_name}</Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: getStatusColor(entry.status) + '20' }]}>
@@ -814,7 +814,7 @@ export default function PayrollScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   header: {
     flexDirection: 'row',
@@ -822,9 +822,9 @@ const styles = StyleSheet.create({
     paddingTop: Platform.OS === 'web' ? 20 : 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
-    backgroundColor: '#1e40af', // Darker blue header like other pages
+    backgroundColor: '#f5f5f5', // Darker blue header like other pages
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like other pages
+    borderBottomColor: '#ffffff', // Yellow border like other pages
     gap: 16,
     ...(Platform.OS === 'web' ? {
       position: 'sticky' as any,
@@ -847,16 +847,16 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like other pages
+    color: '#ffffff', // Yellow text like other pages
   },
   subtitle: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#f5f5f5', // Light yellow like other pages
   },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     paddingHorizontal: 16,
     paddingVertical: 12,
     borderRadius: 8,
@@ -918,7 +918,7 @@ const styles = StyleSheet.create({
   },
   emptyCardSubtext: {
     fontSize: 13,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
   },
   entryCard: {
@@ -927,7 +927,7 @@ const styles = StyleSheet.create({
     padding: 16,
     marginBottom: 12,
     borderLeftWidth: 4,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
@@ -970,12 +970,12 @@ const styles = StyleSheet.create({
   },
   entryLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   entryValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   totalRow: {
     marginTop: 8,
@@ -991,7 +991,7 @@ const styles = StyleSheet.create({
   totalValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   entryActions: {
     flexDirection: 'row',
@@ -1004,7 +1004,7 @@ const styles = StyleSheet.create({
   readOnlyValue: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     paddingVertical: 12,
     paddingHorizontal: 16,
     backgroundColor: '#f3f4f6',
@@ -1052,7 +1052,7 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     fontSize: 24,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: 'bold',
   },
   modalContent: {
@@ -1065,7 +1065,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   input: {
@@ -1090,22 +1090,22 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedUserOption: {
-    borderColor: '#236ecf',
+    borderColor: '#000000',
     backgroundColor: '#eff6ff',
   },
   userOptionText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   selectedUserOptionText: {
-    color: '#236ecf',
+    color: '#000000',
     fontWeight: '600',
   },
   selectedIndicator: {
     width: 10,
     height: 10,
     borderRadius: 5,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   dayRow: {
     marginBottom: 16,
@@ -1116,7 +1116,7 @@ const styles = StyleSheet.create({
   dayLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   dayInputs: {
@@ -1129,7 +1129,7 @@ const styles = StyleSheet.create({
   },
   dayInputLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginBottom: 4,
   },
   hourInput: {
@@ -1170,12 +1170,12 @@ const styles = StyleSheet.create({
   },
   calculationLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   calculationValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   totalCalculationRow: {
     marginTop: 8,
@@ -1191,13 +1191,13 @@ const styles = StyleSheet.create({
   totalCalculationValue: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   submitButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#000000',
     padding: 16,
     borderRadius: 8,
     gap: 8,
@@ -1226,11 +1226,11 @@ const styles = StyleSheet.create({
   detailLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   detailValue: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     flex: 1,
     textAlign: 'right',
   },
@@ -1244,12 +1244,12 @@ const styles = StyleSheet.create({
   },
   dayDetailLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   dayDetailValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   summaryRow: {
     flexDirection: 'row',
@@ -1259,18 +1259,18 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   summaryValue: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   totalSummaryRow: {
     marginTop: 8,
     paddingTop: 12,
     borderTopWidth: 2,
-    borderTopColor: '#236ecf',
+    borderTopColor: '#000000',
   },
   totalSummaryLabel: {
     fontSize: 18,
@@ -1280,7 +1280,7 @@ const styles = StyleSheet.create({
   totalSummaryValue: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
   },
   modalActions: {
     flexDirection: 'row',

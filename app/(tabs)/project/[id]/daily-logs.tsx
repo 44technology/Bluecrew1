@@ -15,7 +15,9 @@ import {
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, router } from 'expo-router';
-import { ArrowLeft, Plus, Camera, Calendar, Clock, User, Cloud, Sun, CloudRain, Wind, Eye, Edit, Trash2, CheckCircle, Upload, X } from 'lucide-react-native';
+import { Plus, Camera, Calendar, Clock, User, Cloud, Sun, CloudRain, Wind, Eye, Edit, Trash2, CheckCircle, Upload, X, ArrowLeft } from 'lucide-react-native';
+import BackButton from '@/components/BackButton';
+import HamburgerMenu from '@/components/HamburgerMenu';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { Project } from '@/types';
@@ -34,9 +36,7 @@ export default function DailyLogsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <ArrowLeft size={24} color="#ffffff" />
-          </TouchableOpacity>
+          <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
           <Text style={styles.headerTitle}>Access Denied</Text>
         </View>
         <View style={styles.accessDenied}>
@@ -370,13 +370,14 @@ export default function DailyLogsScreen() {
     }));
   };
 
-  const getWeatherIcon = (condition: string) => {
+  const getWeatherIcon = (condition: string, selected = false) => {
+    const c = selected ? '#ffffff' : undefined;
     switch (condition) {
-      case 'sunny': return <Sun size={20} color="#f59e0b" />;
-      case 'cloudy': return <Cloud size={20} color="#6b7280" />;
-      case 'rainy': return <CloudRain size={20} color="#3b82f6" />;
-      case 'stormy': return <CloudRain size={20} color="#ef4444" />;
-      default: return <Sun size={20} color="#f59e0b" />;
+      case 'sunny': return <Sun size={20} color={c ?? '#f59e0b'} />;
+      case 'cloudy': return <Cloud size={20} color={c ?? '#000000'} />;
+      case 'rainy': return <CloudRain size={20} color={c ?? '#3b82f6'} />;
+      case 'stormy': return <CloudRain size={20} color={c ?? '#ef4444'} />;
+      default: return <Sun size={20} color={c ?? '#f59e0b'} />;
     }
   };
 
@@ -385,7 +386,7 @@ export default function DailyLogsScreen() {
       case 'present': return '#10b981';
       case 'late': return '#f59e0b';
       case 'absent': return '#ef4444';
-      default: return '#6b7280';
+      default: return '#000000';
     }
   };
 
@@ -402,13 +403,14 @@ export default function DailyLogsScreen() {
     return (
       <View style={styles.container}>
         <View style={styles.header}>
-          <TouchableOpacity onPress={() => router.push(`/(tabs)/project/${id}`)} style={styles.backButton}>
-            <ArrowLeft size={24} color="#ffcc00" />
-          </TouchableOpacity>
+          <BackButton 
+          onPress={() => router.push(`/(tabs)/project/${id}`)}
+          color="#ffffff" 
+        />
           <Text style={styles.headerTitle}>Daily Logs</Text>
         </View>
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading daily logs...</Text>
         </View>
       </View>
@@ -417,28 +419,24 @@ export default function DailyLogsScreen() {
 
   return (
     <View style={styles.container}>
+      <HamburgerMenu />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.push(`/(tabs)/project/${id}`)} style={styles.backButton}>
-          <ArrowLeft size={24} color="#ffcc00" />
+          <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Daily Logs</Text>
-        <TouchableOpacity
-          style={styles.addButton}
-          onPress={() => setShowAddLogModal(true)}>
-          <Plus size={24} color="#236ecf" />
-        </TouchableOpacity>
+        <Text style={styles.headerTitle} numberOfLines={1}>Daily Logs</Text>
       </View>
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {dailyLogs.length === 0 ? (
           <View style={styles.emptyState}>
-            <Calendar size={64} color="#6b7280" />
+            <Calendar size={64} color="#000000" />
             <Text style={styles.emptyTitle}>No Daily Logs</Text>
             <Text style={styles.emptyText}>Start recording daily activities</Text>
             <TouchableOpacity
               style={styles.addFirstLogButton}
               onPress={() => setShowAddLogModal(true)}>
-              <Plus size={20} color="#ffffff" />
+              <Plus size={20} color="#000000" />
               <Text style={styles.addFirstLogText}>Add First Log</Text>
             </TouchableOpacity>
           </View>
@@ -448,14 +446,14 @@ export default function DailyLogsScreen() {
               <View key={log.id} style={styles.logCard}>
                 <View style={styles.logHeader}>
                   <View style={styles.logDateContainer}>
-                    <Calendar size={16} color="#236ecf" />
+                    <Calendar size={16} color="#000000" />
                     <Text style={styles.logDate}>{formatDate(log.date)}</Text>
                   </View>
                   <View style={styles.logActions}>
                     <TouchableOpacity
                       style={styles.actionButton}
                       onPress={() => handleEditLog(log)}>
-                      <Edit size={16} color="#6b7280" />
+                      <Edit size={16} color="#000000" />
                     </TouchableOpacity>
                     <TouchableOpacity
                       style={styles.actionButton}
@@ -474,7 +472,7 @@ export default function DailyLogsScreen() {
                     </Text>
                   </View>
                   <View style={styles.weatherItem}>
-                    <Wind size={16} color="#6b7280" />
+                    <Wind size={16} color="#000000" />
                     <Text style={styles.weatherText}>{log.weather.wind_speed} km/h</Text>
                   </View>
                 </View>
@@ -575,6 +573,12 @@ export default function DailyLogsScreen() {
         )}
       </ScrollView>
 
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => setShowAddLogModal(true)}>
+        <Plus size={24} color="#000000" />
+      </TouchableOpacity>
+
       {/* Add Log Modal */}
       <Modal
         visible={showAddLogModal}
@@ -612,7 +616,7 @@ export default function DailyLogsScreen() {
                     style={styles.datePickerButton}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <Calendar size={20} color="#6b7280" />
+                    <Calendar size={20} color="#000000" />
                     <Text style={styles.datePickerText}>
                       {newLog.date || 'Select Date'}
                     </Text>
@@ -649,8 +653,11 @@ export default function DailyLogsScreen() {
                       ...prev,
                       weather: { ...prev.weather!, condition: condition as any }
                     }))}>
-                    {getWeatherIcon(condition)}
-                    <Text style={styles.weatherOptionText}>
+                    {getWeatherIcon(condition, newLog.weather?.condition === condition)}
+                    <Text style={[
+                      styles.weatherOptionText,
+                      newLog.weather?.condition === condition && styles.selectedWeatherOptionText
+                    ]}>
                       {condition.charAt(0).toUpperCase() + condition.slice(1)}
                     </Text>
                   </TouchableOpacity>
@@ -714,13 +721,13 @@ export default function DailyLogsScreen() {
                   onPress={handlePickImage}
                   disabled={uploadingPhoto}
                 >
-                  <Camera size={18} color="#236ecf" />
+                  <Camera size={18} color="#000000" />
                   <Text style={styles.photoButtonText}>Add Photo</Text>
                 </TouchableOpacity>
               </View>
               {uploadingPhoto && (
                 <View style={styles.uploadingContainer}>
-                  <ActivityIndicator size="small" color="#236ecf" />
+                  <ActivityIndicator size="small" color="#000000" />
                   <Text style={styles.uploadingText}>Uploading...</Text>
                 </View>
               )}
@@ -798,7 +805,7 @@ export default function DailyLogsScreen() {
                     style={styles.datePickerButton}
                     onPress={() => setShowDatePicker(true)}
                   >
-                    <Calendar size={20} color="#6b7280" />
+                    <Calendar size={20} color="#000000" />
                     <Text style={styles.datePickerText}>
                       {newLog.date || 'Select Date'}
                     </Text>
@@ -877,13 +884,13 @@ export default function DailyLogsScreen() {
                   onPress={handlePickImage}
                   disabled={uploadingPhoto}
                 >
-                  <Camera size={18} color="#236ecf" />
+                  <Camera size={18} color="#000000" />
                   <Text style={styles.photoButtonText}>Add Photo</Text>
                 </TouchableOpacity>
               </View>
               {uploadingPhoto && (
                 <View style={styles.uploadingContainer}>
-                  <ActivityIndicator size="small" color="#236ecf" />
+                  <ActivityIndicator size="small" color="#000000" />
                   <Text style={styles.uploadingText}>Uploading...</Text>
                 </View>
               )}
@@ -940,22 +947,22 @@ export default function DailyLogsScreen() {
               <Text style={styles.deleteIconText}>⚠</Text>
             </View>
             
-            <Text style={styles.deleteTitle}>Silmek istediğinizden emin misiniz?</Text>
+            <Text style={styles.deleteTitle}>Are you sure you want to delete?</Text>
             <Text style={styles.deleteMessage}>
-              Bu günlük kaydını silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.
+              Are you sure you want to delete this daily log? This action cannot be undone.
             </Text>
             
             <View style={styles.deleteButtons}>
               <TouchableOpacity 
                 style={styles.cancelDeleteButton}
                 onPress={cancelDeleteLog}>
-                <Text style={styles.cancelDeleteText}>İptal</Text>
+                <Text style={styles.cancelDeleteText}>Cancel</Text>
               </TouchableOpacity>
               
               <TouchableOpacity 
                 style={styles.confirmDeleteButton}
                 onPress={confirmDeleteLog}>
-                <Text style={styles.confirmDeleteText}>Sil</Text>
+                <Text style={styles.confirmDeleteText}>Delete</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -968,15 +975,16 @@ export default function DailyLogsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like teams
+    backgroundColor: '#ffffff', // Blue background like teams
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header
+    backgroundColor: '#f5f5f5',
     paddingTop: 50,
     paddingHorizontal: 20,
+    paddingRight: 60,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border
+    borderBottomColor: '#b0b0b0',
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
@@ -986,15 +994,27 @@ const styles = StyleSheet.create({
     marginRight: 16,
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#000000',
     flex: 1,
+    minWidth: 0,
   },
-  addButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#ffcc00', // Yellow button
+  fab: {
+    position: 'absolute',
+    bottom: Platform.OS === 'web' ? 40 : 90,
+    right: Platform.OS === 'web' ? 40 : 20,
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
   content: {
     flex: 1,
@@ -1004,12 +1024,12 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
   },
   loadingText: {
     marginTop: 16,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#000000',
   },
   accessDenied: {
     flex: 1,
@@ -1019,7 +1039,7 @@ const styles = StyleSheet.create({
   },
   accessDeniedText: {
     fontSize: 18,
-    color: '#ffffff',
+    color: '#000000',
     textAlign: 'center',
   },
   emptyState: {
@@ -1035,20 +1055,20 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#fbbf24', // Light yellow like teams
+    color: '#f5f5f5', // Light yellow like teams
     marginBottom: 24,
   },
   addFirstLogButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffcc00', // Yellow button like teams
+    backgroundColor: '#ffffff', // Yellow button like teams
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
   },
   addFirstLogText: {
-    color: '#236ecf', // Blue text on yellow button
+    color: '#000000', // Blue text on yellow button
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1065,7 +1085,7 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like teams
+    borderLeftColor: '#ffffff', // Yellow border like teams
   },
   logHeader: {
     flexDirection: 'row',
@@ -1107,7 +1127,7 @@ const styles = StyleSheet.create({
   },
   weatherText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   workersSection: {
     marginBottom: 16,
@@ -1136,11 +1156,11 @@ const styles = StyleSheet.create({
   },
   workerRole: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   workerHours: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   attendanceBadge: {
     paddingHorizontal: 8,
@@ -1157,7 +1177,7 @@ const styles = StyleSheet.create({
   },
   workText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
   },
   materialsSection: {
@@ -1174,7 +1194,7 @@ const styles = StyleSheet.create({
   },
   materialText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   issuesSection: {
     marginBottom: 16,
@@ -1189,7 +1209,7 @@ const styles = StyleSheet.create({
   },
   notesText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     lineHeight: 20,
   },
   logFooter: {
@@ -1202,11 +1222,11 @@ const styles = StyleSheet.create({
   },
   createdBy: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
   },
   createdAt: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
   },
   modalContainer: {
     flex: 1,
@@ -1225,11 +1245,11 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like teams
+    color: '#ffffff', // Yellow text like teams
   },
   closeButton: {
     fontSize: 24,
-    color: '#6b7280',
+    color: '#000000',
   },
   modalContent: {
     flex: 1,
@@ -1270,23 +1290,26 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   selectedWeatherOption: {
-    borderColor: '#236ecf',
-    backgroundColor: '#f0f9ff',
+    borderColor: '#000000',
+    backgroundColor: '#000000',
+  },
+  selectedWeatherOptionText: {
+    color: '#ffffff',
   },
   weatherOptionText: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     marginTop: 4,
   },
   submitButton: {
-    backgroundColor: '#ffcc00', // Yellow button like teams
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 16,
     alignItems: 'center',
     marginTop: 20,
   },
   submitButtonText: {
-    color: '#236ecf', // Blue text on yellow button
+    color: '#000000', // Blue text on yellow button
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1329,7 +1352,7 @@ const styles = StyleSheet.create({
   },
   deleteCloseButtonText: {
     fontSize: 24,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '300',
   },
   deleteIcon: {
@@ -1353,7 +1376,7 @@ const styles = StyleSheet.create({
   },
   deleteMessage: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     marginBottom: 24,
     lineHeight: 20,
@@ -1374,7 +1397,7 @@ const styles = StyleSheet.create({
   cancelDeleteText: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
   },
   confirmDeleteButton: {
     flex: 1,
@@ -1433,7 +1456,7 @@ const styles = StyleSheet.create({
   photoButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#236ecf',
+    color: '#000000',
   },
   uploadingContainer: {
     flexDirection: 'row',
@@ -1446,7 +1469,7 @@ const styles = StyleSheet.create({
   },
   uploadingText: {
     fontSize: 14,
-    color: '#236ecf',
+    color: '#000000',
   },
   photosPreviewGrid: {
     flexDirection: 'row',

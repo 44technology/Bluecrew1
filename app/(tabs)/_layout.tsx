@@ -84,15 +84,15 @@ export default function TabLayout() {
         <Tabs
         screenOptions={{
           headerShown: false,
-          // Hide tab bar completely on web (we use TopNavigationBar instead)
-          // Only show on native mobile (iOS/Android)
-          tabBarStyle: Platform.OS === 'web' ? { 
+          // Hide tab bar on mobile (use hamburger menu instead) and desktop web (use TopNavigationBar)
+          // Only show on non-mobile web
+          tabBarStyle: (isMobile || isWebDesktop) ? { 
             display: 'none',
             height: 0,
             overflow: 'hidden',
           } : {
             backgroundColor: '#ffffff',
-            borderTopColor: '#236ecf20',
+            borderTopColor: '#17171720',
             height: 60,
             paddingBottom: 8,
             paddingTop: 8,
@@ -102,8 +102,8 @@ export default function TabLayout() {
             justifyContent: 'center',
             alignItems: 'center',
           },
-          tabBarActiveTintColor: '#236ecf',
-          tabBarInactiveTintColor: '#6b7280',
+          tabBarActiveTintColor: '#000000',
+          tabBarInactiveTintColor: '#000000',
           tabBarShowLabel: true,
           tabBarLabelStyle: {
             fontSize: 11,
@@ -123,6 +123,8 @@ export default function TabLayout() {
             <Building2 size={size} color={color} />
           ),
           href: pageAccess['projects'] !== false ? ((userRole === 'admin' || userRole === 'pm' || userRole === 'sales') ? undefined : null) : null,
+          // Hide tab bar when opened from hamburger menu (mobile only)
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 2) Team */}
@@ -134,6 +136,7 @@ export default function TabLayout() {
             <Users size={size} color={color} />
           ),
           href: pageAccess['team'] !== false ? (userRole === 'client' ? null : undefined) : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 3) HR (admin) */}
@@ -145,6 +148,7 @@ export default function TabLayout() {
             <UserCog size={size} color={color} />
           ),
           href: userRole === 'admin' ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 3.1) Payroll (admin) */}
@@ -156,6 +160,7 @@ export default function TabLayout() {
             <DollarSign size={size} color={color} />
           ),
           href: userRole === 'admin' ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 3.2) Commission (admin) */}
@@ -167,6 +172,7 @@ export default function TabLayout() {
             <TrendingUp size={size} color={color} />
           ),
           href: userRole === 'admin' ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 4) Leads (admin & sales) */}
@@ -178,6 +184,7 @@ export default function TabLayout() {
             <User size={size} color={color} />
           ),
           href: (userRole === 'admin' || userRole === 'sales') ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 5) Clients (admin) */}
@@ -189,6 +196,7 @@ export default function TabLayout() {
             <UserCheck size={size} color={color} />
           ),
           href: userRole === 'admin' ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 6) Sales (admin, sales only - client sees Proposals and Invoices directly) */}
@@ -200,6 +208,7 @@ export default function TabLayout() {
             <Briefcase size={size} color={color} />
           ),
           href: (userRole === 'admin' || (userRole === 'sales' && pageAccess['sales-report'] !== false)) ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 7) Time Clock */}
@@ -211,6 +220,7 @@ export default function TabLayout() {
             <Clock size={size} color={color} />
           ),
           href: (userRole === 'client' || pageAccess['time-clock'] === false) ? null : undefined,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 8) Approval (admin only) */}
@@ -222,6 +232,7 @@ export default function TabLayout() {
             <CheckCircle size={size} color={color} />
           ),
           href: userRole === 'admin' ? 'project-approval' : null, // Sadece admin görebilir
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 7) Proposals - Client sees as "Sales" */}
@@ -233,6 +244,7 @@ export default function TabLayout() {
             userRole === 'client' ? <Briefcase size={size} color={color} /> : <FileText size={size} color={color} />
           ),
           href: pageAccess['proposals'] !== false ? ((userRole === 'admin' || userRole === 'sales' || userRole === 'client') ? undefined : null) : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 8) Invoices - Admin, Sales, and Client can view */}
@@ -244,6 +256,7 @@ export default function TabLayout() {
             <Receipt size={size} color={color} />
           ),
           href: pageAccess['invoices'] !== false ? ((userRole === 'admin' || userRole === 'sales' || userRole === 'client') ? undefined : null) : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 8.1) Tracking (admin, pm) - moved up for visibility */}
@@ -255,6 +268,7 @@ export default function TabLayout() {
             <Package size={size} color={color} />
           ),
           href: (userRole === 'admin' || userRole === 'pm') ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 8) Expenses (admin) */}
@@ -266,6 +280,7 @@ export default function TabLayout() {
             <CreditCard size={size} color={color} />
           ),
           href: (userRole === 'admin') ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 9) Reports (admin only, not client) */}
@@ -277,6 +292,7 @@ export default function TabLayout() {
             <FileText size={size} color={color} />
           ),
           href: (userRole === 'admin') ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 10) Permissions (admin only) */}
@@ -288,6 +304,19 @@ export default function TabLayout() {
             <Shield size={size} color={color} />
           ),
           href: userRole === 'admin' ? undefined : null,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
+        }}
+      />
+      {/* Company Settings - Admin / company users */}
+      <Tabs.Screen
+        name="company-settings"
+        options={{
+          title: 'Company',
+          tabBarIcon: ({ size, color }) => (
+            <Building2 size={size} color={color} />
+          ),
+          href: undefined,
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 10) Settings - All users can access */}
@@ -299,6 +328,7 @@ export default function TabLayout() {
             <User size={size} color={color} />
           ),
           href: undefined, // Tüm kullanıcılar settings'e erişebilir
+          tabBarStyle: isMobile ? { display: 'none' } : (isWebDesktop ? { display: 'none' } : undefined),
         }}
       />
       {/* 9) Test Firebase - Hidden from tab bar */}
@@ -313,6 +343,27 @@ export default function TabLayout() {
         }}
       />
       {/* Hidden tabs - not shown in tab bar */}
+      <Tabs.Screen
+        name="notifications"
+        options={{
+          href: null, // Hide from tab bar
+          tabBarStyle: { display: 'none' }, // Always hide tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="sales-report"
+        options={{
+          href: null, // Hide from tab bar
+          tabBarStyle: { display: 'none' }, // Always hide tab bar
+        }}
+      />
+      <Tabs.Screen
+        name="employee"
+        options={{
+          href: null, // Hide from tab bar
+          tabBarStyle: { display: 'none' }, // Always hide tab bar
+        }}
+      />
       <Tabs.Screen
         name="schedule"
         options={{

@@ -152,7 +152,7 @@ export default function NotificationsScreen() {
       case 'project':
         return '#8b5cf6'; // Purple
       default:
-        return '#6b7280'; // Gray
+        return '#000000'; // Gray
     }
   };
 
@@ -176,7 +176,7 @@ export default function NotificationsScreen() {
       <View style={styles.container}>
         <HamburgerMenu />
         <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#236ecf" />
+          <ActivityIndicator size="large" color="#000000" />
           <Text style={styles.loadingText}>Loading notifications...</Text>
         </View>
       </View>
@@ -213,7 +213,7 @@ export default function NotificationsScreen() {
             <RefreshControl
               refreshing={refreshing}
               onRefresh={onRefresh}
-              tintColor="#ffffff"
+              tintColor="#000000"
             />
           ) : undefined
         }>
@@ -293,13 +293,13 @@ export default function NotificationsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf', // Blue background like other pages
+    backgroundColor: '#ffffff', // Blue background like other pages
   },
   loadingText: {
     marginTop: 12,
@@ -307,12 +307,13 @@ const styles = StyleSheet.create({
     color: '#ffffff', // White text on blue background
   },
   header: {
-    backgroundColor: '#1e40af', // Darker blue header like other pages
+    backgroundColor: '#f5f5f5', // Darker blue header like other pages
     paddingHorizontal: 20,
     paddingTop: Platform.OS === 'ios' ? 60 : 20,
     paddingBottom: 16,
     borderBottomWidth: 1,
-    borderBottomColor: '#ffcc00', // Yellow border like other pages
+    borderBottomColor: '#ffffff', // Yellow border like other pages
+    paddingRight: 80, // Add padding to avoid hamburger menu overlap
   },
   headerTop: {
     flexDirection: 'row',
@@ -323,13 +324,15 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 28,
     fontWeight: '700',
-    color: '#ffcc00', // Yellow text like other pages
+    color: '#ffffff', // Yellow text like other pages
+    flex: 1,
   },
   markAllButton: {
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    marginLeft: 12,
   },
   markAllText: {
     fontSize: 14,
@@ -338,7 +341,7 @@ const styles = StyleSheet.create({
   },
   unreadCount: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#f5f5f5', // Light yellow like other pages
   },
   content: {
     flex: 1,
@@ -361,7 +364,7 @@ const styles = StyleSheet.create({
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#fbbf24', // Light yellow like other pages
+    color: '#f5f5f5', // Light yellow like other pages
     marginTop: 8,
   },
   section: {
@@ -388,12 +391,12 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     elevation: 3,
     borderLeftWidth: 4,
-    borderLeftColor: '#ffcc00', // Yellow border like other pages
+    borderLeftColor: '#ffffff', // Yellow border like other pages
     alignItems: 'flex-start',
     minHeight: Platform.OS !== 'web' ? 100 : undefined,
   },
   unreadItem: {
-    borderLeftColor: '#236ecf', // Blue border for unread
+    borderLeftColor: '#000000', // Blue border for unread
     borderLeftWidth: 4,
   },
   iconContainer: {
@@ -414,7 +417,7 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   readTitle: {
-    color: '#6b7280',
+    color: '#000000',
   },
   notificationMessage: {
     fontSize: 14,
@@ -423,17 +426,17 @@ const styles = StyleSheet.create({
     lineHeight: 20,
   },
   readMessage: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   notificationTime: {
     fontSize: 12,
-    color: '#9ca3af',
+    color: '#000000',
   },
   unreadDot: {
     width: 8,
     height: 8,
     borderRadius: 4,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     marginTop: 6,
   },
 });

@@ -131,7 +131,7 @@ const styles = StyleSheet.create({
   statusLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   statusText: {
@@ -153,18 +153,18 @@ const styles = StyleSheet.create({
   userLabel: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   userText: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
   },
   buttonContainer: {
     gap: 12,
   },
   testButton: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     padding: 16,
     borderRadius: 8,
     alignItems: 'center',

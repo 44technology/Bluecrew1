@@ -1,13 +1,16 @@
 import { useEffect } from 'react';
 import { Stack, router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
+import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 
 function AppContent() {
   const { user, isLoading } = useAuth();
+  const { theme } = useTheme();
   useFrameworkReady();
 
   useEffect(() => {
@@ -18,8 +21,8 @@ function AppContent() {
 
   if (isLoading) {
     return (
-      <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#236ecf" />
+      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
+        <ActivityIndicator size="large" color="#000000" />
       </View>
     );
   }
@@ -418,12 +421,16 @@ export default function RootLayout() {
   }, []);
 
   return (
-    <AuthProvider>
-      <LanguageProvider>
-        <AppContent />
-        <StatusBar style="auto" />
-      </LanguageProvider>
-    </AuthProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <AuthProvider>
+        <ThemeProvider>
+          <LanguageProvider>
+            <AppContent />
+            <StatusBar style="auto" />
+          </LanguageProvider>
+        </ThemeProvider>
+      </AuthProvider>
+    </GestureHandlerRootView>
   );
 }
 
@@ -432,6 +439,5 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#236ecf', // Blue background
   },
 });

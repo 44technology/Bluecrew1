@@ -14,6 +14,7 @@ export interface UserProfile {
   name: string;
   role: 'admin' | 'pm' | 'client' | 'sales';
   company?: string;
+  company_id?: string; // Tenant company ID – user belongs to this company
   phone?: string;
   created_at: string;
   updated_at: string;

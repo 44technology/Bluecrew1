@@ -141,7 +141,7 @@ export default function CompletedProjectsScreen() {
             style={styles.backButton}
             onPress={() => router.back()}
           >
-            <ArrowLeft size={24} color="#236ecf" />
+            <ArrowLeft size={24} color="#000000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Completed Projects</Text>
         </View>
@@ -159,14 +159,14 @@ export default function CompletedProjectsScreen() {
           style={styles.backButton}
           onPress={() => router.back()}
         >
-          <ArrowLeft size={24} color="#236ecf" />
+          <ArrowLeft size={24} color="#000000" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Completed Projects</Text>
         <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilterModal(true)}
         >
-          <Filter size={24} color="#236ecf" />
+          <Filter size={24} color="#000000" />
         </TouchableOpacity>
       </View>
 
@@ -197,7 +197,7 @@ export default function CompletedProjectsScreen() {
         {/* Projects List */}
         {loading ? (
           <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#236ecf" />
+            <ActivityIndicator size="large" color="#000000" />
             <Text style={styles.loadingText}>Loading completed projects...</Text>
           </View>
         ) : filteredProjects.length === 0 ? (
@@ -232,7 +232,7 @@ export default function CompletedProjectsScreen() {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filter Projects</Text>
               <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <X size={24} color="#6b7280" />
+                <X size={24} color="#000000" />
               </TouchableOpacity>
             </View>
             
@@ -261,7 +261,7 @@ export default function CompletedProjectsScreen() {
                       style={styles.datePickerButton}
                       onPress={() => setShowStartDatePicker(true)}
                     >
-                      <Calendar size={20} color="#6b7280" />
+                      <Calendar size={20} color="#000000" />
                       <Text style={styles.datePickerText}>
                         {startDate ? formatDate(startDate) : 'Select start date'}
                       </Text>
@@ -308,7 +308,7 @@ export default function CompletedProjectsScreen() {
                       style={styles.datePickerButton}
                       onPress={() => setShowEndDatePicker(true)}
                     >
-                      <Calendar size={20} color="#6b7280" />
+                      <Calendar size={20} color="#000000" />
                       <Text style={styles.datePickerText}>
                         {endDate ? formatDate(endDate) : 'Select end date'}
                       </Text>
@@ -475,7 +475,7 @@ const styles = StyleSheet.create({
   },
   summaryLabel: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   loadingContainer: {
@@ -487,7 +487,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
   },
   emptyState: {
     flex: 1,
@@ -498,13 +498,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#374151',
+    color: '#000000',
     marginTop: 16,
     marginBottom: 8,
   },
   emptySubtitle: {
     fontSize: 16,
-    color: '#6b7280',
+    color: '#000000',
     textAlign: 'center',
     lineHeight: 24,
   },
@@ -555,12 +555,12 @@ const styles = StyleSheet.create({
   },
   projectCategory: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
   projectDescription: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     lineHeight: 20,
     marginBottom: 16,
   },
@@ -576,12 +576,12 @@ const styles = StyleSheet.create({
   infoLabel: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     minWidth: 80,
   },
   infoValue: {
     fontSize: 14,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
   },
   progressContainer: {
@@ -647,7 +647,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#374151',
+    color: '#000000',
     marginBottom: 8,
   },
   dateInputContainer: {
@@ -662,7 +662,7 @@ const styles = StyleSheet.create({
   },
   dateInputText: {
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
   },
   datePickerButton: {
     flexDirection: 'row',
@@ -682,7 +682,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   placeholderText: {
-    color: '#9ca3af',
+    color: '#000000',
   },
   dateIcon: {
     fontSize: 16,
@@ -702,13 +702,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedRoleButton: {
-    backgroundColor: '#236ecf',
-    borderColor: '#236ecf',
+    backgroundColor: '#ffffff',
+    borderColor: '#000000',
   },
   roleButtonText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#6b7280',
+    color: '#000000',
   },
   selectedRoleButtonText: {
     color: '#ffffff',
@@ -719,7 +719,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 14,
-    color: '#374151',
+    color: '#000000',
     backgroundColor: '#ffffff',
   },
   modalActions: {
@@ -740,14 +740,14 @@ const styles = StyleSheet.create({
   clearButtonText: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#6b7280',
+    color: '#000000',
   },
   applyButton: {
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     alignItems: 'center',
   },
   applyButtonText: {

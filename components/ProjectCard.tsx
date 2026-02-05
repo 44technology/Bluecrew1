@@ -10,6 +10,7 @@ import { Calendar, Clock, User, Trash2, CreditCard as Edit3, UserPlus } from 'lu
 import { ProjectTimeline } from './ProjectTimeline';
 import { Project } from '@/types';
 import { useLanguage } from '@/contexts/LanguageContext';
+import { CARD_BORDER } from '@/constants/design';
 import { useAuth } from '@/contexts/AuthContext';
 
 interface ProjectCardProps {
@@ -69,12 +70,12 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
           {/* Client and PM Info */}
           <View style={styles.projectInfo}>
             <View style={styles.infoRow}>
-              <User size={12} color="#6b7280" />
+              <User size={12} color="#000000" />
               <Text style={styles.infoText}>Client: {project.client_name}</Text>
             </View>
             {project.assigned_pms && project.assigned_pms.length > 0 ? (
               <View style={styles.infoRow}>
-                <User size={12} color="#6b7280" />
+                <User size={12} color="#000000" />
                 <Text style={styles.infoText}>
                   PM: {project.assigned_pms.length > 1 
                     ? `${project.assigned_pms.length} PMs` 
@@ -84,7 +85,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               </View>
             ) : (
               <View style={styles.infoRow}>
-                <User size={12} color="#6b7280" />
+                <User size={12} color="#000000" />
                 <Text style={styles.infoText}>PM: {project.manager_id}</Text>
               </View>
             )}
@@ -96,7 +97,7 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
               <TouchableOpacity
                 style={styles.actionButton}
                 onPress={() => onEdit(project)}>
-                <Edit3 size={18} color="#236ecf" />
+                <Edit3 size={18} color="#000000" />
               </TouchableOpacity>
             )}
             {userRole === 'admin' && onAssignPM && (
@@ -137,17 +138,17 @@ export const ProjectCard: React.FC<ProjectCardProps> = ({
 
       <View style={styles.details}>
         <View style={styles.detailRow}>
-          <Calendar size={16} color="#6b7280" />
+          <Calendar size={16} color="#000000" />
           <Text style={styles.detailText}>
             {formatDate(project.start_date)} - {formatDate(project.deadline)}
           </Text>
         </View>
         
         <View style={styles.detailRow}>
-          <Clock size={16} color={isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#6b7280'} />
+          <Clock size={16} color={isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#000000'} />
           <Text style={[
             styles.detailText,
-            { color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#6b7280' }
+            { color: isOverdue ? '#ef4444' : isDueSoon ? '#f59e0b' : '#000000' }
           ]}>
             {isOverdue 
               ? `${Math.abs(daysLeft)} days overdue`
@@ -169,13 +170,14 @@ const styles = StyleSheet.create({
     padding: 10,
     marginBottom: 10,
     marginHorizontal: 2,
+    ...CARD_BORDER,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
     shadowOpacity: 0.08,
     shadowRadius: 2,
     elevation: 2,
     borderLeftWidth: 3,
-    borderLeftColor: '#236ecf',
+    borderLeftColor: '#000000',
     maxWidth: '100%',
   },
   cardHeader: {
@@ -200,12 +202,12 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#236ecf',
+    color: '#000000',
     flex: 1,
     lineHeight: 18,
   },
   progressBadge: {
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     paddingHorizontal: 8,
     paddingVertical: 4,
     borderRadius: 12,
@@ -227,7 +229,7 @@ const styles = StyleSheet.create({
   },
   description: {
     fontSize: 12,
-    color: '#6b7280',
+    color: '#000000',
     lineHeight: 16,
     flexWrap: 'wrap',
   },
@@ -262,13 +264,13 @@ const styles = StyleSheet.create({
   },
   progressFill: {
     height: '100%',
-    backgroundColor: '#236ecf',
+    backgroundColor: '#ffffff',
     borderRadius: 2,
   },
   progressText: {
     fontSize: 11,
     fontWeight: '600',
-    color: '#236ecf',
+    color: '#000000',
     minWidth: 30,
     textAlign: 'right',
   },
@@ -283,7 +285,7 @@ const styles = StyleSheet.create({
   },
   detailText: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#000000',
     flex: 1,
     flexWrap: 'wrap',
   },
@@ -302,7 +304,7 @@ const styles = StyleSheet.create({
   },
   infoText: {
     fontSize: 11,
-    color: '#6b7280',
+    color: '#000000',
     fontWeight: '500',
   },
 });
