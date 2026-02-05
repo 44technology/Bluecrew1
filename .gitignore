@@ -11,6 +11,7 @@ expo-env.d.ts
 ios/Pods/
 ios/Pods 2/
 ios/build/
+ios/BlueCrew 2.xcworkspace/
 
 # native
 *.orig.*
