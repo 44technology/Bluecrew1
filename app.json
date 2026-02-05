@@ -19,7 +19,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.bluecrew.app",
       "googleServicesFile": "./GoogleService-Info.plist",
-      "newArchEnabled": true,
+      "newArchEnabled": false,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
