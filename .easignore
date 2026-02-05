@@ -4,6 +4,9 @@ node_modules/
 dist/
 web-build/
 
+# Duplicate iOS workspace (EAS'ta tek workspace kalsın, "Select Workspace" takılmasın)
+ios/BlueCrew 2.xcworkspace/
+
 # Build outputs
 *.log
 *.tsbuildinfo
