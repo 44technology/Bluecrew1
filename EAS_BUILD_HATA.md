@@ -27,7 +27,12 @@ Bu projede **react-native-reanimated v4** kullanıldığı için `newArchEnabled
 
 ### D) "PhaseScriptExecution [Expo] Configure project" hatası
 
-Hata **"[Expo] Configure project"** script phase’inde düşüyorsa (ARCHIVE FAILED): Bu projede build phase, `.sh` dosyasını çalıştırmak yerine **doğrudan node ile** `expo-modules-autolinking generate-modules-provider` çalıştırıyor; tüm yollar `SRCROOT` ile dinamik (EAS’ta da doğru). Shell `/bin/bash`, PATH fallback’ler var. Değişiklik `ios/BlueCrew.xcodeproj/project.pbxproj`. Commit + push sonrası tekrar build alın.
+Hata **"[Expo] Configure project"** script phase’inde düşüyorsa (ARCHIVE FAILED): Bu projede iki katmanlı çözüm var:
+
+1. **EAS’ta:** `eas-build-post-install` (package.json) ile **pod install’dan sonra** `scripts/eas-expo-configure.sh` çalışıyor; bu script `ExpoModulesProvider.swift` dosyasını üretiyor. Böylece Xcode aşamasına gelindiğinde dosya zaten var.
+2. **Xcode phase:** `ExpoModulesProvider.swift` mevcutsa phase **hemen exit 0** yapıyor (node çalıştırmıyor). Yoksa (yerel build) node ile üretiyor.
+
+Commit + push sonrası tekrar EAS build alın. EAS log’da `[eas-expo-configure] Generating...` / `Done.` satırlarını görmelisiniz.
 
 ### E) Code signing / credentials
 
