@@ -18,7 +18,6 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bluecrew.app",
-      "googleServicesFile": "./GoogleService-Info.plist",
       "newArchEnabled": true,
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -26,17 +25,20 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.bluecrew.app",
       "googleServicesFile": "./google-services.json"
     },
     "web": {
-      "favicon": "./assets/favicon.png",
+      "favicon": "./assets/images/favicon.png",
       "bundler": "metro"
     },
-    "plugins": [],
+    "plugins": [
+      "@react-native-community/datetimepicker",
+      "expo-router"
+    ],
     "extra": {
       "eas": {
         "projectId": "6a286b09-91dd-4b05-9979-2f438e877682"
