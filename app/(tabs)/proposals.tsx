@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Platform,
   RefreshControl,
+  Linking,
 } from 'react-native';
 import { Plus, X, CheckCircle, XCircle, Eye, FileText, DollarSign, Calendar, Trash, Download, Receipt, User, UserCheck, BarChart3, MessageSquare, Building2, Send, Edit } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
@@ -31,6 +32,8 @@ import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 export default function ProposalsScreen() {
   const { t } = useLanguage();
@@ -306,7 +309,7 @@ export default function ProposalsScreen() {
     try {
       // Load proposals waiting for management approval
       const allProposals = await ProposalService.getProposals();
-      const pending = allProposals.filter(p => p.management_approval === 'pending');
+      const pending = allProposals.filter(p => p.management_approval === 'pending' || p.management_approval === 'update_review');
       setPendingProposals(pending);
 
       // Load invoices waiting for approval
@@ -1013,7 +1016,7 @@ export default function ProposalsScreen() {
         sent_for_approval_at: deleteField(),
         sent_for_approval_by: deleteField(),
         sent_for_approval_by_name: deleteField(),
-        management_approval: 'pending', // Keep as pending
+        management_approval: 'update_review', // Admin/sales görsün: revize edildi, tekrar inceleme gerek
       });
 
       // Create notification for the proposal creator (sales)
@@ -1093,6 +1096,9 @@ export default function ProposalsScreen() {
     if (proposal.management_approval === 'approved') {
       return { text: 'Management Approved', color: '#10b981' };
     }
+    if (proposal.management_approval === 'update_review') {
+      return { text: 'Update Review', color: '#2563eb' };
+    }
     if (proposal.client_approval === 'approved') {
       return { text: 'Client Approved', color: '#10b981' };
     }
@@ -1166,26 +1172,21 @@ export default function ProposalsScreen() {
   };
 
   const handleExportPDF = async (proposal: Proposal) => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Info', 'PDF export is only available on web');
-      return;
-    }
-
     try {
       let logoBase64 = '';
-      try {
-        const logoPath = '/assets/images/logo.png';
-        const response = await fetch(logoPath);
-        if (response.ok) {
-          const blob = await response.blob();
-          const reader = new FileReader();
-          logoBase64 = await new Promise((resolve) => {
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        }
-      } catch (error) {
-        console.log('Logo not found, continuing without logo');
+      if (Platform.OS === 'web') {
+        try {
+          const logoPath = '/assets/images/logo.png';
+          const response = await fetch(logoPath);
+          if (response.ok) {
+            const blob = await response.blob();
+            const reader = new FileReader();
+            logoBase64 = await new Promise((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+          }
+        } catch (_) {}
       }
 
       const htmlContent = `<!DOCTYPE html>
@@ -1532,6 +1533,20 @@ export default function ProposalsScreen() {
 </body>
 </html>`;
 
+      if (Platform.OS !== 'web') {
+        const { uri } = await Print.printToFileAsync({ html: htmlContent });
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `Proposal ${proposal.proposal_number}`,
+          });
+        } else {
+          await Linking.openURL(uri);
+        }
+        return;
+      }
+
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1541,8 +1556,7 @@ export default function ProposalsScreen() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      const printWindow = window.open('', '_blank');
+      const printWindow = typeof window !== 'undefined' && window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(htmlContent);
         printWindow.document.close();
@@ -1999,13 +2013,16 @@ export default function ProposalsScreen() {
                                 {client.name}
                               </Text>
                               {client.email && (
-                                <Text style={styles.clientDropdownOptionEmail}>
+                                <Text style={[
+                                  styles.clientDropdownOptionEmail,
+                                  newProposal.client_id === client.id && styles.selectedClientDropdownOptionEmail
+                                ]}>
                                   {client.email}
                                 </Text>
                               )}
                             </View>
                             {newProposal.client_id === client.id && (
-                              <CheckCircle size={20} color="#000000" />
+                              <CheckCircle size={20} color="#ffffff" />
                             )}
                           </TouchableOpacity>
                         ))}
@@ -2734,8 +2751,13 @@ export default function ProposalsScreen() {
                           }}
                         >
                           <Text style={[styles.clientDropdownOptionText, newProposal.client_id === client.id && styles.selectedClientDropdownOptionText]}>{client.name}</Text>
-                          {client.email && <Text style={styles.clientDropdownOptionEmail}>{client.email}</Text>}
-                          {newProposal.client_id === client.id && <CheckCircle size={20} color="#000000" />}
+                          {client.email && (
+                            <Text style={[
+                              styles.clientDropdownOptionEmail,
+                              newProposal.client_id === client.id && styles.selectedClientDropdownOptionEmail
+                            ]}>{client.email}</Text>
+                          )}
+                          {newProposal.client_id === client.id && <CheckCircle size={20} color="#ffffff" />}
                         </TouchableOpacity>
                       ))}
                     {clients.filter(c =>
@@ -2815,15 +2837,13 @@ export default function ProposalsScreen() {
                   <View style={styles.detailSection}>
                     <View style={styles.detailHeader}>
                       <Text style={styles.detailTitle}>{selectedProposal.proposal_number}</Text>
-                      {Platform.OS === 'web' && (
-                        <TouchableOpacity
-                          style={styles.downloadButton}
-                          onPress={() => handleExportPDF(selectedProposal)}
-                        >
-                          <Download size={18} color="#000000" />
-                          <Text style={styles.downloadButtonText}>Download PDF</Text>
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity
+                        style={styles.downloadButton}
+                        onPress={() => handleExportPDF(selectedProposal)}
+                      >
+                        <Download size={18} color="#000000" />
+                        <Text style={styles.downloadButtonText}>{Platform.OS === 'web' ? 'Download PDF' : 'PDF'}</Text>
+                      </TouchableOpacity>
                     </View>
                     
                     <View style={styles.detailRow}>
@@ -2850,9 +2870,9 @@ export default function ProposalsScreen() {
                     </View>
                     <View style={styles.detailRow}>
                       <Text style={styles.detailLabel}>Management Approval:</Text>
-                      <View style={[styles.statusBadge, { backgroundColor: selectedProposal.management_approval === 'approved' ? '#059669' : selectedProposal.management_approval === 'rejected' ? '#ef4444' : '#f59e0b' }]}>
+                      <View style={[styles.statusBadge, { backgroundColor: selectedProposal.management_approval === 'approved' ? '#059669' : selectedProposal.management_approval === 'rejected' ? '#ef4444' : selectedProposal.management_approval === 'update_review' ? '#2563eb' : '#f59e0b' }]}>
                         <Text style={styles.statusText}>
-                          {selectedProposal.management_approval === 'approved' ? 'Approved' : selectedProposal.management_approval === 'rejected' ? 'Rejected' : 'Pending'}
+                          {selectedProposal.management_approval === 'approved' ? 'Approved' : selectedProposal.management_approval === 'rejected' ? 'Rejected' : selectedProposal.management_approval === 'update_review' ? 'Update Review' : 'Pending'}
                         </Text>
                       </View>
                     </View>
@@ -2981,9 +3001,9 @@ export default function ProposalsScreen() {
                     )}
                   </View>
 
-                  {/* Sales: can edit when pending and (not yet sent for approval OR sent back for update review) */}
-                  {/* Admin: can edit when proposal is not approved */}
+                  {/* Sales: can edit when pending (not sent) or update_review; Admin: can edit when not approved */}
                   {((selectedProposal.management_approval === 'pending' && userRole === 'sales' && !selectedProposal.sent_for_approval_at) ||
+                    (selectedProposal.management_approval === 'update_review' && userRole === 'sales') ||
                     (selectedProposal.management_approval !== 'approved' && userRole === 'admin')) && (
                     <View style={styles.modalActions}>
                       <TouchableOpacity
@@ -3044,7 +3064,7 @@ export default function ProposalsScreen() {
                   )}
 
                   {/* Admin can approve/reject/update review proposals */}
-                  {selectedProposal.management_approval === 'pending' && userRole === 'admin' && (
+                  {(selectedProposal.management_approval === 'pending' || selectedProposal.management_approval === 'update_review') && userRole === 'admin' && (
                     <View style={styles.modalActions}>
                       <TouchableOpacity
                         style={styles.rejectButton}
@@ -4150,7 +4170,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#f3f4f6',
   },
   selectedClientDropdownOption: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#000000',
   },
   clientDropdownOptionText: {
     fontSize: 16,
@@ -4158,13 +4178,16 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectedClientDropdownOptionText: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   clientDropdownOptionEmail: {
     fontSize: 12,
     color: '#000000',
     marginTop: 2,
+  },
+  selectedClientDropdownOptionEmail: {
+    color: '#ffffff',
   },
   clientDropdownEmpty: {
     padding: 20,
@@ -4238,7 +4261,7 @@ const styles = StyleSheet.create({
   },
   selectedCategory: {
     borderColor: '#000000',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#000000',
   },
   categoryText: {
     fontSize: 16,
@@ -4247,7 +4270,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   selectedCategoryText: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   supervisionOptionContent: {

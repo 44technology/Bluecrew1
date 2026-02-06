@@ -735,12 +735,12 @@ const styles = StyleSheet.create({
     minHeight: 40,
   },
   segmentItemActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#171717',
   },
   segmentText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#000000',
+    color: '#1f2937',
   },
   segmentTextActive: {
     color: '#ffffff',
@@ -755,19 +755,19 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#d1d5db',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f9fafb',
     minHeight: 40,
     alignItems: 'center',
     justifyContent: 'center',
   },
   yearChipActive: {
-    backgroundColor: '#ffffff',
-    borderColor: '#000000',
+    backgroundColor: '#171717',
+    borderColor: '#171717',
   },
   yearChipText: {
     fontSize: 13,
     fontWeight: '700',
-    color: '#000000',
+    color: '#1f2937',
   },
   yearChipTextActive: {
     color: '#ffffff',
@@ -777,12 +777,12 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
-    backgroundColor: '#ffffff', // Blue background like other pages
+    backgroundColor: '#ffffff',
   },
   accessDeniedText: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#ffffff', // Yellow text like other pages
+    color: '#1f2937',
     textAlign: 'center',
   },
   yearSelector: {
@@ -931,7 +931,9 @@ const styles = StyleSheet.create({
   exportButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff', // Yellow button like other pages
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#d1d5db',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 8,
@@ -939,7 +941,7 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
   },
   exportButtonText: {
-    color: '#1f2937', // Dark text on yellow
+    color: '#1f2937',
     fontSize: 14,
     fontWeight: '600',
   },

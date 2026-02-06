@@ -1,6 +1,6 @@
 import { initializeApp, getApps } from 'firebase/app';
-import { getAuth } from 'firebase/auth';
-import { getFirestore, connectFirestoreEmulator, enableNetwork, disableNetwork } from 'firebase/firestore';
+import { getAuth, initializeAuth, getReactNativePersistence } from 'firebase/auth';
+import { getFirestore, enableNetwork, disableNetwork } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import { Platform } from 'react-native';
 
@@ -63,8 +63,27 @@ try {
   app = initializeApp(firebaseConfig);
 }
 
-// Initialize Firebase services with error handling
-export const auth = getAuth(app);
+// Initialize Auth: Web'de getAuth, React Native'de kalıcı oturum için initializeAuth
+let auth: ReturnType<typeof getAuth>;
+if (Platform.OS === 'web') {
+  auth = getAuth(app);
+} else {
+  try {
+    const AsyncStorage = require('@react-native-async-storage/async-storage').default;
+    auth = initializeAuth(app, {
+      persistence: getReactNativePersistence(AsyncStorage),
+    });
+  } catch (err: any) {
+    // already-initialized (hot reload) veya başka hata: getAuth ile devam et
+    if (err?.code === 'auth/already-initialized' || err?.message?.includes('already-initialized')) {
+      auth = getAuth(app);
+    } else {
+      console.warn('Firebase Auth initializeAuth failed, using getAuth:', err?.message || err);
+      auth = getAuth(app);
+    }
+  }
+}
+export { auth };
 export const db = getFirestore(app);
 export const storage = getStorage(app);
 

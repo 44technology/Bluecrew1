@@ -56,7 +56,9 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
   useEffect(() => {
     // Listen to Firebase auth state changes
     const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
-      console.log('Firebase auth state changed:', firebaseUser?.email);
+      if (__DEV__) {
+        console.log('Firebase auth state:', firebaseUser ? firebaseUser.email : '(signed out)');
+      }
       
       if (firebaseUser) {
         try {

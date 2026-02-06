@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Alert,
+  Image,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Globe, User, Settings as SettingsIcon, Info, LogOut } from 'lucide-react-native';
@@ -13,7 +15,7 @@ import BackButton from '@/components/BackButton';
 import { useLanguage, Language } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import HamburgerMenu from '@/components/HamburgerMenu';
-import { Platform } from 'react-native';
+import { auth } from '@/lib/firebase';
 
 export default function SettingsScreen() {
   const { language, setLanguage, t } = useLanguage();
@@ -75,7 +77,15 @@ export default function SettingsScreen() {
       >
         <View style={styles.profileCard}>
           <View style={styles.avatar}>
-            <User size={32} color="#ffffff" />
+            {(user?.profile_picture || auth.currentUser?.photoURL) ? (
+              <Image
+                source={{ uri: user?.profile_picture || auth.currentUser?.photoURL || '' }}
+                style={styles.avatarImage}
+                resizeMode="cover"
+              />
+            ) : (
+              <User size={32} color="#ffffff" />
+            )}
           </View>
           <View style={styles.profileInfo}>
             <Text style={styles.profileName}>{user?.name || 'User'}</Text>
@@ -194,10 +204,16 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#236ecf',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 16,
+    overflow: 'hidden',
+  },
+  avatarImage: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
   },
   profileInfo: {
     flex: 1,
@@ -259,17 +275,20 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   selectedLanguage: {
-    backgroundColor: '#00000020',
+    backgroundColor: '#000000',
+    borderColor: '#000000',
   },
   languageText: {
     fontSize: 14,
     color: '#000000',
   },
   selectedLanguageText: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   selectedDot: {

@@ -648,32 +648,9 @@ export default function ClientsScreen() {
               <Download size={18} color="#ffffff" />
               <Text style={styles.exportButtonText}>Export CSV</Text>
             </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => {
-                  setFieldErrors({});
-                  setShowAddModal(true);
-                }}
-              >
-                <Plus size={18} color="#ffffff" />
-                <Text style={styles.addButtonText}>Add Client</Text>
-              </TouchableOpacity>
           </View>
         )}
       </View>
-
-      {/* Add Button - Moved to content area for mobile */}
-      {isMobile && (canEditClients || userRole === 'admin') && (
-        <View style={styles.contentActions}>
-          <TouchableOpacity
-            style={styles.addButton}
-            onPress={() => setShowAddModal(true)}
-          >
-            <Plus size={18} color="#ffffff" />
-            <Text style={styles.addButtonText}>Add Client</Text>
-          </TouchableOpacity>
-        </View>
-      )}
 
       {/* Web: Search and Batch Operations Toolbar */}
       {Platform.OS === 'web' && (
@@ -1286,7 +1263,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ffffff', // Blue like teams
+    backgroundColor: '#1f2937',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,

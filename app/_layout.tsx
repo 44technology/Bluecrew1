@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
-import { Stack, router } from 'expo-router';
+import { Stack, router, useSegments } from 'expo-router';
+import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
@@ -8,23 +9,35 @@ import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
 
+// Splash'i uygulama hazır olana kadar göster (beyaz ekranı önler)
+SplashScreen.preventAutoHideAsync?.();
+
 function AppContent() {
   const { user, isLoading } = useAuth();
   const { theme } = useTheme();
+  const segments = useSegments();
   useFrameworkReady();
 
+  // Index (splash + loading bar) kendi süresi bitince login'e gidiyor; index/root'tayken login'e atlama
+  const isIndexScreen = segments[0] === 'index' || segments.length === 0;
+
   useEffect(() => {
-    if (!isLoading && !user) {
+    if (isLoading || isIndexScreen) return;
+    if (!user) {
       router.replace('/login');
     }
-  }, [user, isLoading]);
+  }, [user, isLoading, isIndexScreen]);
+
+  // Auth yüklenene kadar splash ekranda kalsın, sonra gizle
+  useEffect(() => {
+    if (!isLoading) {
+      SplashScreen.hideAsync?.();
+    }
+  }, [isLoading]);
 
   if (isLoading) {
-    return (
-      <View style={[styles.loadingContainer, { backgroundColor: theme.background }]}>
-        <ActivityIndicator size="large" color="#000000" />
-      </View>
-    );
+    // Beyaz ekran yerine splash görünsün; boş view (splash arkada)
+    return <View style={[styles.loadingContainer, { backgroundColor: theme.background }]} />;
   }
 
   return (

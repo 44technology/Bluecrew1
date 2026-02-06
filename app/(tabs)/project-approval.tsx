@@ -151,7 +151,7 @@ export default function ProjectApprovalScreen() {
         // Only admin can approve proposals (management approval)
         if (userRole === 'admin') {
           const allProposals = await ProposalService.getProposals();
-          const pending = allProposals.filter(p => p.management_approval === 'pending');
+          const pending = allProposals.filter(p => p.management_approval === 'pending' || p.management_approval === 'update_review');
           setPendingProposals(pending);
         }
       }
@@ -1803,14 +1803,16 @@ export default function ProjectApprovalScreen() {
                       selectedProposal.management_approval === 'approved' && styles.statusBadgeApproved,
                       selectedProposal.management_approval === 'rejected' && styles.statusBadgeRejected,
                       selectedProposal.management_approval === 'pending' && styles.statusBadgePending,
+                      selectedProposal.management_approval === 'update_review' && styles.statusBadgeReview,
                     ]}>
                       <Text style={[
                         styles.statusBadgeText,
                         selectedProposal.management_approval === 'approved' && styles.statusBadgeTextApproved,
                         selectedProposal.management_approval === 'rejected' && styles.statusBadgeTextRejected,
                         selectedProposal.management_approval === 'pending' && styles.statusBadgeTextPending,
+                        selectedProposal.management_approval === 'update_review' && styles.statusBadgeTextReview,
                       ]}>
-                        {selectedProposal.management_approval ? selectedProposal.management_approval.charAt(0).toUpperCase() + selectedProposal.management_approval.slice(1) : 'Pending'}
+                        {selectedProposal.management_approval === 'update_review' ? 'Update Review' : selectedProposal.management_approval ? selectedProposal.management_approval.charAt(0).toUpperCase() + selectedProposal.management_approval.slice(1) : 'Pending'}
                       </Text>
                     </View>
                   </View>
@@ -2650,7 +2652,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#fef3c7',
   },
   statusBadgeReview: {
-    backgroundColor: '#fef3c7',
+    backgroundColor: '#dbeafe',
   },
   statusBadgeText: {
     fontSize: 11,
@@ -2668,7 +2670,7 @@ const styles = StyleSheet.create({
     color: '#d97706',
   },
   statusBadgeTextReview: {
-    color: '#d97706',
+    color: '#2563eb',
   },
   modalContainer: {
     flex: 1,

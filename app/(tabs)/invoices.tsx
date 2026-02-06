@@ -11,6 +11,7 @@ import {
   ActivityIndicator,
   Platform,
   RefreshControl,
+  Linking,
 } from 'react-native';
 import { Plus, X, Eye, FileText, DollarSign, Calendar, Trash, Download, User, UserCheck, Receipt, BarChart3, MessageSquare, Filter, Search, Building2, CheckCircle, Circle, Upload, Paperclip } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
@@ -32,6 +33,8 @@ import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 
 export default function InvoicesScreen() {
   const { t } = useLanguage();
@@ -1038,11 +1041,6 @@ export default function InvoicesScreen() {
   };
 
   const handleExportPDF = async (invoice: Invoice) => {
-    if (Platform.OS !== 'web') {
-      Alert.alert('Info', 'PDF export is only available on web');
-      return;
-    }
-
     try {
       // Fetch related proposal and project info
       let proposalInfo = '';
@@ -1075,40 +1073,32 @@ export default function InvoicesScreen() {
         projectInfo = invoice.project_name;
       }
 
-      // Convert logo to base64
+      // Convert logo to base64 (web only; native uses text fallback)
       let logoBase64 = '';
-      const logoPaths = [
-        '/assets/images/logo.png',
-        './assets/images/logo.png',
-        'assets/images/logo.png',
-        '/logo.png',
-        window.location.origin + '/assets/images/logo.png',
-      ];
-      
-      for (const logoPath of logoPaths) {
-        try {
-          const response = await fetch(logoPath);
-          if (response.ok) {
-            const blob = await response.blob();
-            if (blob.type.startsWith('image/')) {
-              const reader = new FileReader();
-              logoBase64 = await new Promise((resolve) => {
-                reader.onloadend = () => resolve(reader.result as string);
-                reader.readAsDataURL(blob);
-              });
-              if (logoBase64) {
-                console.log('Logo loaded from:', logoPath);
-                break;
+      if (Platform.OS === 'web') {
+        const logoPaths = [
+          '/assets/images/logo.png',
+          './assets/images/logo.png',
+          'assets/images/logo.png',
+          '/logo.png',
+          (typeof window !== 'undefined' && window.location?.origin) ? window.location.origin + '/assets/images/logo.png' : '',
+        ].filter(Boolean);
+        for (const logoPath of logoPaths) {
+          try {
+            const response = await fetch(logoPath);
+            if (response.ok) {
+              const blob = await response.blob();
+              if (blob.type.startsWith('image/')) {
+                const reader = new FileReader();
+                logoBase64 = await new Promise((resolve) => {
+                  reader.onloadend = () => resolve(reader.result as string);
+                  reader.readAsDataURL(blob);
+                });
+                if (logoBase64) break;
               }
             }
-          }
-        } catch (error) {
-          // Try next path
+          } catch (_) {}
         }
-      }
-      
-      if (!logoBase64) {
-        console.log('Logo not found in any path, using text fallback');
       }
 
       // Create HTML content for PDF
@@ -1399,7 +1389,24 @@ export default function InvoicesScreen() {
         </html>
       `;
 
-      // Create blob and download
+      if (Platform.OS !== 'web') {
+        const { uri } = await Print.printToFileAsync({
+          html: htmlContent,
+          baseUrl: undefined,
+        });
+        const canShare = await Sharing.isAvailableAsync();
+        if (canShare) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            dialogTitle: `Invoice ${invoice.invoice_number}`,
+          });
+        } else {
+          await Linking.openURL(uri);
+        }
+        return;
+      }
+
+      // Web: create blob and download + print
       const blob = new Blob([htmlContent], { type: 'text/html' });
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -1409,9 +1416,7 @@ export default function InvoicesScreen() {
       link.click();
       document.body.removeChild(link);
       URL.revokeObjectURL(url);
-
-      // Also try to print
-      const printWindow = window.open('', '_blank');
+      const printWindow = typeof window !== 'undefined' && window.open('', '_blank');
       if (printWindow) {
         printWindow.document.write(htmlContent);
         printWindow.document.close();
@@ -2052,15 +2057,13 @@ export default function InvoicesScreen() {
                   <View style={styles.detailSection}>
                     <View style={styles.detailHeader}>
                       <Text style={styles.detailTitle}>{selectedInvoice.invoice_number}</Text>
-                      {Platform.OS === 'web' && (
-                        <TouchableOpacity
-                          style={styles.downloadButton}
-                          onPress={() => handleExportPDF(selectedInvoice)}
-                        >
-                          <Download size={18} color="#000000" />
-                          <Text style={styles.downloadButtonText}>Download PDF</Text>
-                        </TouchableOpacity>
-                      )}
+                      <TouchableOpacity
+                        style={styles.downloadButton}
+                        onPress={() => handleExportPDF(selectedInvoice)}
+                      >
+                        <Download size={18} color="#000000" />
+                        <Text style={styles.downloadButtonText}>{Platform.OS === 'web' ? 'Download PDF' : 'PDF'}</Text>
+                      </TouchableOpacity>
                     </View>
                     
                     {selectedInvoice.project_name && (
@@ -2848,18 +2851,30 @@ export default function InvoicesScreen() {
                       onPress={() => handleSelectProposal(proposal.id)}
                     >
                       <View style={styles.proposalOptionContent}>
-                        <Text style={styles.proposalOptionNumber}>{proposal.proposal_number}</Text>
-                        <Text style={styles.proposalOptionClient}>Client: {proposal.client_name}</Text>
-                        <Text style={styles.proposalOptionDate}>
+                        <Text style={[
+                          styles.proposalOptionNumber,
+                          selectedProposalId === proposal.id && styles.selectedProposalText
+                        ]}>{proposal.proposal_number}</Text>
+                        <Text style={[
+                          styles.proposalOptionClient,
+                          selectedProposalId === proposal.id && styles.selectedProposalText
+                        ]}>Client: {proposal.client_name}</Text>
+                        <Text style={[
+                          styles.proposalOptionDate,
+                          selectedProposalId === proposal.id && styles.selectedProposalText
+                        ]}>
                           Date: {new Date(proposal.proposal_date || proposal.created_at).toLocaleDateString()}
                         </Text>
-                        <Text style={styles.proposalOptionTotal}>
+                        <Text style={[
+                          styles.proposalOptionTotal,
+                          selectedProposalId === proposal.id && styles.selectedProposalText
+                        ]}>
                           Total: ${proposal.total_cost.toLocaleString()}
                         </Text>
                       </View>
                       {selectedProposalId === proposal.id && (
                         <View style={styles.selectedIndicator}>
-                          <CheckCircle size={20} color="#059669" />
+                          <CheckCircle size={20} color="#ffffff" />
                         </View>
                       )}
                     </TouchableOpacity>
@@ -3404,7 +3419,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedProject: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#000000',
     borderColor: '#000000',
     borderWidth: 2,
   },
@@ -3414,7 +3429,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectedProjectText: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   clientList: {
@@ -3431,7 +3446,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedClient: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#000000',
     borderColor: '#000000',
     borderWidth: 2,
   },
@@ -3441,7 +3456,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectedClientText: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   toggleContainer: {
@@ -3451,15 +3466,16 @@ const styles = StyleSheet.create({
   },
   toggleButton: {
     flex: 1,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ffffff',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
     alignItems: 'center',
   },
   toggleButtonActive: {
-    backgroundColor: '#eff6ff',
-    borderWidth: 2,
+    backgroundColor: '#000000',
     borderColor: '#000000',
   },
   toggleButtonText: {
@@ -3468,7 +3484,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   toggleButtonTextActive: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   newClientForm: {
@@ -3995,7 +4011,10 @@ const styles = StyleSheet.create({
   },
   selectedProposal: {
     borderColor: '#000000',
-    backgroundColor: '#f0f9ff',
+    backgroundColor: '#000000',
+  },
+  selectedProposalText: {
+    color: '#ffffff',
   },
   proposalOptionContent: {
     flex: 1,
@@ -4327,7 +4346,7 @@ const styles = StyleSheet.create({
   },
   selectedCategory: {
     borderColor: '#000000',
-    backgroundColor: '#eff6ff',
+    backgroundColor: '#000000',
   },
   categoryText: {
     fontSize: 16,
@@ -4335,7 +4354,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
   selectedCategoryText: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   inputText: {

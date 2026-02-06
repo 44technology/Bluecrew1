@@ -14,8 +14,6 @@ import {
 import { db } from '@/lib/firebase';
 import { stripUndefined } from '@/lib/firestoreUtils';
 import { Project, ProjectStep } from '@/types';
-import { ChangeOrderService } from './changeOrderService';
-import { CommentService } from './commentService';
 
 const PROJECTS_COLLECTION = 'projects';
 const STEPS_COLLECTION = 'steps';
@@ -155,8 +153,9 @@ export class ProjectService {
         await deleteDoc(doc(db, STEPS_COLLECTION, stepDoc.id));
       }
       
-      // Delete all change orders for this project
+      // Delete all change orders for this project (dynamic import avoids require cycle)
       try {
+        const { ChangeOrderService } = await import('./changeOrderService');
         const changeOrders = await ChangeOrderService.getChangeOrderRequestsByProjectId(projectId);
         for (const changeOrder of changeOrders) {
           await ChangeOrderService.deleteChangeOrderRequest(changeOrder.id);
@@ -166,8 +165,9 @@ export class ProjectService {
         // Continue even if change order deletion fails
       }
       
-      // Delete all comments for this project
+      // Delete all comments for this project (dynamic import avoids require cycle)
       try {
+        const { CommentService } = await import('./commentService');
         const comments = await CommentService.getCommentsByProjectId(projectId);
         for (const comment of comments) {
           await CommentService.deleteComment(comment.id);

@@ -1,19 +1,41 @@
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef } from 'react';
+import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { router } from 'expo-router';
 
+const LOADING_DURATION_MS = 2500;
+
 export default function IndexScreen() {
+  const progress = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    Animated.timing(progress, {
+      toValue: 1,
+      duration: LOADING_DURATION_MS,
+      useNativeDriver: false,
+      easing: Easing.out(Easing.ease),
+    }).start();
+  }, [progress]);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      router.replace('/login');
+    }, LOADING_DURATION_MS);
+    return () => clearTimeout(t);
+  }, []);
+
+  const widthInterpolate = progress.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0%', '100%'],
+  });
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>BlueCrew</Text>
+      <Text style={styles.title}>Blue Crew</Text>
       <Text style={styles.subtitle}>Project Management App</Text>
-      
-      <TouchableOpacity 
-        style={styles.button}
-        onPress={() => router.push('/auth/login')}
-      >
-        <Text style={styles.buttonText}>Get Started</Text>
-      </TouchableOpacity>
+
+      <View style={styles.loadingTrack}>
+        <Animated.View style={[styles.loadingFill, { width: widthInterpolate }]} />
+      </View>
     </View>
   );
 }
@@ -23,32 +45,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f4e4a6',
+    backgroundColor: '#FFCC00',
     padding: 20,
   },
   title: {
     fontSize: 48,
     fontWeight: 'bold',
-    color: '#000000',
+    color: '#236ECF',
     marginBottom: 10,
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 18,
-    color: '#000000',
+    color: '#236ECF',
     marginBottom: 40,
     textAlign: 'center',
   },
-  button: {
+  loadingTrack: {
+    width: '80%',
+    maxWidth: 320,
+    height: 8,
     backgroundColor: '#ffffff',
-    paddingHorizontal: 30,
-    paddingVertical: 15,
-    borderRadius: 10,
-    minWidth: 200,
-    alignItems: 'center',
+    borderRadius: 4,
+    overflow: 'hidden',
   },
-  buttonText: {
-    color: '#ffffff',
-    fontSize: 16,
-    fontWeight: '600',
+  loadingFill: {
+    height: '100%',
+    backgroundColor: '#236ECF',
+    borderRadius: 4,
   },
 });

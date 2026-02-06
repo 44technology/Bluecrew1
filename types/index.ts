@@ -410,7 +410,7 @@ export interface Proposal {
   discount?: number; // Discount amount
   description?: string; // Proposal description/notes
   total_cost: number;
-  management_approval: 'pending' | 'approved' | 'rejected';
+  management_approval: 'pending' | 'approved' | 'rejected' | 'update_review';
   client_approval: null | 'pending' | 'approved' | 'rejected' | 'request_changes'; // null = not sent to client yet
   management_approved_at?: string;
   management_rejected_at?: string;

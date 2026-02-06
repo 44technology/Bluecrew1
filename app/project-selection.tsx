@@ -223,6 +223,7 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 6,
+    backgroundColor: '#ffffff',
   },
   segmentActive: {
     backgroundColor: '#000000',

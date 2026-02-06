@@ -861,8 +861,11 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',
+    backgroundColor: 'transparent',
+    marginBottom: -2,
   },
   tabActive: {
+    backgroundColor: '#000000',
     borderBottomColor: '#000000',
   },
   tabText: {
@@ -871,7 +874,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   tabTextActive: {
-    color: '#000000',
+    color: '#ffffff',
     fontWeight: '600',
   },
   tabContent: {

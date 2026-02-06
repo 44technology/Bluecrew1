@@ -466,7 +466,7 @@ export default function PermissionsScreen() {
           onPress={savePermissions}
           disabled={saving}
         >
-          <Save size={20} color="#ffffff" />
+          <Save size={20} color="#ffffff" strokeWidth={2} />
           <Text style={styles.saveButtonText}>
             {saving ? 'Saving...' : 'Save'}
           </Text>
@@ -621,7 +621,7 @@ const styles = StyleSheet.create({
   saveButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff',
+    backgroundColor: '#171717',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
@@ -663,12 +663,12 @@ const styles = StyleSheet.create({
     minHeight: 44,
   },
   roleTabActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#171717',
   },
   roleTabText: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#000000',
+    color: '#374151',
     textAlign: 'center',
   },
   roleTabTextActive: {
@@ -772,23 +772,23 @@ const styles = StyleSheet.create({
   },
   permissionButton: {
     paddingHorizontal: 14,
-    paddingVertical: 6,
+    paddingVertical: 8,
     borderRadius: 6,
     backgroundColor: '#f3f4f6',
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: '#d1d5db',
     minWidth: 60,
     alignItems: 'center',
     justifyContent: 'center',
   },
   permissionButtonActive: {
-    backgroundColor: '#ffffff',
-    borderColor: '#000000',
+    backgroundColor: '#171717',
+    borderColor: '#171717',
   },
   permissionButtonText: {
-    fontSize: 11,
+    fontSize: 12,
     fontWeight: '600',
-    color: '#000000',
+    color: '#1f2937',
     textAlign: 'center',
   },
   permissionButtonTextActive: {

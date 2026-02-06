@@ -931,9 +931,6 @@ export default function TeamScreen() {
           <BackButton color="#000000" backgroundColor="rgba(0, 0, 0, 0.1)" />
         <View>
           <Text style={styles.title}>Team Management</Text>
-          <Text style={styles.subtitle}>
-            Manage your team, contractors, and vendors
-          </Text>
         </View>
       </View>
 
@@ -1109,7 +1106,7 @@ export default function TeamScreen() {
                       <Text style={[
                         styles.roleButtonText,
                         newOurTeamMember.position === 'pm' && styles.selectedRoleButtonText,
-                      ]}>
+                      ]} numberOfLines={1} adjustsFontSizeToFit>
                         PM
                       </Text>
                     </TouchableOpacity>
@@ -1123,7 +1120,7 @@ export default function TeamScreen() {
                       <Text style={[
                         styles.roleButtonText,
                         newOurTeamMember.position === 'sales' && styles.selectedRoleButtonText,
-                      ]}>
+                      ]} numberOfLines={1} adjustsFontSizeToFit>
                         SALES
                       </Text>
                     </TouchableOpacity>
@@ -1137,11 +1134,10 @@ export default function TeamScreen() {
                       <Text style={[
                         styles.roleButtonText,
                         newOurTeamMember.position === 'office' && styles.selectedRoleButtonText,
-                      ]}>
+                      ]} numberOfLines={1} adjustsFontSizeToFit>
                         OFFICE
                       </Text>
                     </TouchableOpacity>
-                    {/* Only admins can create admin accounts */}
                     {userRole === 'admin' && (
                       <TouchableOpacity
                         style={[
@@ -1153,7 +1149,7 @@ export default function TeamScreen() {
                         <Text style={[
                           styles.roleButtonText,
                           newOurTeamMember.position === 'admin' && styles.selectedRoleButtonText,
-                        ]}>
+                        ]} numberOfLines={1} adjustsFontSizeToFit>
                           ADMIN
                         </Text>
                       </TouchableOpacity>
@@ -1426,7 +1422,7 @@ export default function TeamScreen() {
                       <Text style={[
                         styles.roleButtonText,
                         editOurTeamMember.position === 'pm' && styles.selectedRoleButtonText,
-                      ]}>
+                      ]} numberOfLines={1} adjustsFontSizeToFit>
                         PM
                       </Text>
                     </TouchableOpacity>
@@ -1440,7 +1436,7 @@ export default function TeamScreen() {
                       <Text style={[
                         styles.roleButtonText,
                         editOurTeamMember.position === 'sales' && styles.selectedRoleButtonText,
-                      ]}>
+                      ]} numberOfLines={1} adjustsFontSizeToFit>
                         SALES
                       </Text>
                     </TouchableOpacity>
@@ -1695,7 +1691,7 @@ const styles = StyleSheet.create({
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1f2937',
     justifyContent: 'center',
     alignItems: 'center',
     marginRight: 12,
@@ -1985,14 +1981,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#d1d5db',
     alignItems: 'center',
-    backgroundColor: '#f9fafb',
+    backgroundColor: '#ffffff',
   },
   selectedRoleButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     borderColor: '#000000',
   },
   roleButtonText: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: '600',
     color: '#000000',
   },
