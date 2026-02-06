@@ -31,6 +31,17 @@ const translations = {
     addStep: 'Add Step',
     stepName: 'Step Name',
     addEmployee: 'Add Employee',
+    createProject: 'Create Project',
+    projectAddress: 'Project Address',
+    totalBudget: 'Total Budget',
+    selectClient: 'Select Client',
+    completed: 'Completed',
+    noProjects: 'No projects available',
+    createNewProject: 'Create New Project',
+    projectCreated: 'Project created successfully',
+    projectDeleted: 'Project deleted successfully',
+    deleteProject: 'Delete Project',
+    areYouSure: 'Are you sure?',
     
     // Status
     pending: 'Pending',
@@ -44,6 +55,10 @@ const translations = {
     position: 'Position',
     email: 'Email',
     phone: 'Phone',
+    team: 'Team',
+    ourTeam: 'Our Team',
+    subcontractors: 'Subcontractors',
+    vendors: 'Vendors',
     
     // Schedule
     myTasks: 'My Tasks',
@@ -51,6 +66,8 @@ const translations = {
     dueToday: 'Due Today',
     upcoming: 'Upcoming',
     overdue: 'Overdue',
+    addSchedule: 'Add Schedule',
+    projectSchedule: 'Project Schedule',
     
     // Actions
     add: 'Add',
@@ -82,11 +99,16 @@ const translations = {
     renovation: 'Renovation',
     infrastructure: 'Infrastructure',
     
-    // Common
+    // Common / Status messages
     loading: 'Loading...',
     error: 'Error',
     success: 'Success',
     noData: 'No data available',
+    noDataAvailable: 'No data available',
+    errorOccurred: 'An error occurred',
+    saved: 'Saved',
+    deleted: 'Deleted',
+    updated: 'Updated',
     
     // Language
     language: 'Language',
@@ -107,21 +129,6 @@ const translations = {
     back: 'Back',
     next: 'Next',
     previous: 'Previous',
-    
-    // Projects
-    createProject: 'Create Project',
-    projectAddress: 'Project Address',
-    totalBudget: 'Total Budget',
-    client: 'Client',
-    selectClient: 'Select Client',
-    active: 'Active',
-    completed: 'Completed',
-    noProjects: 'No projects available',
-    createNewProject: 'Create New Project',
-    projectCreated: 'Project created successfully',
-    projectDeleted: 'Project deleted successfully',
-    deleteProject: 'Delete Project',
-    areYouSure: 'Are you sure?',
     
     // HR
     hrDashboard: 'HR Dashboard',
@@ -210,17 +217,6 @@ const translations = {
     totalHours: 'Total Hours',
     weeklySummary: 'Weekly Summary',
     
-    // Team
-    team: 'Team',
-    ourTeam: 'Our Team',
-    subcontractors: 'Subcontractors',
-    vendors: 'Vendors',
-    
-    // Schedule
-    schedule: 'Schedule',
-    addSchedule: 'Add Schedule',
-    projectSchedule: 'Project Schedule',
-    
     // Documents
     documents: 'Documents',
     uploadDocument: 'Upload Document',
@@ -229,16 +225,6 @@ const translations = {
     materials: 'Materials',
     materialRequest: 'Material Request',
     requestMaterials: 'Request Materials',
-    
-    // Status messages
-    loading: 'Loading...',
-    noDataAvailable: 'No data available',
-    errorOccurred: 'An error occurred',
-    success: 'Success',
-    error: 'Error',
-    saved: 'Saved',
-    deleted: 'Deleted',
-    updated: 'Updated',
     
     // Validation
     required: 'Required',
@@ -292,6 +278,17 @@ const translations = {
     addStep: 'Agregar Paso',
     stepName: 'Nombre del Paso',
     addEmployee: 'Agregar Empleado',
+    createProject: 'Crear Proyecto',
+    projectAddress: 'Dirección del Proyecto',
+    totalBudget: 'Presupuesto Total',
+    selectClient: 'Seleccionar Cliente',
+    completed: 'Completado',
+    noProjects: 'No hay proyectos disponibles',
+    createNewProject: 'Crear Nuevo Proyecto',
+    projectCreated: 'Proyecto creado exitosamente',
+    projectDeleted: 'Proyecto eliminado exitosamente',
+    deleteProject: 'Eliminar Proyecto',
+    areYouSure: '¿Estás seguro?',
     
     // Status
     pending: 'Pendiente',
@@ -305,6 +302,10 @@ const translations = {
     position: 'Posición',
     email: 'Correo',
     phone: 'Teléfono',
+    team: 'Equipo',
+    ourTeam: 'Nuestro Equipo',
+    subcontractors: 'Subcontratistas',
+    vendors: 'Proveedores',
     
     // Schedule
     myTasks: 'Mis Tareas',
@@ -312,6 +313,8 @@ const translations = {
     dueToday: 'Vence Hoy',
     upcoming: 'Próximas',
     overdue: 'Vencidas',
+    addSchedule: 'Agregar Horario',
+    projectSchedule: 'Horario del Proyecto',
     
     // Actions
     add: 'Agregar',
@@ -343,11 +346,16 @@ const translations = {
     renovation: 'Renovación',
     infrastructure: 'Infraestructura',
     
-    // Common
+    // Common / Status messages
     loading: 'Cargando...',
     error: 'Error',
     success: 'Éxito',
     noData: 'No hay datos disponibles',
+    noDataAvailable: 'No hay datos disponibles',
+    errorOccurred: 'Ocurrió un error',
+    saved: 'Guardado',
+    deleted: 'Eliminado',
+    updated: 'Actualizado',
     
     // Language
     language: 'Idioma',
@@ -368,21 +376,6 @@ const translations = {
     back: 'Atrás',
     next: 'Siguiente',
     previous: 'Anterior',
-    
-    // Projects
-    createProject: 'Crear Proyecto',
-    projectAddress: 'Dirección del Proyecto',
-    totalBudget: 'Presupuesto Total',
-    client: 'Cliente',
-    selectClient: 'Seleccionar Cliente',
-    active: 'Activo',
-    completed: 'Completado',
-    noProjects: 'No hay proyectos disponibles',
-    createNewProject: 'Crear Nuevo Proyecto',
-    projectCreated: 'Proyecto creado exitosamente',
-    projectDeleted: 'Proyecto eliminado exitosamente',
-    deleteProject: 'Eliminar Proyecto',
-    areYouSure: '¿Estás seguro?',
     
     // HR
     hrDashboard: 'Panel de HR',
@@ -471,17 +464,6 @@ const translations = {
     totalHours: 'Horas Totales',
     weeklySummary: 'Resumen Semanal',
     
-    // Team
-    team: 'Equipo',
-    ourTeam: 'Nuestro Equipo',
-    subcontractors: 'Subcontratistas',
-    vendors: 'Proveedores',
-    
-    // Schedule
-    schedule: 'Horario',
-    addSchedule: 'Agregar Horario',
-    projectSchedule: 'Horario del Proyecto',
-    
     // Documents
     documents: 'Documentos',
     uploadDocument: 'Subir Documento',
@@ -490,16 +472,6 @@ const translations = {
     materials: 'Materiales',
     materialRequest: 'Solicitud de Materiales',
     requestMaterials: 'Solicitar Materiales',
-    
-    // Status messages
-    loading: 'Cargando...',
-    noDataAvailable: 'No hay datos disponibles',
-    errorOccurred: 'Ocurrió un error',
-    success: 'Éxito',
-    error: 'Error',
-    saved: 'Guardado',
-    deleted: 'Eliminado',
-    updated: 'Actualizado',
     
     // Validation
     required: 'Requerido',
