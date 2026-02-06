@@ -254,44 +254,79 @@ export default function CompanySettingsScreen() {
                 />
 
                 <Text style={styles.sectionLabel}>{t('colorPalette')}</Text>
-                <View style={styles.paletteRow}>
-                  {([1, 2, 3, 4] as ColorPaletteId[]).map((id) => {
-                    const p = COLOR_PALETTES[id];
-                    const isActive = paletteId === id;
-                    const showColors = isActive ? theme : p;
-                    return (
-                      <TouchableOpacity
-                        key={id}
-                        style={[
-                          styles.paletteBtn,
-                          { borderRadius: RADIUS.lg, backgroundColor: '#f8fafc', borderColor: isActive ? theme.primary : '#e2e8f0' },
-                          isActive && styles.paletteBtnActive,
-                        ]}
-                        onPress={() => isAdmin && setPaletteId(id)}
-                        disabled={!isAdmin}
-                        activeOpacity={0.85}
-                      >
-                        <View style={styles.paletteSwatches}>
-                          {(['primary', 'accent', 'background'] as const).map((key) => (
-                            isAdmin && isActive ? (
-                              <TouchableOpacity
-                                key={key}
-                                style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]}
-                                onPress={() => {
-                                  setColorPickerKey(key);
-                                  setColorPickerVisible(true);
-                                }}
-                                activeOpacity={0.8}
-                              />
-                            ) : (
-                              <View key={key} style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]} />
-                            )
-                          ))}
-                        </View>
-                        <Text style={styles.paletteLabel}>{t(`palette${id}Name` as 'palette1Name' | 'palette2Name' | 'palette3Name' | 'palette4Name')}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
+                <View style={styles.paletteGrid}>
+                  <View style={styles.paletteRow}>
+                    {([1, 2] as ColorPaletteId[]).map((id) => {
+                      const p = COLOR_PALETTES[id];
+                      const isActive = paletteId === id;
+                      const showColors = isActive ? theme : p;
+                      return (
+                        <TouchableOpacity
+                          key={id}
+                          style={[
+                            styles.paletteBtn,
+                            { borderRadius: RADIUS.lg, backgroundColor: '#f8fafc', borderColor: isActive ? theme.primary : '#e2e8f0' },
+                            isActive && styles.paletteBtnActive,
+                          ]}
+                          onPress={() => isAdmin && setPaletteId(id)}
+                          disabled={!isAdmin}
+                          activeOpacity={0.85}
+                        >
+                          <View style={styles.paletteSwatches}>
+                            {(['primary', 'accent', 'background'] as const).map((key) => (
+                              isAdmin && isActive ? (
+                                <TouchableOpacity
+                                  key={key}
+                                  style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]}
+                                  onPress={() => { setColorPickerKey(key); setColorPickerVisible(true); }}
+                                  activeOpacity={0.8}
+                                />
+                              ) : (
+                                <View key={key} style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]} />
+                              )
+                            ))}
+                          </View>
+                          <Text style={styles.paletteLabel} numberOfLines={1}>{t(`palette${id}Name` as 'palette1Name' | 'palette2Name' | 'palette3Name' | 'palette4Name')}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
+                  <View style={styles.paletteRow}>
+                    {([3, 4] as ColorPaletteId[]).map((id) => {
+                      const p = COLOR_PALETTES[id];
+                      const isActive = paletteId === id;
+                      const showColors = isActive ? theme : p;
+                      return (
+                        <TouchableOpacity
+                          key={id}
+                          style={[
+                            styles.paletteBtn,
+                            { borderRadius: RADIUS.lg, backgroundColor: '#f8fafc', borderColor: isActive ? theme.primary : '#e2e8f0' },
+                            isActive && styles.paletteBtnActive,
+                          ]}
+                          onPress={() => isAdmin && setPaletteId(id)}
+                          disabled={!isAdmin}
+                          activeOpacity={0.85}
+                        >
+                          <View style={styles.paletteSwatches}>
+                            {(['primary', 'accent', 'background'] as const).map((key) => (
+                              isAdmin && isActive ? (
+                                <TouchableOpacity
+                                  key={key}
+                                  style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]}
+                                  onPress={() => { setColorPickerKey(key); setColorPickerVisible(true); }}
+                                  activeOpacity={0.8}
+                                />
+                              ) : (
+                                <View key={key} style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]} />
+                              )
+                            ))}
+                          </View>
+                          <Text style={styles.paletteLabel} numberOfLines={1}>{t(`palette${id}Name` as 'palette1Name' | 'palette2Name' | 'palette3Name' | 'palette4Name')}</Text>
+                        </TouchableOpacity>
+                      );
+                    })}
+                  </View>
                 </View>
 
                 <ColorPickerModal
@@ -418,29 +453,35 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
+  paletteGrid: {
+    marginBottom: 20,
+  },
   paletteRow: {
     flexDirection: 'row',
-    gap: 12,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 10,
   },
   paletteBtn: {
     flex: 1,
-    padding: 12,
+    minWidth: 0,
+    paddingVertical: 14,
+    paddingHorizontal: 10,
     alignItems: 'center',
+    justifyContent: 'center',
     borderWidth: 2,
-    minHeight: 88,
+    minHeight: 92,
   },
   paletteBtnActive: {
     borderWidth: 3,
   },
   paletteSwatches: {
     flexDirection: 'row',
-    gap: 4,
+    gap: 5,
     marginBottom: 8,
   },
   paletteSwatch: {
-    width: 24,
-    height: 24,
+    width: 22,
+    height: 22,
     borderRadius: 6,
     borderWidth: 1,
     borderColor: 'rgba(0,0,0,0.1)',
