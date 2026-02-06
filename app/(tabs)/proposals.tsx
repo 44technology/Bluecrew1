@@ -32,8 +32,6 @@ import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 
 export default function ProposalsScreen() {
   const { t } = useLanguage();
@@ -1534,15 +1532,23 @@ export default function ProposalsScreen() {
 </html>`;
 
       if (Platform.OS !== 'web') {
-        const { uri } = await Print.printToFileAsync({ html: htmlContent });
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
-            dialogTitle: `Proposal ${proposal.proposal_number}`,
-          });
-        } else {
-          await Linking.openURL(uri);
+        try {
+          const PrintModule = await import('expo-print');
+          const SharingModule = await import('expo-sharing');
+          const Print = PrintModule.default ?? PrintModule;
+          const Sharing = SharingModule.default ?? SharingModule;
+          const { uri } = await Print.printToFileAsync({ html: htmlContent });
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(uri, {
+              mimeType: 'application/pdf',
+              dialogTitle: `Proposal ${proposal.proposal_number}`,
+            });
+          } else {
+            await Linking.openURL(uri);
+          }
+        } catch (_e) {
+          Alert.alert('Info', 'PDF is only available on web or in a production/TestFlight build.');
         }
         return;
       }

@@ -33,8 +33,6 @@ import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
-import * as Print from 'expo-print';
-import * as Sharing from 'expo-sharing';
 
 export default function InvoicesScreen() {
   const { t } = useLanguage();
@@ -1390,18 +1388,26 @@ export default function InvoicesScreen() {
       `;
 
       if (Platform.OS !== 'web') {
-        const { uri } = await Print.printToFileAsync({
-          html: htmlContent,
-          baseUrl: undefined,
-        });
-        const canShare = await Sharing.isAvailableAsync();
-        if (canShare) {
-          await Sharing.shareAsync(uri, {
-            mimeType: 'application/pdf',
-            dialogTitle: `Invoice ${invoice.invoice_number}`,
+        try {
+          const PrintModule = await import('expo-print');
+          const SharingModule = await import('expo-sharing');
+          const Print = PrintModule.default ?? PrintModule;
+          const Sharing = SharingModule.default ?? SharingModule;
+          const { uri } = await Print.printToFileAsync({
+            html: htmlContent,
+            baseUrl: undefined,
           });
-        } else {
-          await Linking.openURL(uri);
+          const canShare = await Sharing.isAvailableAsync();
+          if (canShare) {
+            await Sharing.shareAsync(uri, {
+              mimeType: 'application/pdf',
+              dialogTitle: `Invoice ${invoice.invoice_number}`,
+            });
+          } else {
+            await Linking.openURL(uri);
+          }
+        } catch (_e) {
+          Alert.alert(t('info') || 'Info', 'PDF is only available on web or in a production/TestFlight build.');
         }
         return;
       }
