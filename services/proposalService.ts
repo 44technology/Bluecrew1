@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { Proposal } from '@/types';
 
@@ -7,11 +8,12 @@ const PROPOSALS_COLLECTION = 'proposals';
 export const ProposalService = {
   async createProposal(proposalData: Omit<Proposal, 'id' | 'created_at'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, PROPOSALS_COLLECTION), {
+      const payload = stripUndefined({
         ...proposalData,
         created_at: new Date().toISOString(),
         proposal_date: proposalData.proposal_date || new Date().toISOString(),
-      });
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, PROPOSALS_COLLECTION), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating proposal:', error);
@@ -68,7 +70,9 @@ export const ProposalService = {
   async updateProposal(proposalId: string, updates: Partial<Proposal>): Promise<void> {
     try {
       const proposalDocRef = doc(db, PROPOSALS_COLLECTION, proposalId);
-      await updateDoc(proposalDocRef, updates);
+      const payload = stripUndefined(updates as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(proposalDocRef, payload);
     } catch (error) {
       console.error('Error updating proposal:', error);
       throw error;

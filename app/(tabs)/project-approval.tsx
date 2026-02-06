@@ -2073,7 +2073,7 @@ export default function ProjectApprovalScreen() {
                             });
                             
                             setNewChangeOrderComment('');
-                            loadChangeOrderComments(selectedChangeOrder.id);
+                            await loadChangeOrderComments(selectedChangeOrder.id);
                           } catch (error) {
                             console.error('Error adding comment:', error);
                             Alert.alert('Error', 'Failed to add comment');

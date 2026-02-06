@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { Lead, LeadNote } from '@/types';
 
@@ -7,11 +8,12 @@ const LEADS_COLLECTION = 'leads';
 export const LeadService = {
   async createLead(leadData: Omit<Lead, 'id' | 'created_at' | 'updated_at'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, LEADS_COLLECTION), {
+      const payload = stripUndefined({
         ...leadData,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      });
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, LEADS_COLLECTION), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating lead:', error);
@@ -53,10 +55,9 @@ export const LeadService = {
   async updateLead(leadId: string, updates: Partial<Lead>): Promise<void> {
     try {
       const leadRef = doc(db, LEADS_COLLECTION, leadId);
-      await updateDoc(leadRef, {
-        ...updates,
-        updated_at: new Date().toISOString()
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(leadRef, payload);
     } catch (error) {
       console.error('Error updating lead:', error);
       throw error;

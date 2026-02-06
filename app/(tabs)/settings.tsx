@@ -28,7 +28,7 @@ export default function SettingsScreen() {
       router.replace('/auth/login');
     } catch (error) {
       console.error('Logout error:', error);
-      Alert.alert('Error', 'Logout failed. Please try again.');
+      Alert.alert(t('error'), t('logoutFailed'));
     }
   };
 
@@ -102,42 +102,39 @@ export default function SettingsScreen() {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <SettingsIcon size={20} color="#000000" />
-            <Text style={styles.sectionTitle}>App Settings</Text>
+            <Text style={styles.sectionTitle}>{t('appSettings')}</Text>
           </View>
           
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Notifications</Text>
+            <Text style={styles.settingText}>{t('notifications')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Privacy Policy</Text>
+            <Text style={styles.settingText}>{t('privacyPolicy')}</Text>
           </TouchableOpacity>
           
           <TouchableOpacity style={styles.settingItem}>
-            <Text style={styles.settingText}>Terms of Service</Text>
+            <Text style={styles.settingText}>{t('termsOfService')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
           <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
             <LogOut size={20} color="#ef4444" />
-            <Text style={styles.logoutText}>Logout</Text>
+            <Text style={styles.logoutText}>{t('logout')}</Text>
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <Info size={20} color="#000000" />
-            <Text style={styles.sectionTitle}>About</Text>
+            <Text style={styles.sectionTitle}>{t('about')}</Text>
           </View>
           
           <View style={styles.infoContainer}>
-            <Text style={styles.appName}>BlueCrew Project Manager</Text>
-            <Text style={styles.version}>Version 1.0.0</Text>
-            <Text style={styles.description}>
-              Professional construction project management and tracking application 
-              designed for BlueCrew Contractors.
-            </Text>
+            <Text style={styles.appName}>{t('appName')}</Text>
+            <Text style={styles.version}>{t('version')} 1.0.0</Text>
+            <Text style={styles.description}>{t('aboutDescription')}</Text>
           </View>
         </View>
       </ScrollView>

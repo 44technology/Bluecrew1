@@ -3,11 +3,13 @@ import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
 import { Building2, Users, UserCheck, User, FileText, Clock, CheckCircle, UserCog, Database, Receipt, Briefcase, Shield, DollarSign, TrendingUp, Package, CreditCard } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import TopNavigationBar from '@/components/TopNavigationBar';
 import { PermissionService } from '@/services/permissionService';
 
 export default function TabLayout() {
   const { userRole } = useAuth();
+  const { t } = useLanguage();
   const [isMobile, setIsMobile] = useState(false);
   const [isWebDesktop, setIsWebDesktop] = useState(false);
   const [pageAccess, setPageAccess] = useState<Record<string, boolean>>({});
@@ -118,7 +120,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="projects"
         options={{
-          title: 'Projects',
+          title: t('projects'),
           tabBarIcon: ({ size, color }) => (
             <Building2 size={size} color={color} />
           ),
@@ -131,7 +133,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="team"
         options={{
-          title: 'Team',
+          title: t('employees'),
           tabBarIcon: ({ size, color }) => (
             <Users size={size} color={color} />
           ),
@@ -143,7 +145,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="hr"
         options={{
-          title: 'HR',
+          title: t('hr'),
           tabBarIcon: ({ size, color }) => (
             <UserCog size={size} color={color} />
           ),
@@ -155,7 +157,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="payroll"
         options={{
-          title: 'Payroll',
+          title: t('payroll'),
           tabBarIcon: ({ size, color }) => (
             <DollarSign size={size} color={color} />
           ),
@@ -167,7 +169,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="commission"
         options={{
-          title: 'Commission',
+          title: t('commission'),
           tabBarIcon: ({ size, color }) => (
             <TrendingUp size={size} color={color} />
           ),
@@ -179,7 +181,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="leads"
         options={{
-          title: 'Leads',
+          title: t('leads'),
           tabBarIcon: ({ size, color }) => (
             <User size={size} color={color} />
           ),
@@ -191,7 +193,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="clients"
         options={{
-          title: 'Clients',
+          title: t('clients'),
           tabBarIcon: ({ size, color }) => (
             <UserCheck size={size} color={color} />
           ),
@@ -203,7 +205,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="sales"
         options={{
-          title: 'Sales',
+          title: t('sales'),
           tabBarIcon: ({ size, color }) => (
             <Briefcase size={size} color={color} />
           ),
@@ -215,7 +217,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="time-clock"
         options={{
-          title: 'Time Clock',
+          title: t('timeClock'),
           tabBarIcon: ({ size, color }) => (
             <Clock size={size} color={color} />
           ),
@@ -227,7 +229,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="project-approval"
         options={{
-          title: 'Approval',
+          title: t('approval'),
           tabBarIcon: ({ size, color }) => (
             <CheckCircle size={size} color={color} />
           ),
@@ -239,7 +241,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="proposals"
         options={{
-          title: userRole === 'client' ? 'Sales' : 'Proposals',
+          title: userRole === 'client' ? t('sales') : t('proposals'),
           tabBarIcon: ({ size, color }) => (
             userRole === 'client' ? <Briefcase size={size} color={color} /> : <FileText size={size} color={color} />
           ),
@@ -251,7 +253,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="invoices"
         options={{
-          title: 'Invoices',
+          title: t('invoices'),
           tabBarIcon: ({ size, color }) => (
             <Receipt size={size} color={color} />
           ),
@@ -263,7 +265,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="tracking"
         options={{
-          title: 'Tracking',
+          title: t('tracking'),
           tabBarIcon: ({ size, color }) => (
             <Package size={size} color={color} />
           ),
@@ -275,7 +277,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="expenses"
         options={{
-          title: 'Expenses',
+          title: t('expenses'),
           tabBarIcon: ({ size, color }) => (
             <CreditCard size={size} color={color} />
           ),
@@ -287,7 +289,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="reports"
         options={{
-          title: 'Reports',
+          title: t('reports'),
           tabBarIcon: ({ size, color }) => (
             <FileText size={size} color={color} />
           ),
@@ -299,7 +301,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="permissions"
         options={{
-          title: 'Permissions',
+          title: t('permissions'),
           tabBarIcon: ({ size, color }) => (
             <Shield size={size} color={color} />
           ),
@@ -311,7 +313,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="company-settings"
         options={{
-          title: 'Company',
+          title: t('company'),
           tabBarIcon: ({ size, color }) => (
             <Building2 size={size} color={color} />
           ),
@@ -323,7 +325,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Settings',
+          title: t('settings'),
           tabBarIcon: ({ size, color }) => (
             <User size={size} color={color} />
           ),
@@ -335,7 +337,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="test-firebase"
         options={{
-          title: 'Test Firebase',
+          title: t('testFirebase'),
           tabBarIcon: ({ size, color }) => (
             <Database size={size} color={color} />
           ),

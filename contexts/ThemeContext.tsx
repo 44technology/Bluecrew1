@@ -51,7 +51,16 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  const theme = COLOR_PALETTES[paletteId] ?? COLOR_PALETTES[DEFAULT_PALETTE_ID];
+  const baseTheme = COLOR_PALETTES[paletteId] ?? COLOR_PALETTES[DEFAULT_PALETTE_ID];
+  const theme: CompanyTheme = {
+    ...baseTheme,
+    ...(company?.custom_primary && { primary: company.custom_primary }),
+    ...(company?.custom_accent && { accent: company.custom_accent }),
+    ...(company?.custom_background && {
+      background: company.custom_background,
+      cardBg: company.custom_background,
+    }),
+  };
 
   return (
     <ThemeContext.Provider

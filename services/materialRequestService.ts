@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, query, where, doc, updateDoc, deleteDoc, getDoc } from 'firebase/firestore';
 import { NotificationService } from './notificationService';
 import { ProjectService } from './projectService';
@@ -35,10 +36,11 @@ export interface MaterialRequest {
 export const MaterialRequestService = {
   async createMaterialRequest(requestData: Omit<MaterialRequest, 'id' | 'requested_at'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, 'materialRequests'), {
+      const payload = stripUndefined({
         ...requestData,
         requested_at: new Date().toISOString(),
-      });
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, 'materialRequests'), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating material request:', error);
@@ -83,7 +85,10 @@ export const MaterialRequestService = {
       const requestDoc = await getDoc(requestDocRef);
       const oldData = requestDoc.data() as MaterialRequest;
       
-      await updateDoc(requestDocRef, updates);
+      const payload = stripUndefined(updates as Record<string, unknown>);
+      if (Object.keys(payload).length > 0) {
+        await updateDoc(requestDocRef, payload);
+      }
 
       // Create notifications for status changes
       try {

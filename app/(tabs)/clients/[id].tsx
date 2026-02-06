@@ -397,330 +397,245 @@ export default function ClientDetailScreen() {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.content}>
-          {/* Left Sidebar */}
-          <View style={styles.sidebar}>
-            <View style={styles.profileSection}>
-              <View style={styles.avatar}>
-                <Text style={styles.avatarText}>
-                  {client.name.split(' ').map(n => n[0]).join('').toUpperCase()}
-                </Text>
-              </View>
-              <Text style={styles.clientName}>{client.name}</Text>
-              <Text style={styles.clientEmail}>{client.email}</Text>
+        {/* Single-column mobile layout: scroll down, no horizontal */}
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={true}
+          showsHorizontalScrollIndicator={false}
+        >
+          {/* Profile */}
+          <View style={styles.profileSection}>
+            <View style={styles.avatar}>
+              <Text style={styles.avatarText}>
+                {client.name.split(' ').map(n => n[0]).join('').toUpperCase()}
+              </Text>
             </View>
+            <Text style={styles.clientName}>{client.name}</Text>
+            <Text style={styles.clientEmail}>{client.email}</Text>
+          </View>
 
-            {/* Quick Actions */}
-            <View style={styles.quickActions}>
-              <TouchableOpacity 
-                style={styles.quickAction}
-                onPress={() => setShowNoteModal(true)}
-              >
-                <MessageSquare size={20} color="#000000" />
-                <Text style={styles.quickActionText}>Note</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.quickAction}
-                onPress={handleSendEmail}
-              >
-                <Mail size={20} color="#000000" />
-                <Text style={styles.quickActionText}>Email</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.quickAction}
-                onPress={handleCall}
-              >
-                <Phone size={20} color="#000000" />
-                <Text style={styles.quickActionText}>Call</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.quickAction}
-                onPress={handleCreateProposal}
-              >
-                <FileText size={20} color="#000000" />
-                <Text style={styles.quickActionText}>Proposal</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={styles.quickAction}
-                onPress={handleCreateInvoice}
-              >
-                <Receipt size={20} color="#000000" />
-                <Text style={styles.quickActionText}>Invoice</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={styles.quickAction}>
-                <MoreVertical size={20} color="#000000" />
-                <Text style={styles.quickActionText}>More</Text>
+          {/* Quick Actions */}
+          <View style={styles.quickActions}>
+            <TouchableOpacity style={styles.quickAction} onPress={() => setShowNoteModal(true)}>
+              <MessageSquare size={20} color="#000000" />
+              <Text style={styles.quickActionText}>Note</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAction} onPress={handleSendEmail}>
+              <Mail size={20} color="#000000" />
+              <Text style={styles.quickActionText}>Email</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAction} onPress={handleCall}>
+              <Phone size={20} color="#000000" />
+              <Text style={styles.quickActionText}>Call</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAction} onPress={handleCreateProposal}>
+              <FileText size={20} color="#000000" />
+              <Text style={styles.quickActionText}>Proposal</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAction} onPress={handleCreateInvoice}>
+              <Receipt size={20} color="#000000" />
+              <Text style={styles.quickActionText}>Invoice</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.quickAction}>
+              <MoreVertical size={20} color="#000000" />
+              <Text style={styles.quickActionText}>More</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* About this contact */}
+          <View style={styles.aboutSection}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>About this contact</Text>
+              <TouchableOpacity>
+                <MoreVertical size={16} color="#000000" />
               </TouchableOpacity>
             </View>
-
-            {/* About Section */}
-            <View style={styles.aboutSection}>
-              <View style={styles.sectionHeader}>
-                <Text style={styles.sectionTitle}>About this contact</Text>
-                <TouchableOpacity>
-                  <MoreVertical size={16} color="#000000" />
-                </TouchableOpacity>
-              </View>
+            <View style={styles.infoRow}>
+              <Mail size={16} color="#000000" />
+              <Text style={styles.infoText}>{client.email}</Text>
+            </View>
+            {client.phone && (
               <View style={styles.infoRow}>
-                <Mail size={16} color="#000000" />
-                <Text style={styles.infoText}>{client.email}</Text>
+                <Phone size={16} color="#000000" />
+                <Text style={styles.infoText}>{client.phone}</Text>
               </View>
-              {client.phone && (
-                <View style={styles.infoRow}>
-                  <Phone size={16} color="#000000" />
-                  <Text style={styles.infoText}>{client.phone}</Text>
-                </View>
-              )}
-              {client.address && (
-                <View style={styles.infoRow}>
-                  <MapPin size={16} color="#000000" />
-                  <Text style={styles.infoText}>{client.address}</Text>
-                </View>
-              )}
+            )}
+            {client.address && (
               <View style={styles.infoRow}>
-                <Calendar size={16} color="#000000" />
-                <Text style={styles.infoText}>
-                  Created: {new Date(client.created_at).toLocaleDateString()}
-                </Text>
+                <MapPin size={16} color="#000000" />
+                <Text style={styles.infoText}>{client.address}</Text>
               </View>
+            )}
+            <View style={styles.infoRow}>
+              <Calendar size={16} color="#000000" />
+              <Text style={styles.infoText}>
+                Created: {new Date(client.created_at).toLocaleDateString()}
+              </Text>
             </View>
           </View>
 
-          {/* Main Content Area */}
-          <View style={styles.mainContent}>
-            {/* Tabs */}
-            <View style={styles.tabs}>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
-                onPress={() => setActiveTab('overview')}
-              >
-                <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>
-                  Overview
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'activities' && styles.tabActive]}
-                onPress={() => setActiveTab('activities')}
-              >
-                <Text style={[styles.tabText, activeTab === 'activities' && styles.tabTextActive]}>
-                  Activities
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'proposals' && styles.tabActive]}
-                onPress={() => setActiveTab('proposals')}
-              >
-                <Text style={[styles.tabText, activeTab === 'proposals' && styles.tabTextActive]}>
-                  Proposals
-                </Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.tab, activeTab === 'invoices' && styles.tabActive]}
-                onPress={() => setActiveTab('invoices')}
-              >
-                <Text style={[styles.tabText, activeTab === 'invoices' && styles.tabTextActive]}>
-                  Invoices
-                </Text>
-              </TouchableOpacity>
+          {/* CRM Statistics (was right sidebar) */}
+          <View style={styles.statsCard}>
+            <Text style={styles.statsTitle}>CRM Statistics</Text>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Approved Proposals</Text>
+              <Text style={styles.statValue}>{crmStats.approvedProposals}</Text>
             </View>
-
-            {/* Tab Content */}
-            <ScrollView style={styles.tabContent} showsVerticalScrollIndicator={false}>
-              {activeTab === 'overview' && (
-                <View style={styles.overviewContent}>
-                  <Text style={styles.sectionTitle}>Client Information</Text>
-                  <View style={styles.infoCard}>
-                    <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Email</Text>
-                      <Text style={styles.infoValue}>{client.email}</Text>
-                    </View>
-                    {client.phone && (
-                      <View style={styles.infoItem}>
-                        <Text style={styles.infoLabel}>Phone</Text>
-                        <Text style={styles.infoValue}>{client.phone}</Text>
-                      </View>
-                    )}
-                    {client.address && (
-                      <View style={styles.infoItem}>
-                        <Text style={styles.infoLabel}>Address</Text>
-                        <Text style={styles.infoValue}>{client.address}</Text>
-                      </View>
-                    )}
-                    <View style={styles.infoItem}>
-                      <Text style={styles.infoLabel}>Created</Text>
-                      <Text style={styles.infoValue}>
-                        {new Date(client.created_at).toLocaleDateString()}
-                      </Text>
-                    </View>
-                  </View>
-                </View>
-              )}
-
-              {activeTab === 'activities' && (
-                <View style={styles.activitiesContent}>
-                  <View style={styles.activitiesHeader}>
-                    <TextInput
-                      style={styles.searchInput}
-                      placeholder="Search activities"
-                      placeholderTextColor="#000000"
-                    />
-                    <TouchableOpacity
-                      style={styles.createNoteButton}
-                      onPress={() => setShowNoteModal(true)}
-                    >
-                      <Plus size={18} color="#ffffff" />
-                      <Text style={styles.createNoteButtonText}>Create Note</Text>
-                    </TouchableOpacity>
-                  </View>
-
-                  {/* Notes List */}
-                  {(!client.notes || client.notes.length === 0) ? (
-                    <View style={styles.emptyState}>
-                      <Text style={styles.emptyText}>No notes yet</Text>
-                    </View>
-                  ) : (
-                    <View style={styles.activitiesList}>
-                      {client.notes.map((note, index) => (
-                        <View key={note.id || index} style={styles.activityItem}>
-                          <View style={styles.activityHeader}>
-                            <View style={styles.activityIcon}>
-                              <MessageSquare size={16} color="#000000" />
-                            </View>
-                            <Text style={styles.activityTitle}>
-                              Note by {note.created_by_name}
-                            </Text>
-                            <Text style={styles.activityDate}>
-                              {note.contact_date 
-                                ? new Date(note.contact_date).toLocaleDateString()
-                                : new Date(note.created_at).toLocaleDateString()}
-                            </Text>
-                          </View>
-                          <Text style={styles.activityContent}>{note.note}</Text>
-                        </View>
-                      ))}
-                    </View>
-                  )}
-                </View>
-              )}
-
-              {activeTab === 'proposals' && (
-                <View style={styles.proposalsContent}>
-                  <TouchableOpacity
-                    style={styles.createButton}
-                    onPress={handleCreateProposal}
-                  >
-                    <Plus size={20} color="#ffffff" />
-                    <Text style={styles.createButtonText}>Create Proposal</Text>
-                  </TouchableOpacity>
-
-                  {proposals.length === 0 ? (
-                    <View style={styles.emptyState}>
-                      <Text style={styles.emptyText}>No proposals yet</Text>
-                    </View>
-                  ) : (
-                    proposals.map((proposal) => (
-                      <TouchableOpacity
-                        key={proposal.id}
-                        style={styles.recordCard}
-                        onPress={() => router.push(`/proposals?id=${proposal.id}`)}
-                      >
-                        <FileText size={20} color="#000000" />
-                        <View style={styles.recordInfo}>
-                          <Text style={styles.recordTitle}>{proposal.proposal_number}</Text>
-                          <Text style={styles.recordSubtitle}>
-                            {new Date(proposal.created_at).toLocaleDateString()}
-                          </Text>
-                        </View>
-                        <Text style={styles.recordAmount}>
-                          ${proposal.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </Text>
-                      </TouchableOpacity>
-                    ))
-                  )}
-                </View>
-              )}
-
-              {activeTab === 'invoices' && (
-                <View style={styles.invoicesContent}>
-                  <InvoiceTabs invoices={invoices} />
-                </View>
-              )}
-            </ScrollView>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Total Proposals</Text>
+              <Text style={styles.statValue}>{crmStats.totalProposals}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Total Invoices</Text>
+              <Text style={styles.statValue}>{crmStats.totalInvoices}</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statLabel}>Total Revenue</Text>
+              <Text style={styles.statValue}>
+                ${crmStats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+              </Text>
+            </View>
           </View>
 
-          {/* Right Sidebar */}
-          <View style={styles.rightSidebar}>
-            {/* CRM Stats */}
-            <View style={styles.statsCard}>
-              <Text style={styles.statsTitle}>CRM Statistics</Text>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Approved Proposals</Text>
-                <Text style={styles.statValue}>{crmStats.approvedProposals}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Total Proposals</Text>
-                <Text style={styles.statValue}>{crmStats.totalProposals}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Total Invoices</Text>
-                <Text style={styles.statValue}>{crmStats.totalInvoices}</Text>
-              </View>
-              <View style={styles.statItem}>
-                <Text style={styles.statLabel}>Total Revenue</Text>
-                <Text style={styles.statValue}>
-                  ${crmStats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                </Text>
+          {/* Tabs */}
+          <View style={styles.tabs}>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'overview' && styles.tabActive]}
+              onPress={() => setActiveTab('overview')}
+            >
+              <Text style={[styles.tabText, activeTab === 'overview' && styles.tabTextActive]}>Overview</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'activities' && styles.tabActive]}
+              onPress={() => setActiveTab('activities')}
+            >
+              <Text style={[styles.tabText, activeTab === 'activities' && styles.tabTextActive]}>Activities</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'proposals' && styles.tabActive]}
+              onPress={() => setActiveTab('proposals')}
+            >
+              <Text style={[styles.tabText, activeTab === 'proposals' && styles.tabTextActive]}>Proposals</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.tab, activeTab === 'invoices' && styles.tabActive]}
+              onPress={() => setActiveTab('invoices')}
+            >
+              <Text style={[styles.tabText, activeTab === 'invoices' && styles.tabTextActive]}>Invoices</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Tab Content (no nested ScrollView – one page scroll) */}
+          {activeTab === 'overview' && (
+            <View style={styles.overviewContent}>
+              <Text style={styles.sectionTitle}>Client Information</Text>
+              <View style={styles.infoCard}>
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Email</Text>
+                  <Text style={styles.infoValue}>{client.email}</Text>
+                </View>
+                {client.phone && (
+                  <View style={styles.infoItem}>
+                    <Text style={styles.infoLabel}>Phone</Text>
+                    <Text style={styles.infoValue}>{client.phone}</Text>
+                  </View>
+                )}
+                {client.address && (
+                  <View style={styles.infoItem}>
+                    <Text style={styles.infoLabel}>Address</Text>
+                    <Text style={styles.infoValue}>{client.address}</Text>
+                  </View>
+                )}
+                <View style={styles.infoItem}>
+                  <Text style={styles.infoLabel}>Created</Text>
+                  <Text style={styles.infoValue}>
+                    {new Date(client.created_at).toLocaleDateString()}
+                  </Text>
+                </View>
               </View>
             </View>
+          )}
 
-            {/* Associated Records */}
-            <View style={styles.recordsCard}>
-              <View style={styles.recordsHeader}>
-                <Text style={styles.recordsTitle}>Proposals</Text>
-                <TouchableOpacity onPress={handleCreateProposal}>
-                  <Text style={styles.addLink}>+Add</Text>
+          {activeTab === 'activities' && (
+            <View style={styles.activitiesContent}>
+              <View style={styles.activitiesHeader}>
+                <TextInput
+                  style={styles.searchInput}
+                  placeholder="Search activities"
+                  placeholderTextColor="#000000"
+                />
+                <TouchableOpacity style={styles.createNoteButton} onPress={() => setShowNoteModal(true)}>
+                  <Plus size={18} color="#ffffff" />
+                  <Text style={styles.createNoteButtonText}>Create Note</Text>
                 </TouchableOpacity>
               </View>
-              {proposals.length === 0 ? (
-                <Text style={styles.recordsEmpty}>No proposals associated</Text>
+              {(!client.notes || client.notes.length === 0) ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No notes yet</Text>
+                </View>
               ) : (
-                proposals.slice(0, 3).map((proposal) => (
+                <View style={styles.activitiesList}>
+                  {client.notes.map((note, index) => (
+                    <View key={note.id || index} style={styles.activityItem}>
+                      <View style={styles.activityHeader}>
+                        <View style={styles.activityIcon}>
+                          <MessageSquare size={16} color="#000000" />
+                        </View>
+                        <Text style={styles.activityTitle}>Note by {note.created_by_name}</Text>
+                        <Text style={styles.activityDate}>
+                          {note.contact_date
+                            ? new Date(note.contact_date).toLocaleDateString()
+                            : new Date(note.created_at).toLocaleDateString()}
+                        </Text>
+                      </View>
+                      <Text style={styles.activityContent}>{note.note}</Text>
+                    </View>
+                  ))}
+                </View>
+              )}
+            </View>
+          )}
+
+          {activeTab === 'proposals' && (
+            <View style={styles.proposalsContent}>
+              <TouchableOpacity style={styles.createButton} onPress={handleCreateProposal}>
+                <Plus size={20} color="#ffffff" />
+                <Text style={styles.createButtonText}>Create Proposal</Text>
+              </TouchableOpacity>
+              {proposals.length === 0 ? (
+                <View style={styles.emptyState}>
+                  <Text style={styles.emptyText}>No proposals yet</Text>
+                </View>
+              ) : (
+                proposals.map((proposal) => (
                   <TouchableOpacity
                     key={proposal.id}
-                    style={styles.recordItem}
+                    style={styles.recordCard}
                     onPress={() => router.push(`/proposals?id=${proposal.id}`)}
                   >
-                    <FileText size={16} color="#000000" />
-                    <Text style={styles.recordItemText}>{proposal.proposal_number}</Text>
+                    <FileText size={20} color="#000000" />
+                    <View style={styles.recordInfo}>
+                      <Text style={styles.recordTitle}>{proposal.proposal_number}</Text>
+                      <Text style={styles.recordSubtitle}>
+                        {new Date(proposal.created_at).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    <Text style={styles.recordAmount}>
+                      ${proposal.total_cost.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
                   </TouchableOpacity>
                 ))
               )}
             </View>
+          )}
 
-            <View style={styles.recordsCard}>
-              <View style={styles.recordsHeader}>
-                <Text style={styles.recordsTitle}>Invoices</Text>
-                <TouchableOpacity>
-                  <Text style={styles.addLink}>+Add</Text>
-                </TouchableOpacity>
-              </View>
-              {invoices.length === 0 ? (
-                <Text style={styles.recordsEmpty}>No invoices associated</Text>
-              ) : (
-                invoices.slice(0, 3).map((invoice) => (
-                  <TouchableOpacity
-                    key={invoice.id}
-                    style={styles.recordItem}
-                    onPress={() => router.push(`/invoices?id=${invoice.id}`)}
-                  >
-                    <Receipt size={16} color="#000000" />
-                    <Text style={styles.recordItemText}>{invoice.invoice_number}</Text>
-                  </TouchableOpacity>
-                ))
-              )}
+          {activeTab === 'invoices' && (
+            <View style={styles.invoicesContent}>
+              <InvoiceTabs invoices={invoices} />
             </View>
-          </View>
-        </View>
+          )}
+        </ScrollView>
       </View>
 
       {/* Add Note Modal */}
@@ -830,21 +745,26 @@ const styles = StyleSheet.create({
   actionsButton: {
     padding: 8,
   },
-  content: {
+  scrollView: {
     flex: 1,
-    flexDirection: 'row',
+    width: '100%',
+    maxWidth: '100%',
   },
-  sidebar: {
-    width: 280,
-    backgroundColor: '#ffffff',
-    borderRightWidth: 1,
-    borderRightColor: '#e5e7eb',
+  scrollContent: {
     padding: 20,
+    paddingBottom: 40,
+    width: '100%',
+    maxWidth: '100%',
   },
   profileSection: {
     alignItems: 'center',
     marginBottom: 24,
     paddingBottom: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
   },
@@ -852,13 +772,13 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#e5e7eb',
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: 12,
   },
   avatarText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 32,
     fontWeight: '600',
   },
@@ -879,12 +799,15 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 12,
     marginBottom: 24,
-    paddingBottom: 24,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    padding: 20,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   quickAction: {
     width: '30%',
+    minWidth: 90,
     alignItems: 'center',
     padding: 12,
     backgroundColor: '#f9fafb',
@@ -898,6 +821,11 @@ const styles = StyleSheet.create({
   },
   aboutSection: {
     marginBottom: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -920,15 +848,13 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000000',
   },
-  mainContent: {
-    flex: 1,
-    backgroundColor: '#ffffff',
-  },
   tabs: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     borderBottomWidth: 1,
     borderBottomColor: '#e5e7eb',
-    paddingHorizontal: 20,
+    paddingHorizontal: 0,
+    marginBottom: 16,
   },
   tab: {
     paddingVertical: 16,
@@ -1101,15 +1027,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000000',
   },
-  rightSidebar: {
-    width: 300,
-    backgroundColor: '#ffffff',
-    borderLeftWidth: 1,
-    borderLeftColor: '#e5e7eb',
-    padding: 20,
-    gap: 16,
-  },
   statsCard: {
+    width: '100%',
+    marginBottom: 24,
     backgroundColor: '#f9fafb',
     borderRadius: 8,
     padding: 16,

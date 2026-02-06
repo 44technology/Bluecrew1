@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, updateDoc, doc, query, where, orderBy } from 'firebase/firestore';
 import { TimeClockEntry, WeeklyTimeClock } from '@/types';
 
@@ -32,17 +33,14 @@ export class TimeClockService {
       };
 
       if (location) {
-        // Remove undefined fields to avoid Firestore errors
         entryData.location = {
           latitude: location.latitude,
           longitude: location.longitude,
+          ...(location.address && { address: location.address }),
         };
-        if (location.address) {
-          entryData.location.address = location.address;
-        }
       }
 
-      const docRef = await addDoc(collection(db, 'time_clock'), entryData);
+      const docRef = await addDoc(collection(db, 'time_clock'), stripUndefined(entryData));
       return docRef.id;
     } catch (error) {
       console.error('Error clocking in:', error);
@@ -76,19 +74,15 @@ export class TimeClockService {
         updated_at: now,
       };
 
-      // Add clock out location if provided
       if (location) {
-        // Remove undefined fields to avoid Firestore errors
         updateData.clock_out_location = {
           latitude: location.latitude,
           longitude: location.longitude,
+          ...(location.address && { address: location.address }),
         };
-        if (location.address) {
-          updateData.clock_out_location.address = location.address;
-        }
       }
 
-      await updateDoc(entryRef, updateData);
+      await updateDoc(entryRef, stripUndefined(updateData));
     } catch (error) {
       console.error('Error clocking out:', error);
       throw error;

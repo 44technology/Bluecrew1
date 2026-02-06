@@ -139,8 +139,9 @@ export default function ProjectsScreen() {
     project_description: '',
   });
   const [selectedClients, setSelectedClients] = useState<Array<{ id: string; name: string }>>([]);
-  const [workTitles, setWorkTitles] = useState<Array<{ name: string; description: string; quantity: string; unit_price: string; price: string }>>([]);
-  const [newWorkTitle, setNewWorkTitle] = useState({ name: '', description: '', quantity: '', unit_price: '', price: '' });
+  const [workTitles, setWorkTitles] = useState<Array<{ name: string; descriptions: string[]; quantity: string; unit_price: string; price: string }>>([]);
+  const [newWorkTitle, setNewWorkTitle] = useState({ name: '', descriptions: [] as string[], quantity: '', unit_price: '', price: '' });
+  const [newDescription, setNewDescription] = useState('');
   const [editingWorkTitleIndex, setEditingWorkTitleIndex] = useState<number | null>(null);
   const [invoiceLoaded, setInvoiceLoaded] = useState(false);
   const [showWorkTitleModal, setShowWorkTitleModal] = useState(false);
@@ -509,6 +510,13 @@ export default function ProjectsScreen() {
     }
   }, [showCreateModal, userRole]);
 
+  // Load clients when Create Project modal opens so list is never empty
+  useEffect(() => {
+    if (showCreateModal) {
+      loadClients();
+    }
+  }, [showCreateModal]);
+
   // Calculate PM budget when total budget or gross profit rate changes
   useEffect(() => {
     if (userRole === 'admin' && showCreateModal) {
@@ -559,7 +567,7 @@ export default function ProjectsScreen() {
         // Pre-fill work titles
         const invoiceWorkTitles = invoice.work_titles.map(wt => ({
           name: wt.name,
-          description: wt.description || '',
+          descriptions: (wt as any).descriptions?.length ? (wt as any).descriptions : (wt.description ? [wt.description] : []),
           quantity: (wt.quantity || 0).toString(),
           unit_price: (wt.unit_price || 0).toString(),
           price: wt.price.toString(),
@@ -704,9 +712,9 @@ export default function ProjectsScreen() {
         // Pre-fill work titles from proposal
         const proposalWorkTitles = proposal.work_titles.map(wt => ({
           name: wt.name,
-          description: wt.descriptions && wt.descriptions.length > 0 
-            ? wt.descriptions.join(', ') 
-            : (wt.description || ''),
+          descriptions: (wt as any).descriptions && (wt as any).descriptions.length > 0
+            ? (wt as any).descriptions
+            : ((wt as any).description ? [(wt as any).description] : []),
           quantity: (wt.quantity || 0).toString(),
           unit_price: (wt.unit_price || 0).toString(),
           price: wt.price.toString(),
@@ -834,7 +842,7 @@ export default function ProjectsScreen() {
       project_description: '',
     });
     setWorkTitles([]);
-    setNewWorkTitle({ name: '', description: '', quantity: '', unit_price: '', price: '' });
+    setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
     setSelectedClients([]);
     setClientBudget('');
     setIsCreatingFromProposal(false);
@@ -844,6 +852,25 @@ export default function ProjectsScreen() {
       // Navigate back to the proposal details page
       router.back();
     }
+  };
+
+  const handleAddDescription = () => {
+    if (!newDescription.trim()) {
+      Alert.alert('Error', 'Please enter a description');
+      return;
+    }
+    setNewWorkTitle(prev => ({
+      ...prev,
+      descriptions: [...prev.descriptions, newDescription.trim()],
+    }));
+    setNewDescription('');
+  };
+
+  const handleRemoveDescription = (index: number) => {
+    setNewWorkTitle(prev => ({
+      ...prev,
+      descriptions: prev.descriptions.filter((_, i) => i !== index),
+    }));
   };
 
   const handleAddWorkTitle = () => {
@@ -858,12 +885,13 @@ export default function ProjectsScreen() {
     
     setWorkTitles(prev => [...prev, { 
       name: newWorkTitle.name, 
-      description: newWorkTitle.description || '',
+      descriptions: newWorkTitle.descriptions?.length ? [...newWorkTitle.descriptions] : [],
       quantity: newWorkTitle.quantity,
       unit_price: newWorkTitle.unit_price,
       price: calculatedPrice,
     }]);
-    setNewWorkTitle({ name: '', description: '', quantity: '', unit_price: '', price: '' });
+    setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+    setNewDescription('');
     setSelectedWorkTitleFromList('');
   };
 
@@ -991,7 +1019,7 @@ export default function ProjectsScreen() {
         const calculatedPrice = (quantity * unitPrice).toString();
         finalWorkTitles.push({
           name: newWorkTitle.name,
-          description: newWorkTitle.description || '',
+          descriptions: newWorkTitle.descriptions?.length ? [...newWorkTitle.descriptions] : [],
           quantity: newWorkTitle.quantity,
           unit_price: newWorkTitle.unit_price,
           price: calculatedPrice,
@@ -1137,7 +1165,7 @@ export default function ProjectsScreen() {
       // Build project data object, filtering out undefined values
       const projectDataRaw: any = {
         title: newProject.title,
-        description: newProject.description,
+        description: newProject.description ?? '',
         category: newProject.category,
         client_id: selectedClients[0].id, // First client for backward compatibility
         client_name: selectedClients[0].name, // First client name for backward compatibility
@@ -1187,10 +1215,12 @@ export default function ProjectsScreen() {
           const quantity = parseFloat(workTitle.quantity) || 0;
           const unitPrice = parseFloat(workTitle.unit_price) || 0;
           const calculatedPrice = quantity * unitPrice;
-          
+          const descriptionStr = (workTitle.descriptions && workTitle.descriptions.length > 0)
+            ? workTitle.descriptions.join(', ')
+            : '';
           const parentStepId = await ProjectService.addStep(projectId, {
             name: workTitle.name,
-            description: workTitle.description || undefined,
+            description: descriptionStr,
             price: calculatedPrice,
             status: 'pending',
             order_index: i,
@@ -1245,7 +1275,8 @@ export default function ProjectsScreen() {
         project_description: '',
       });
       setWorkTitles([]);
-      setNewWorkTitle({ name: '', description: '', quantity: '', unit_price: '', price: '' });
+      setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+      setNewDescription('');
       setSelectedClients([]);
       setFieldErrors({});
       setInvoiceLoaded(false); // Reset invoice loaded flag
@@ -1791,8 +1822,12 @@ export default function ProjectsScreen() {
                     <View key={index} style={styles.workTitleItem}>
                       <View style={styles.workTitleInfo}>
                         <Text style={styles.workTitleName}>{workTitle.name}</Text>
-                        {workTitle.description && (
-                          <Text style={styles.workTitleDescription}>{workTitle.description}</Text>
+                        {(workTitle.descriptions && workTitle.descriptions.length > 0) && (
+                          <View style={styles.descriptionsList}>
+                            {workTitle.descriptions.map((desc, di) => (
+                              <Text key={di} style={styles.workTitleDescription}>• {desc}</Text>
+                            ))}
+                          </View>
                         )}
                         <View style={styles.workTitleDetails}>
                           <Text style={styles.workTitleDetailText}>
@@ -1840,15 +1875,42 @@ export default function ProjectsScreen() {
                     )}
                   </View>
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Work Description</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      placeholder="Enter work description"
-                      value={newWorkTitle.description}
-                      onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, description: text }))}
-                      multiline
-                      numberOfLines={2}
-                    />
+                    <View style={styles.labelRow}>
+                      <Text style={styles.label}>Work Descriptions</Text>
+                      <Text style={styles.descriptionCount}>{newWorkTitle.descriptions.length} added</Text>
+                    </View>
+                    {newWorkTitle.descriptions.length > 0 && (
+                      <View style={styles.descriptionsList}>
+                        {newWorkTitle.descriptions.map((desc, index) => (
+                          <View key={index} style={styles.descriptionItem}>
+                            <Text style={styles.descriptionText}>• {desc}</Text>
+                            <TouchableOpacity
+                              style={styles.removeDescriptionButton}
+                              onPress={() => handleRemoveDescription(index)}
+                            >
+                              <X size={14} color="#ef4444" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                    <View style={styles.addDescriptionContainer}>
+                      <TextInput
+                        style={[styles.input, styles.textArea]}
+                        placeholder="Enter work description"
+                        value={newDescription}
+                        onChangeText={setNewDescription}
+                        multiline
+                        numberOfLines={2}
+                      />
+                      <TouchableOpacity
+                        style={styles.addDescriptionButton}
+                        onPress={handleAddDescription}
+                      >
+                        <Plus size={16} color="#000000" />
+                        <Text style={styles.addDescriptionButtonText}>Add Description</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   <View style={styles.quantityUnitRow}>
                     <View style={styles.quantityInputContainer}>
@@ -2339,6 +2401,186 @@ export default function ProjectsScreen() {
               </TouchableOpacity>
             </View>
           </ScrollView>
+
+          {/* Category / Client / Work Title overlays inside Create Project modal (fixes iOS list not opening) */}
+          {showCategoryModal && (
+            <View style={styles.pickerOverlay} pointerEvents="box-none">
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowCategoryModal(false)} />
+              <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Category</Text>
+                  <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={styles.categoryList} contentContainerStyle={styles.categoryListContent}>
+                  {categories.map((category) => (
+                    <TouchableOpacity
+                      key={category}
+                      style={[
+                        styles.categoryOption,
+                        newProject.category === category && styles.selectedCategory
+                      ]}
+                      onPress={() => {
+                        setNewProject(prev => ({ ...prev, category }));
+                        setShowCategoryModal(false);
+                        if (fieldErrors.category) {
+                          setFieldErrors(prev => ({ ...prev, category: '' }));
+                        }
+                      }}
+                    >
+                      <Text style={[
+                        styles.categoryText,
+                        newProject.category === category && styles.selectedCategoryText
+                      ]}>
+                        {category}
+                      </Text>
+                      {newProject.category === category && (
+                        <View style={styles.selectedIndicatorDot} />
+                      )}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
+
+          {showClientSelectModal && (
+            <View style={styles.pickerOverlay} pointerEvents="box-none">
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setShowClientSelectModal(false); setClientSearchQuery(''); }} />
+              <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                <View style={styles.workTitleModalHeader}>
+                  <Text style={styles.workTitleModalTitle}>Select Clients</Text>
+                  <TouchableOpacity onPress={() => { setShowClientSelectModal(false); setClientSearchQuery(''); }}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search clients..."
+                    value={clientSearchQuery}
+                    onChangeText={setClientSearchQuery}
+                    autoCapitalize="none"
+                  />
+                </View>
+                <ScrollView
+                  style={[styles.categoryList, styles.pickerScrollMinHeight]}
+                  contentContainerStyle={styles.categoryListContent}
+                  showsVerticalScrollIndicator={true}
+                  nestedScrollEnabled={true}
+                >
+                  <TouchableOpacity
+                    style={[styles.categoryOption, styles.addClientButton]}
+                    onPress={() => {
+                      setShowClientSelectModal(false);
+                      setShowNewClientModal(true);
+                      setClientSearchQuery('');
+                    }}
+                  >
+                    <View style={styles.clientOptionContent}>
+                      <Plus size={20} color="#000000" />
+                      <Text style={[styles.addClientText, { marginLeft: 8 }]}>New Client</Text>
+                    </View>
+                  </TouchableOpacity>
+                  {clients
+                    .filter(client =>
+                      client.name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                      client.email?.toLowerCase().includes(clientSearchQuery.toLowerCase())
+                    )
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                    .map((client) => {
+                      const isSelected = selectedClients.some(c => c.id === client.id);
+                      return (
+                        <TouchableOpacity
+                          key={client.id}
+                          style={[styles.categoryOption, isSelected && styles.selectedCategory]}
+                          onPress={() => {
+                            if (isSelected) {
+                              const newSelected = selectedClients.filter(c => c.id !== client.id);
+                              setSelectedClients(newSelected);
+                              setNewProject(prev => ({
+                                ...prev,
+                                client_id: newSelected[0]?.id ?? '',
+                                client_name: newSelected[0]?.name ?? ''
+                              }));
+                              if (newSelected.length > 0 && fieldErrors.clients) setFieldErrors(prev => ({ ...prev, clients: '' }));
+                            } else {
+                              const newSelected = [...selectedClients, { id: client.id, name: client.name }];
+                              setSelectedClients(newSelected);
+                              setNewProject(prev => ({ ...prev, client_id: newSelected[0].id, client_name: newSelected[0].name }));
+                              if (fieldErrors.clients) setFieldErrors(prev => ({ ...prev, clients: '' }));
+                            }
+                          }}
+                        >
+                          <View style={styles.clientOptionContent}>
+                            <View style={styles.clientInfo}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <View style={[styles.checkbox, isSelected && styles.checkboxChecked]}>
+                                  {isSelected && <Check size={16} color="#ffffff" />}
+                                </View>
+                                <Text style={[styles.categoryText, isSelected && styles.selectedCategoryText]}>{client.name}</Text>
+                              </View>
+                              {client.email && <Text style={styles.clientEmail}>{client.email}</Text>}
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                </ScrollView>
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={[styles.doneButton, selectedClients.length === 0 && styles.doneButtonDisabled]}
+                    onPress={() => { if (selectedClients.length > 0) { setShowClientSelectModal(false); setClientSearchQuery(''); } }}
+                    disabled={selectedClients.length === 0}
+                  >
+                    <Text style={[styles.doneButtonText, selectedClients.length === 0 && styles.doneButtonTextDisabled]}>
+                      Done ({selectedClients.length})
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {showWorkTitleModal && (
+            <View style={styles.pickerOverlay} pointerEvents="box-none">
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setShowWorkTitleModal(false); if (selectedWorkTitleFromList !== 'New') setSelectedWorkTitleFromList(''); }} />
+              <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Work Title</Text>
+                  <TouchableOpacity onPress={() => {
+                    setShowWorkTitleModal(false);
+                    if (selectedWorkTitleFromList !== 'New') setSelectedWorkTitleFromList('');
+                  }}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={[styles.categoryList, styles.pickerScrollMinHeight]} contentContainerStyle={styles.categoryListContent} showsVerticalScrollIndicator={true} nestedScrollEnabled={true}>
+                  {predefinedWorkTitles.map((title) => (
+                    <TouchableOpacity
+                      key={title}
+                      style={[styles.categoryOption, selectedWorkTitleFromList === title && styles.selectedCategory]}
+                      onPress={() => {
+                        if (title === 'New') {
+                          setSelectedWorkTitleFromList('New');
+                          setNewWorkTitle(prev => ({ ...prev, name: '' }));
+                          setShowWorkTitleModal(false);
+                        } else {
+                          setSelectedWorkTitleFromList(title);
+                          setNewWorkTitle(prev => ({ ...prev, name: title }));
+                          setShowWorkTitleModal(false);
+                        }
+                      }}
+                    >
+                      <Text style={[styles.categoryText, selectedWorkTitleFromList === title && styles.selectedCategoryText]}>{title}</Text>
+                      {selectedWorkTitleFromList === title && title !== 'New' && <View style={styles.selectedIndicatorDot} />}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
         </View>
       </Modal>
 
@@ -2370,267 +2612,6 @@ export default function ProjectsScreen() {
                 <Text style={styles.confirmModalButtonConfirmText}>Yes, Cancel</Text>
               </TouchableOpacity>
             </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Work Title Selection Modal */}
-      <Modal
-        visible={showWorkTitleModal}
-        transparent={true}
-        animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.categoryModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Work Title</Text>
-              <TouchableOpacity onPress={() => {
-                setShowWorkTitleModal(false);
-                if (selectedWorkTitleFromList !== 'New') {
-                  setSelectedWorkTitleFromList('');
-                }
-              }}>
-                <X size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView 
-              style={styles.categoryList}
-              contentContainerStyle={styles.categoryListContent}
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
-            >
-              {predefinedWorkTitles.map((title) => (
-                <TouchableOpacity
-                  key={title}
-                  style={[
-                    styles.categoryOption,
-                    selectedWorkTitleFromList === title && styles.selectedCategory
-                  ]}
-                  onPress={() => {
-                    if (title === 'New') {
-                      setSelectedWorkTitleFromList('New');
-                      setNewWorkTitle(prev => ({ ...prev, name: '' }));
-                      setShowWorkTitleModal(false);
-                    } else {
-                      setSelectedWorkTitleFromList(title);
-                      setNewWorkTitle(prev => ({ ...prev, name: title }));
-                      setShowWorkTitleModal(false);
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.categoryText,
-                    selectedWorkTitleFromList === title && styles.selectedCategoryText
-                  ]}>
-                    {title}
-                  </Text>
-                  {selectedWorkTitleFromList === title && title !== 'New' && (
-                    <View style={styles.selectedIndicatorDot} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-      {/* Category Selection Modal */}
-      <Modal
-        visible={showCategoryModal}
-        transparent={true}
-        animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.categoryModal}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Category</Text>
-              <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
-                <X size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.categoryList}>
-              {categories.map((category) => (
-                <TouchableOpacity
-                  key={category}
-                  style={[
-                    styles.categoryOption,
-                    newProject.category === category && styles.selectedCategory
-                  ]}
-                  onPress={() => {
-                    setNewProject(prev => ({ ...prev, category }));
-                    setShowCategoryModal(false);
-                    if (fieldErrors.category) {
-                      setFieldErrors(prev => ({ ...prev, category: '' }));
-                    }
-                  }}
-                >
-                  <Text style={[
-                    styles.categoryText,
-                    newProject.category === category && styles.selectedCategoryText
-                  ]}>
-                    {category}
-                  </Text>
-                  {newProject.category === category && (
-                    <View style={styles.selectedIndicatorDot} />
-                  )}
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
-
-      {/* Client Selection Modal */}
-      <Modal
-        visible={showClientSelectModal}
-        transparent={true}
-        animationType="fade"
-        statusBarTranslucent={true}>
-        <View style={[styles.modalOverlay, { zIndex: 9999 }]}>
-          <View style={[styles.categoryModal, { zIndex: 10000 }]}>
-            <View style={styles.workTitleModalHeader}>
-              <Text style={styles.workTitleModalTitle}>Select Clients</Text>
-              <TouchableOpacity onPress={() => {
-                setShowClientSelectModal(false);
-                setClientSearchQuery('');
-              }}>
-                <X size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search clients..."
-                value={clientSearchQuery}
-                onChangeText={setClientSearchQuery}
-                autoCapitalize="none"
-              />
-            </View>
-            
-            <ScrollView 
-              style={styles.categoryList}
-              contentContainerStyle={styles.categoryListContent}
-              showsVerticalScrollIndicator={true}
-              nestedScrollEnabled={true}
-            >
-              {/* New Client Option - Always at top */}
-              <TouchableOpacity
-                style={[
-                  styles.categoryOption,
-                  styles.addClientButton
-                ]}
-                onPress={() => {
-                  setShowClientSelectModal(false);
-                  setShowNewClientModal(true);
-                  setClientSearchQuery('');
-                }}
-              >
-                <View style={styles.clientOptionContent}>
-                  <Plus size={20} color="#000000" />
-                  <Text style={[styles.addClientText, { marginLeft: 8 }]}>
-                    New Client
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              {/* Existing Clients - Filtered and sorted */}
-              {clients
-                .filter(client => 
-                  client.name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
-                  client.email?.toLowerCase().includes(clientSearchQuery.toLowerCase())
-                )
-                .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-                .map((client) => {
-                  const isSelected = selectedClients.some(c => c.id === client.id);
-                  return (
-                    <TouchableOpacity
-                      key={client.id}
-                      style={[
-                        styles.categoryOption,
-                        isSelected && styles.selectedCategory
-                      ]}
-                      onPress={() => {
-                        if (isSelected) {
-                          // Remove client
-                          const newSelected = selectedClients.filter(c => c.id !== client.id);
-                          setSelectedClients(newSelected);
-                          if (newSelected.length > 0) {
-                            setNewProject(prev => ({
-                              ...prev,
-                              client_id: newSelected[0].id,
-                              client_name: newSelected[0].name
-                            }));
-                          } else {
-                            setNewProject(prev => ({
-                              ...prev,
-                              client_id: '',
-                              client_name: ''
-                            }));
-                          }
-                          // Clear error if clients exist
-                          if (newSelected.length > 0 && fieldErrors.clients) {
-                            setFieldErrors(prev => ({ ...prev, clients: '' }));
-                          }
-                        } else {
-                          // Add client
-                          const newSelected = [...selectedClients, { id: client.id, name: client.name }];
-                          setSelectedClients(newSelected);
-                          setNewProject(prev => ({
-                            ...prev,
-                            client_id: newSelected[0].id,
-                            client_name: newSelected[0].name
-                          }));
-                          // Clear error when client is added
-                          if (fieldErrors.clients) {
-                            setFieldErrors(prev => ({ ...prev, clients: '' }));
-                          }
-                        }
-                      }}
-                    >
-                      <View style={styles.clientOptionContent}>
-                        <View style={styles.clientInfo}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-                            <View style={[
-                              styles.checkbox,
-                              isSelected && styles.checkboxChecked
-                            ]}>
-                              {isSelected && <Check size={16} color="#ffffff" />}
-                            </View>
-                            <Text style={[
-                              styles.categoryText,
-                              isSelected && styles.selectedCategoryText
-                            ]}>
-                              {client.name}
-                            </Text>
-                          </View>
-                          {client.email && (
-                            <Text style={styles.clientEmail}>
-                              {client.email}
-                            </Text>
-                          )}
-                        </View>
-                      </View>
-                    </TouchableOpacity>
-                  );
-                })}
-            </ScrollView>
-          </View>
-          <View style={styles.modalFooter}>
-            <TouchableOpacity
-              style={[styles.doneButton, selectedClients.length === 0 && styles.doneButtonDisabled]}
-              onPress={() => {
-                if (selectedClients.length > 0) {
-                  setShowClientSelectModal(false);
-                  setClientSearchQuery('');
-                }
-              }}
-              disabled={selectedClients.length === 0}
-            >
-              <Text style={[styles.doneButtonText, selectedClients.length === 0 && styles.doneButtonTextDisabled]}>
-                Done ({selectedClients.length})
-              </Text>
-            </TouchableOpacity>
           </View>
         </View>
       </Modal>
@@ -3175,9 +3156,15 @@ const styles = StyleSheet.create({
     margin: 20,
     overflow: 'hidden',
   },
+  pickerModalMinHeight: {
+    minHeight: 320,
+  },
   categoryList: {
     flex: 1,
     maxHeight: 500,
+  },
+  pickerScrollMinHeight: {
+    minHeight: 260,
   },
   categoryListContent: {
     padding: 16,
@@ -3209,6 +3196,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   // Client Selection Modal Styles
+  pickerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
@@ -3458,12 +3452,52 @@ const styles = StyleSheet.create({
     padding: 4,
     marginLeft: 8,
   },
+  descriptionsList: {
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 4,
+  },
+  descriptionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: '#000000',
+    flex: 1,
+  },
+  addDescriptionContainer: {
+    gap: 8,
+  },
   addDescriptionButton: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
     gap: 6,
     marginTop: 8,
-    paddingVertical: 6,
+  },
+  addDescriptionButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  descriptionCount: {
+    fontSize: 12,
+    color: '#000000',
+    fontWeight: '500',
   },
   addDescriptionText: {
     fontSize: 14,

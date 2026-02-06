@@ -12,6 +12,7 @@ import {
   onSnapshot 
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { Project, ProjectStep } from '@/types';
 import { ChangeOrderService } from './changeOrderService';
 import { CommentService } from './commentService';
@@ -114,11 +115,12 @@ export class ProjectService {
   // Create new project
   static async createProject(project: Omit<Project, 'id' | 'steps'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, PROJECTS_COLLECTION), {
+      const payload = stripUndefined({
         ...project,
         created_at: new Date().toISOString(),
         progress_percentage: 0
-      });
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, PROJECTS_COLLECTION), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating project:', error);
@@ -130,10 +132,9 @@ export class ProjectService {
   static async updateProject(projectId: string, updates: Partial<Project>): Promise<void> {
     try {
       const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
-      await updateDoc(projectRef, {
-        ...updates,
-        updated_at: new Date().toISOString()
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(projectRef, payload);
     } catch (error) {
       console.error('Error updating project:', error);
       throw error;
@@ -184,14 +185,21 @@ export class ProjectService {
     }
   }
 
-  // Add step to project
+  // Add step to project (Firestore does not accept undefined; omit those keys)
   static async addStep(projectId: string, step: Omit<ProjectStep, 'id' | 'project_id'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, STEPS_COLLECTION), {
+      const raw: Record<string, unknown> = {
         ...step,
         project_id: projectId,
-        created_at: new Date().toISOString()
+        created_at: new Date().toISOString(),
+      };
+      const sanitized: Record<string, unknown> = {};
+      Object.keys(raw).forEach((key) => {
+        if (raw[key] !== undefined) {
+          sanitized[key] = raw[key];
+        }
       });
+      const docRef = await addDoc(collection(db, STEPS_COLLECTION), sanitized);
       return docRef.id;
     } catch (error) {
       console.error('Error adding step:', error);
@@ -203,10 +211,9 @@ export class ProjectService {
   static async updateStep(stepId: string, updates: Partial<ProjectStep>): Promise<void> {
     try {
       const stepRef = doc(db, STEPS_COLLECTION, stepId);
-      await updateDoc(stepRef, {
-        ...updates,
-        updated_at: new Date().toISOString()
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(stepRef, payload);
     } catch (error) {
       console.error('Error updating step:', error);
       throw error;
@@ -265,15 +272,5 @@ export class ProjectService {
     return unsubscribe;
   }
 
-  // Update project
-  static async updateProject(projectId: string, updates: Partial<Project>): Promise<void> {
-    try {
-      const projectRef = doc(db, PROJECTS_COLLECTION, projectId);
-      await updateDoc(projectRef, updates);
-    } catch (error) {
-      console.error('Error updating project:', error);
-      throw new Error('Failed to update project');
-    }
-  }
 }
 

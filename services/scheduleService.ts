@@ -1,5 +1,6 @@
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, where, orderBy } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { PMSchedule } from '@/types';
 
 export class ScheduleService {
@@ -7,11 +8,12 @@ export class ScheduleService {
 
   static async createSchedule(schedule: Omit<PMSchedule, 'id'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, this.collectionName), {
+      const payload = stripUndefined({
         ...schedule,
         created_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
-      });
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, this.collectionName), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating schedule:', error);
@@ -59,10 +61,9 @@ export class ScheduleService {
   static async updateSchedule(scheduleId: string, updates: Partial<PMSchedule>): Promise<void> {
     try {
       const scheduleRef = doc(db, this.collectionName, scheduleId);
-      await updateDoc(scheduleRef, {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(scheduleRef, payload);
     } catch (error) {
       console.error('Error updating schedule:', error);
       throw new Error('Failed to update schedule');

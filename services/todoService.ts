@@ -13,6 +13,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { TodoItem, TodoImage, TodoComment, TodoChecklistItem } from '@/types';
 
 const TODOS_COLLECTION = 'todos';
@@ -106,7 +107,7 @@ export class TodoService {
         return Math.max(max, data.order_index || 0);
       }, -1);
 
-      const todoData = {
+      const payload = stripUndefined({
         ...todo,
         order_index: maxOrder + 1,
         created_at: new Date().toISOString(),
@@ -114,10 +115,9 @@ export class TodoService {
         images: todo.images || [],
         comments: todo.comments || [],
         checklist: todo.checklist || [],
-      };
-
-      console.log('Creating todo with data:', todoData);
-      const docRef = await addDoc(collection(db, TODOS_COLLECTION), todoData);
+      } as Record<string, unknown>);
+      console.log('Creating todo with data:', payload);
+      const docRef = await addDoc(collection(db, TODOS_COLLECTION), payload);
       console.log('Todo created with ID:', docRef.id);
       return docRef.id;
     } catch (error: any) {
@@ -135,10 +135,9 @@ export class TodoService {
   static async updateTodo(todoId: string, updates: Partial<TodoItem>): Promise<void> {
     try {
       const todoRef = doc(db, TODOS_COLLECTION, todoId);
-      await updateDoc(todoRef, {
-        ...updates,
-        updated_at: new Date().toISOString()
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(todoRef, payload);
     } catch (error) {
       console.error('Error updating todo:', error);
       throw error;

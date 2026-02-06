@@ -51,13 +51,6 @@ function AppContent() {
         }} 
       />
       <Stack.Screen 
-        name="project/[id]" 
-        options={{ 
-          headerShown: false,
-          presentation: 'card',
-        }} 
-      />
-      <Stack.Screen 
         name="+not-found" 
         options={{
           presentation: 'card',

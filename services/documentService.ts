@@ -12,6 +12,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 
 type DocumentCategory = 'Plans' | 'Permits' | 'Designs' | 'Inspection' | 'Insurance' | 'Licence' | 'Other';
 
@@ -121,8 +122,8 @@ export class DocumentService {
       await uploadBytes(storageRef, file);
       const fileUrl = await getDownloadURL(storageRef);
 
-      // Save document metadata to Firestore
-      const docRef = await addDoc(collection(db, DOCUMENTS_COLLECTION), {
+      // Save document metadata to Firestore (stripUndefined: Firestore rejects undefined)
+      const payload = stripUndefined({
         project_id: projectId,
         category,
         name: fileName,
@@ -132,7 +133,8 @@ export class DocumentService {
         uploaded_by_id: uploadedById,
         uploaded_at: new Date().toISOString(),
         file_size: file.size,
-      });
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, DOCUMENTS_COLLECTION), payload);
 
       return docRef.id;
     } catch (error) {

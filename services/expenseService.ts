@@ -1,4 +1,5 @@
 import { db, storage } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { Expense, ExpenseDocument, ExpensePayment } from '@/types';
@@ -134,10 +135,9 @@ export const ExpenseService = {
   async updateExpense(expenseId: string, updates: Partial<Expense>): Promise<void> {
     try {
       const expenseDocRef = doc(db, EXPENSES_COLLECTION, expenseId);
-      await updateDoc(expenseDocRef, {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(expenseDocRef, payload);
     } catch (error) {
       console.error('Error updating expense:', error);
       throw error;

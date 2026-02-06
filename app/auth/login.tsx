@@ -86,8 +86,13 @@ export default function LoginScreen() {
     <KeyboardAvoidingView 
       style={styles.container} 
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}
     >
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView 
+        contentContainerStyle={styles.scrollContainer}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}
+      >
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.logoContainer}>
@@ -139,22 +144,22 @@ export default function LoginScreen() {
                 <Text style={styles.rememberMeText}>Remember me</Text>
               </TouchableOpacity>
             </View>
-
-            <TouchableOpacity
-              style={[styles.loginButton, isLoading && styles.disabledButton]}
-              onPress={handleLogin}
-              disabled={isLoading}
-            >
-              <Text style={styles.loginButtonText}>
-                {isLoading ? 'Signing In...' : 'Sign In'}
-              </Text>
-            </TouchableOpacity>
-
-            {/* Registration disabled - only existing admins can create accounts */}
           </View>
-
         </View>
       </ScrollView>
+
+      {/* Sabit login butonu - klavye açıksa da her zaman görünür */}
+      <View style={styles.footer}>
+        <TouchableOpacity
+          style={[styles.loginButton, isLoading && styles.disabledButton]}
+          onPress={handleLogin}
+          disabled={isLoading}
+        >
+          <Text style={styles.loginButtonText}>
+            {isLoading ? 'Signing In...' : 'Sign In'}
+          </Text>
+        </TouchableOpacity>
+      </View>
     </KeyboardAvoidingView>
   );
 }
@@ -166,12 +171,12 @@ const styles = StyleSheet.create({
   },
   scrollContainer: {
     flexGrow: 1,
-    justifyContent: 'center',
+    paddingHorizontal: 24,
+    paddingBottom: 24,
   },
   content: {
-    flex: 1,
-    paddingHorizontal: 24,
-    justifyContent: 'center',
+    paddingTop: 40,
+    paddingBottom: 24,
   },
   header: {
     alignItems: 'center',
@@ -196,7 +201,15 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   form: {
-    marginBottom: 40,
+    marginBottom: 16,
+  },
+  footer: {
+    paddingHorizontal: 24,
+    paddingTop: 16,
+    paddingBottom: Platform.OS === 'ios' ? 34 : 24,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#f3f4f6',
   },
   inputGroup: {
     marginBottom: 20,
@@ -216,17 +229,16 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
   },
   loginButton: {
-    backgroundColor: '#ffffff', // Blue button
+    backgroundColor: '#000000',
     padding: 16,
     borderRadius: 12,
     alignItems: 'center',
-    marginTop: 8,
   },
   disabledButton: {
-    backgroundColor: '#000000',
+    opacity: 0.7,
   },
   loginButtonText: {
-    color: '#ffffff', // White text on blue button
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },

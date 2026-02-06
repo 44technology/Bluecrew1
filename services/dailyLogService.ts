@@ -11,6 +11,7 @@ import {
   orderBy,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 
 export interface DailyLog {
   id: string;
@@ -114,10 +115,8 @@ export class DailyLogService {
   // created_at is generated here, so callers don't need to pass it.
   static async createDailyLog(log: Omit<DailyLog, 'id' | 'created_at'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, DAILY_LOGS_COLLECTION), {
-        ...log,
-        created_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...log, created_at: new Date().toISOString() } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, DAILY_LOGS_COLLECTION), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating daily log:', error);
@@ -129,10 +128,9 @@ export class DailyLogService {
   static async updateDailyLog(logId: string, updates: Partial<DailyLog>): Promise<void> {
     try {
       const logRef = doc(db, DAILY_LOGS_COLLECTION, logId);
-      await updateDoc(logRef, {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(logRef, payload);
     } catch (error) {
       console.error('Error updating daily log:', error);
       throw error;

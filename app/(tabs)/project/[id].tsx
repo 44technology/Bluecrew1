@@ -98,8 +98,9 @@ export default function ProjectDetailScreen() {
   });
   const [showEditStartDatePicker, setShowEditStartDatePicker] = useState(false);
   const [showEditDeadlinePicker, setShowEditDeadlinePicker] = useState(false);
-  const [editWorkTitles, setEditWorkTitles] = useState<Array<{ name: string; description: string; quantity: string; unit_price: string; price: string }>>([]);
-  const [newEditWorkTitle, setNewEditWorkTitle] = useState({ name: '', description: '', quantity: '', unit_price: '', price: '' });
+  const [editWorkTitles, setEditWorkTitles] = useState<Array<{ name: string; descriptions: string[]; quantity: string; unit_price: string; price: string }>>([]);
+  const [newEditWorkTitle, setNewEditWorkTitle] = useState({ name: '', descriptions: [] as string[], quantity: '', unit_price: '', price: '' });
+  const [newEditDescription, setNewEditDescription] = useState('');
   const [editingWorkTitleIndex, setEditingWorkTitleIndex] = useState<number | null>(null);
   const [showEditWorkTitleModal, setShowEditWorkTitleModal] = useState(false);
   const [selectedEditWorkTitleFromList, setSelectedEditWorkTitleFromList] = useState<string>('');
@@ -748,12 +749,16 @@ export default function ProjectDetailScreen() {
 
   const handleAddComment = async () => {
     if (!newComment.trim() || !project?.id) return;
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be logged in to add a comment');
+      return;
+    }
 
     try {
-      const commentData = {
-        project_id: project?.id || '',
-        user_id: user?.id || 'current-user',
-        user_name: user?.name || 'Current User',
+      const commentData: Omit<Comment, 'id' | 'created_at'> = {
+        project_id: project.id,
+        user_id: user.id,
+        user_name: user.name || 'Current User',
         comment: newComment.trim(),
       };
 
@@ -810,6 +815,21 @@ export default function ProjectDetailScreen() {
     };
     loadUsers();
   }, []);
+
+  // Load clients when Edit Project modal opens (parity with Create Project)
+  useEffect(() => {
+    if (!showEditModal) return;
+    const refreshClients = async () => {
+      try {
+        const allUsersData = await UserService.getAllUsers();
+        const clientUsers = allUsersData.filter(u => u.role === 'client');
+        setClients(clientUsers.map(c => ({ id: c.id, name: c.name, email: c.email, role: 'client' })));
+      } catch (e) {
+        console.error('Error refreshing clients for Edit modal:', e);
+      }
+    };
+    refreshClients();
+  }, [showEditModal]);
 
   // Load selected PMs when modal opens
   useEffect(() => {
@@ -1335,6 +1355,24 @@ export default function ProjectDetailScreen() {
 
   const canCompleteProject = areAllStepsFinished() && userRole === 'admin' && project?.status !== 'completed';
 
+  const handleAddEditDescription = () => {
+    const trimmed = newEditDescription.trim();
+    if (!trimmed) return;
+    setNewEditWorkTitle(prev => ({
+      ...prev,
+      descriptions: [...(prev.descriptions || []), trimmed],
+    }));
+    setNewEditDescription('');
+  };
+
+  const handleRemoveEditDescription = (index: number) => {
+    setNewEditWorkTitle(prev => {
+      const list = [...(prev.descriptions || [])];
+      list.splice(index, 1);
+      return { ...prev, descriptions: list };
+    });
+  };
+
   const handleUpdateProject = async () => {
     if (!project?.id || !editingProject) return;
 
@@ -1848,13 +1886,13 @@ export default function ProjectDetailScreen() {
                 supervision_type: 'part-time' as 'full-time' | 'part-time' | 'none',
                 supervision_weeks: '',
               });
-              // Load work titles from steps
+              // Load work titles from steps (description -> descriptions array)
               if (project.steps && project.steps.length > 0) {
                 const workTitlesFromSteps = project.steps
                   .filter(step => step.step_type === 'parent')
                   .map(step => ({
                     name: step.name,
-                    description: step.description || '',
+                    descriptions: step.description ? (step.description.includes(', ') ? step.description.split(', ') : [step.description]) : [],
                     quantity: '1', // Default since steps don't have quantity
                     unit_price: step.price?.toString() || '0',
                     price: step.price?.toString() || '0',
@@ -2567,12 +2605,12 @@ export default function ProjectDetailScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Work Description</Text>
+              <Text style={styles.label}>Notes</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={newChildStep.description}
                 onChangeText={(text) => setNewChildStep(prev => ({ ...prev, description: text }))}
-                placeholder="Describe the work..."
+                placeholder="Add notes..."
                 multiline
                 numberOfLines={3}
               />
@@ -2729,12 +2767,12 @@ export default function ProjectDetailScreen() {
             </View>
 
             <View style={styles.inputGroup}>
-              <Text style={styles.label}>Description</Text>
+              <Text style={styles.label}>Notes</Text>
               <TextInput
                 style={[styles.input, styles.textArea]}
                 value={editChildStep.description}
                 onChangeText={(text) => setEditChildStep(prev => ({ ...prev, description: text }))}
-                placeholder="Work description..."
+                placeholder="Add notes..."
                 multiline
                 numberOfLines={3}
               />
@@ -3273,6 +3311,9 @@ export default function ProjectDetailScreen() {
                 supervision_weeks: '',
               });
               setEditWorkTitles([]);
+              setNewEditWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+              setNewEditDescription('');
+              setSelectedEditClients([]);
             }}>
               <X size={24} color="#000000" />
             </TouchableOpacity>
@@ -3505,8 +3546,12 @@ export default function ProjectDetailScreen() {
                     <View key={index} style={styles.workTitleItem}>
                       <View style={styles.workTitleInfo}>
                         <Text style={styles.workTitleName}>{workTitle.name}</Text>
-                        {workTitle.description && (
-                          <Text style={styles.workTitleDescription}>{workTitle.description}</Text>
+                        {(workTitle.descriptions && workTitle.descriptions.length > 0) && (
+                          <View style={styles.descriptionsList}>
+                            {workTitle.descriptions.map((desc, di) => (
+                              <Text key={di} style={styles.workTitleDescription}>• {desc}</Text>
+                            ))}
+                          </View>
                         )}
                         <View style={styles.workTitleDetails}>
                           <Text style={styles.workTitleDetailText}>
@@ -3557,15 +3602,42 @@ export default function ProjectDetailScreen() {
                     )}
                   </View>
                   <View style={styles.inputGroup}>
-                    <Text style={styles.label}>Work Description</Text>
-                    <TextInput
-                      style={[styles.input, styles.textArea]}
-                      placeholder="Enter work description"
-                      value={newEditWorkTitle.description}
-                      onChangeText={(text) => setNewEditWorkTitle(prev => ({ ...prev, description: text }))}
-                      multiline
-                      numberOfLines={2}
-                    />
+                    <View style={styles.labelRow}>
+                      <Text style={styles.label}>Work Descriptions</Text>
+                      <Text style={styles.descriptionCount}>{newEditWorkTitle.descriptions?.length ?? 0} added</Text>
+                    </View>
+                    {(newEditWorkTitle.descriptions && newEditWorkTitle.descriptions.length > 0) && (
+                      <View style={styles.descriptionsList}>
+                        {newEditWorkTitle.descriptions.map((desc, index) => (
+                          <View key={index} style={styles.descriptionItem}>
+                            <Text style={styles.descriptionText}>• {desc}</Text>
+                            <TouchableOpacity
+                              style={styles.removeDescriptionButton}
+                              onPress={() => handleRemoveEditDescription(index)}
+                            >
+                              <X size={14} color="#ef4444" />
+                            </TouchableOpacity>
+                          </View>
+                        ))}
+                      </View>
+                    )}
+                    <View style={styles.addDescriptionContainer}>
+                      <TextInput
+                        style={[styles.input, styles.textArea]}
+                        placeholder="Enter work description"
+                        value={newEditDescription}
+                        onChangeText={setNewEditDescription}
+                        multiline
+                        numberOfLines={2}
+                      />
+                      <TouchableOpacity
+                        style={styles.addDescriptionButton}
+                        onPress={handleAddEditDescription}
+                      >
+                        <Plus size={16} color="#000000" />
+                        <Text style={styles.addDescriptionButtonText}>Add Description</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
                   <View style={styles.quantityUnitRow}>
                     <View style={styles.quantityInputContainer}>
@@ -3667,7 +3739,8 @@ export default function ProjectDetailScreen() {
                           return;
                         }
                         setEditWorkTitles([...editWorkTitles, { ...newEditWorkTitle }]);
-                        setNewEditWorkTitle({ name: '', description: '', quantity: '', unit_price: '', price: '' });
+                        setNewEditWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+                        setNewEditDescription('');
                         setSelectedEditWorkTitleFromList('');
                       }}
                     >
@@ -3723,10 +3796,7 @@ export default function ProjectDetailScreen() {
                 const currentWorkTitleTotal = (() => {
                   const quantity = parseFloat(newEditWorkTitle.quantity) || 0;
                   const unitPrice = parseFloat(newEditWorkTitle.unit_price) || 0;
-                  if (quantity > 0 && unitPrice > 0) {
-                    return quantity * unitPrice;
-                  }
-                  return 0;
+                  return quantity * unitPrice;
                 })();
                 const workTitlesTotal = editWorkTitles.reduce((sum, workTitle) => {
                   const quantity = parseFloat(workTitle.quantity) || 0;
@@ -3737,17 +3807,26 @@ export default function ProjectDetailScreen() {
                 const supervisionWeeks = parseFloat(editProjectForm.supervision_weeks) || 0;
                 const supervisionRate = editProjectForm.supervision_type === 'full-time' ? 1450 : editProjectForm.supervision_type === 'part-time' ? 725 : 0;
                 const supervisionFee = (supervisionWeeks > 0 && editProjectForm.supervision_type !== 'none') ? supervisionRate * supervisionWeeks : 0;
-                const discount = parseFloat(editProjectForm.discount) || 0;
                 const generalConditionsPercentageInput = editProjectForm.general_conditions_percentage.trim();
                 const generalConditionsPercentage = generalConditionsPercentageInput === '' ? 18.5 : (isNaN(parseFloat(generalConditionsPercentageInput)) ? 18.5 : parseFloat(generalConditionsPercentageInput));
-                const generalConditionsAmount = ((totalWorkTitles + supervisionFee) * generalConditionsPercentage) / 100;
+                const generalConditions = ((totalWorkTitles + supervisionFee) * generalConditionsPercentage) / 100;
+                const discount = parseFloat(editProjectForm.discount) || 0;
+                const totalBudget = totalWorkTitles + generalConditions + supervisionFee - discount;
                 return (
-                  <View style={styles.calculatedAmount}>
-                    <Text style={styles.calculatedAmountLabel}>Calculated Amount:</Text>
-                    <Text style={styles.calculatedAmountValue}>
-                      ${generalConditionsAmount.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                    </Text>
-                  </View>
+                  <>
+                    <View style={styles.calculatedAmount}>
+                      <Text style={styles.calculatedAmountLabel}>General Conditions ({generalConditionsPercentage}%):</Text>
+                      <Text style={styles.calculatedAmountValue}>
+                        ${generalConditions.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Text>
+                    </View>
+                    <View style={styles.calculatedAmount}>
+                      <Text style={styles.calculatedAmountLabel}>Calculated Total:</Text>
+                      <Text style={styles.calculatedAmountValue}>
+                        ${totalBudget > 0 ? totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
+                      </Text>
+                    </View>
+                  </>
                 );
               })()}
             </View>
@@ -3932,12 +4011,153 @@ export default function ProjectDetailScreen() {
               <Text style={styles.submitButtonText}>Update Project</Text>
             </TouchableOpacity>
           </ScrollView>
+
+          {/* Category / Clients / Work Title overlays inside Edit Project modal (same as Create Project) */}
+          {showEditCategoryModal && (
+            <View style={styles.pickerOverlay} pointerEvents="box-none">
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowEditCategoryModal(false)} />
+              <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Category</Text>
+                  <TouchableOpacity onPress={() => setShowEditCategoryModal(false)}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={[styles.categoryList, styles.pickerScrollMinHeight]} contentContainerStyle={styles.categoryListContent}>
+                  {['Residential', 'Commercial'].map((category) => (
+                    <TouchableOpacity
+                      key={category}
+                      style={[styles.categoryOption, editProjectForm.category === category && styles.selectedCategory]}
+                      onPress={() => {
+                        setEditProjectForm(prev => ({ ...prev, category }));
+                        setShowEditCategoryModal(false);
+                      }}
+                    >
+                      <Text style={[styles.categoryText, editProjectForm.category === category && styles.selectedCategoryText]}>{category}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
+
+          {showClientSelectModal && (
+            <View style={styles.pickerOverlay} pointerEvents="box-none">
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setShowClientSelectModal(false); setClientSearchQuery(''); }} />
+              <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                <View style={styles.workTitleModalHeader}>
+                  <Text style={styles.workTitleModalTitle}>Select Clients</Text>
+                  <TouchableOpacity onPress={() => { setShowClientSelectModal(false); setClientSearchQuery(''); }}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                <View style={styles.searchContainer}>
+                  <TextInput
+                    style={styles.searchInput}
+                    placeholder="Search clients..."
+                    value={clientSearchQuery}
+                    onChangeText={setClientSearchQuery}
+                  />
+                </View>
+                <ScrollView style={[styles.categoryList, styles.pickerScrollMinHeight]} contentContainerStyle={styles.categoryListContent} showsVerticalScrollIndicator>
+                  {clients
+                    .filter(client =>
+                      client.name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                      client.email?.toLowerCase().includes(clientSearchQuery.toLowerCase())
+                    )
+                    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                    .map((client) => {
+                      const isSelected = selectedEditClients.some(c => c.id === client.id);
+                      return (
+                        <TouchableOpacity
+                          key={client.id}
+                          style={[styles.categoryOption, isSelected && styles.selectedCategory]}
+                          onPress={() => {
+                            if (isSelected) {
+                              const newSelected = selectedEditClients.filter(c => c.id !== client.id);
+                              setSelectedEditClients(newSelected);
+                              setEditProjectForm(prev => ({
+                                ...prev,
+                                client_id: newSelected[0]?.id ?? '',
+                                client_name: newSelected[0]?.name ?? ''
+                              }));
+                            } else {
+                              const newSelected = [...selectedEditClients, { id: client.id, name: client.name }];
+                              setSelectedEditClients(newSelected);
+                              setEditProjectForm(prev => ({ ...prev, client_id: newSelected[0].id, client_name: newSelected[0].name }));
+                            }
+                          }}
+                        >
+                          <View style={styles.clientOptionContent}>
+                            <View style={styles.clientInfo}>
+                              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                                <View style={[styles.checkbox, isSelected && styles.checkboxChecked]}>
+                                  {isSelected && <Check size={16} color="#ffffff" />}
+                                </View>
+                                <Text style={[styles.categoryText, isSelected && styles.selectedCategoryText]}>{client.name}</Text>
+                              </View>
+                              {client.email && <Text style={styles.clientEmail}>{client.email}</Text>}
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })}
+                </ScrollView>
+                <View style={styles.modalFooter}>
+                  <TouchableOpacity
+                    style={[styles.doneButton, selectedEditClients.length === 0 && styles.doneButtonDisabled]}
+                    onPress={() => { if (selectedEditClients.length > 0) { setShowClientSelectModal(false); setClientSearchQuery(''); } }}
+                    disabled={selectedEditClients.length === 0}
+                  >
+                    <Text style={[styles.doneButtonText, selectedEditClients.length === 0 && styles.doneButtonTextDisabled]}>
+                      Done ({selectedEditClients.length})
+                    </Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {showEditWorkTitleModal && (
+            <View style={styles.pickerOverlay} pointerEvents="box-none">
+              <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setShowEditWorkTitleModal(false); if (selectedEditWorkTitleFromList !== 'New') setSelectedEditWorkTitleFromList(''); }} />
+              <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>Select Work Title</Text>
+                  <TouchableOpacity onPress={() => { setShowEditWorkTitleModal(false); if (selectedEditWorkTitleFromList !== 'New') setSelectedEditWorkTitleFromList(''); }}>
+                    <X size={24} color="#000000" />
+                  </TouchableOpacity>
+                </View>
+                <ScrollView style={[styles.categoryList, styles.pickerScrollMinHeight]} contentContainerStyle={styles.categoryListContent} showsVerticalScrollIndicator>
+                  {predefinedWorkTitles.map((title) => (
+                    <TouchableOpacity
+                      key={title}
+                      style={[styles.categoryOption, selectedEditWorkTitleFromList === title && styles.selectedCategory]}
+                      onPress={() => {
+                        if (title === 'New') {
+                          setSelectedEditWorkTitleFromList('New');
+                          setNewEditWorkTitle(prev => ({ ...prev, name: '' }));
+                          setShowEditWorkTitleModal(false);
+                        } else {
+                          setSelectedEditWorkTitleFromList(title);
+                          setNewEditWorkTitle(prev => ({ ...prev, name: title }));
+                          setShowEditWorkTitleModal(false);
+                        }
+                      }}
+                    >
+                      <Text style={[styles.categoryText, selectedEditWorkTitleFromList === title && styles.selectedCategoryText]}>{title}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            </View>
+          )}
         </View>
       </Modal>
 
-      {/* Client Selection Modal for Edit Project */}
+      {/* Client Selection Modal for Edit Project - only when Edit modal is closed (overlay used when edit open) */}
       <Modal
-        visible={showClientSelectModal}
+        visible={showClientSelectModal && !showEditModal}
         transparent={true}
         animationType="fade"
         statusBarTranslucent={true}>
@@ -6247,6 +6467,19 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 8,
   },
+  pickerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  pickerModalMinHeight: {
+    minHeight: 320,
+  },
+  pickerScrollMinHeight: {
+    minHeight: 260,
+  },
   // Work Title Modal Header (simple style like create project form)
   workTitleModalHeader: {
     flexDirection: 'row',
@@ -6441,5 +6674,105 @@ const styles = StyleSheet.create({
   },
   priceInput: {
     flex: 1,
+  },
+  // Edit form work titles list
+  workTitlesList: {
+    marginBottom: 16,
+    gap: 8,
+  },
+  workTitleItem: {
+    backgroundColor: '#f9fafb',
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    padding: 12,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  workTitleInfo: {
+    flex: 1,
+  },
+  workTitleName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginBottom: 4,
+  },
+  workTitleDescription: {
+    fontSize: 14,
+    color: '#000000',
+    marginBottom: 4,
+  },
+  workTitleDetails: {
+    marginTop: 8,
+    gap: 4,
+  },
+  workTitleDetailText: {
+    fontSize: 14,
+    color: '#000000',
+  },
+  workTitlePrice: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#059669',
+  },
+  // Multiple descriptions (Create/Edit Project)
+  labelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  descriptionCount: {
+    fontSize: 12,
+    color: '#000000',
+    fontWeight: '500',
+  },
+  descriptionsList: {
+    marginTop: 8,
+    marginBottom: 8,
+    gap: 4,
+  },
+  descriptionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    backgroundColor: '#ffffff',
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  descriptionText: {
+    fontSize: 14,
+    color: '#000000',
+    flex: 1,
+  },
+  removeDescriptionButton: {
+    padding: 4,
+    marginLeft: 8,
+  },
+  addDescriptionContainer: {
+    gap: 8,
+  },
+  addDescriptionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#eff6ff',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#bfdbfe',
+    gap: 6,
+    marginTop: 8,
+  },
+  addDescriptionButtonText: {
+    color: '#000000',
+    fontSize: 14,
+    fontWeight: '600',
   },
 });

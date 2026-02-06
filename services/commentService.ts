@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { 
   collection, 
   addDoc, 
@@ -26,10 +27,20 @@ export class CommentService {
         throw new Error('Firebase connection failed. Please check your internet connection.');
       }
 
-      const docRef = await addDoc(collection(db, 'comments'), {
-        ...comment,
+      // Build payload with only defined values (Firestore rejects undefined)
+      const payload: Record<string, unknown> = {
+        user_id: comment.user_id ?? '',
+        user_name: comment.user_name ?? 'Unknown',
+        comment: comment.comment ?? '',
         created_at: new Date().toISOString(),
-      });
+      };
+      if (comment.project_id != null) payload.project_id = comment.project_id;
+      if (comment.proposal_id != null) payload.proposal_id = comment.proposal_id;
+      if (comment.invoice_id != null) payload.invoice_id = comment.invoice_id;
+      if (comment.change_order_id != null) payload.change_order_id = comment.change_order_id;
+      if (comment.material_request_id != null) payload.material_request_id = comment.material_request_id;
+
+      const docRef = await addDoc(collection(db, 'comments'), payload);
 
       // Create notifications for project chat
       if (comment.project_id) {
@@ -243,10 +254,9 @@ export class CommentService {
   static async updateComment(commentId: string, updates: Partial<Comment>): Promise<void> {
     try {
       const commentRef = doc(db, 'comments', commentId);
-      await updateDoc(commentRef, {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(commentRef, payload);
     } catch (error) {
       console.error('Error updating comment:', error);
       throw error;

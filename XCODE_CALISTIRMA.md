@@ -1,5 +1,27 @@
 # Xcode'da Projeyi Çalıştırma
 
+## Simulator'da son değişiklikleri test etmek (önerilen sıra)
+
+1. **Metro'yu başlat** (bir terminal):
+   ```bash
+   cd /Users/info44technology.com/Desktop/bluecrew1/project
+   npm start
+   ```
+   Açılan pencerede **i** tuşuna basarak iOS simülatörü açabilirsin; veya Xcode’dan Run yapacaksan Metro’yu açık bırak.
+
+2. **Xcode’da çalıştır:**
+   - `open -a Xcode ios/BlueCrew.xcworkspace`
+   - Üstte Scheme: **BlueCrew**, cihaz: bir **iPhone Simulator** seçin.
+   - **⌘ + R** (Run).
+
+3. **Test et:**
+   - **Proposals:** Sağ altta yuvarlak **+** (FAB) ile Create Proposal açılıyor mu, Category / Client / Work Title listeleri açılıyor mu?
+   - **Projects:** Create Project → Category, Select Clients, Select Work Title listeleri açılıyor mu?
+
+Hata görürsen Xcode veya Metro terminalindeki mesajı not alıp düzeltebiliriz; sonra push edip yayınlarsın.
+
+---
+
 ## 1. Workspace'i aç
 
 **Mutlaka `.xcworkspace` açın, `.xcodeproj` değil** (CocoaPods kullanıldığı için).

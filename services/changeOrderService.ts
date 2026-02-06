@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
 import { ChangeOrderRequest } from '@/types';
 import { NotificationService } from './notificationService';
@@ -8,10 +9,8 @@ import { UserService } from './userService';
 export const ChangeOrderService = {
   async createChangeOrderRequest(requestData: Omit<ChangeOrderRequest, 'id' | 'created_at'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, 'changeOrderRequests'), {
-        ...requestData,
-        created_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...requestData, created_at: new Date().toISOString() } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, 'changeOrderRequests'), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating change order request:', error);
@@ -70,8 +69,10 @@ export const ChangeOrderService = {
       const requestDocRef = doc(db, 'changeOrderRequests', requestId);
       const requestDoc = await getDoc(requestDocRef);
       const oldData = requestDoc.data() as ChangeOrderRequest;
-      
-      await updateDoc(requestDocRef, updates);
+      const payload = stripUndefined(updates as Record<string, unknown>);
+      if (Object.keys(payload).length > 0) {
+        await updateDoc(requestDocRef, payload);
+      }
 
       // Create notifications for approval/rejection
       try {

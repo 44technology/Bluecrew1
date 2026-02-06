@@ -115,22 +115,19 @@ export default function ClientsScreen() {
     await loadClients();
   };
 
-  // Set view mode and mobile detection
+  // Mobile-first: always use card view (vertical list) so page scrolls down like mobile app
   useEffect(() => {
     if (Platform.OS === 'ios' || Platform.OS === 'android') {
       setIsMobile(true);
       setViewMode('card');
       return;
     }
-    
     if (Platform.OS === 'web' && typeof window !== 'undefined') {
       const isMobileWidth = window.innerWidth <= 768;
       const userAgent = window.navigator.userAgent || '';
       const isMobileUA = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(userAgent);
-      const mobile = isMobileWidth || isMobileUA;
-      setIsMobile(mobile);
-      setViewMode(mobile ? 'card' : 'table');
-      
+      setIsMobile(isMobileWidth || isMobileUA);
+      setViewMode('card'); // always card = vertical scroll, no horizontal CRM table
       const handleResize = () => {
         if (typeof window !== 'undefined') {
           const mobileWidth = window.innerWidth <= 768;
@@ -140,12 +137,9 @@ export default function ClientsScreen() {
           setIsMobile(mobileWidth || mobileUA);
         }
       };
-      
       window.addEventListener('resize', handleResize);
       return () => {
-        if (typeof window !== 'undefined') {
-          window.removeEventListener('resize', handleResize);
-        }
+        if (typeof window !== 'undefined') window.removeEventListener('resize', handleResize);
       };
     }
   }, []);
@@ -726,9 +720,10 @@ export default function ClientsScreen() {
 
       <ScrollView 
         style={styles.content} 
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={true}
-        showsHorizontalScrollIndicator={true}
-        contentContainerStyle={{ flexGrow: 1, paddingBottom: 120 }}
+        showsHorizontalScrollIndicator={false}
+        horizontal={false}
         refreshControl={
           Platform.OS !== 'web' ? (
             <RefreshControl
@@ -814,10 +809,12 @@ export default function ClientsScreen() {
             ))}
           </View>
         ) : (
-          /* Mobile Card View */
-          filteredClients.map((client) => (
-            <ClientCard key={client.id} client={client} />
-          ))
+          /* Card view: vertical list, scroll down (mobile-style) */
+          <View style={styles.cardListContainer}>
+            {filteredClients.map((client) => (
+              <ClientCard key={client.id} client={client} />
+            ))}
+          </View>
         )}
       </ScrollView>
 
@@ -1236,6 +1233,18 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     padding: 20,
+    width: '100%',
+    maxWidth: '100%',
+  },
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: 120,
+    width: '100%',
+    maxWidth: '100%',
+  },
+  cardListContainer: {
+    width: '100%',
+    maxWidth: '100%',
   },
   emptyState: {
     flex: 1,

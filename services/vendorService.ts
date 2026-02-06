@@ -1,14 +1,13 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc, query, orderBy } from 'firebase/firestore';
 import { Vendor } from '@/types';
 
 export class VendorService {
   static async addVendor(vendor: Omit<Vendor, 'id'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, 'vendors'), {
-        ...vendor,
-        created_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...vendor, created_at: new Date().toISOString() } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, 'vendors'), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error adding vendor:', error);
@@ -34,10 +33,9 @@ export class VendorService {
   static async updateVendor(vendorId: string, updates: Partial<Vendor>): Promise<void> {
     try {
       const vendorRef = doc(db, 'vendors', vendorId);
-      await updateDoc(vendorRef, {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(vendorRef, payload);
     } catch (error) {
       console.error('Error updating vendor:', error);
       throw error;

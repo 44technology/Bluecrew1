@@ -15,6 +15,7 @@ import {
   serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { storage } from '@/lib/firebase';
 
@@ -91,7 +92,7 @@ export class ChatService {
         chatData.is_archived![userId] = false;
       });
 
-      const chatRef = await addDoc(collection(db, 'chats'), chatData);
+      const chatRef = await addDoc(collection(db, 'chats'), stripUndefined(chatData as Record<string, unknown>));
       return chatRef.id;
     } catch (error) {
       console.error('Error creating chat:', error);
@@ -185,7 +186,7 @@ export class ChatService {
     fileSize?: number
   ): Promise<string> {
     try {
-      const messageData: Omit<ChatMessage, 'id'> = {
+      const payload = stripUndefined({
         chat_id: chatId,
         sender_id: senderId,
         sender_name: senderName,
@@ -195,10 +196,9 @@ export class ChatService {
         file_name: fileName,
         file_size: fileSize,
         created_at: new Date().toISOString(),
-        read_by: { [senderId]: new Date().toISOString() }, // Sender has read it
-      };
-
-      const messageRef = await addDoc(collection(db, 'messages'), messageData);
+        read_by: { [senderId]: new Date().toISOString() },
+      } as Record<string, unknown>);
+      const messageRef = await addDoc(collection(db, 'messages'), payload);
 
       // Update chat's last message
       const chatRef = doc(db, 'chats', chatId);

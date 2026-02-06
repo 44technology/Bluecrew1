@@ -1,4 +1,5 @@
 import { db, storage } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import {
   collection,
   doc,
@@ -61,10 +62,9 @@ export class CompanyService {
   ): Promise<void> {
     try {
       const companyRef = doc(db, COMPANIES_COLLECTION, companyId);
-      await updateDoc(companyRef, {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(companyRef, payload);
     } catch (error) {
       console.error('Update company error:', error);
       throw error;

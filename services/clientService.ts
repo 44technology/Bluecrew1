@@ -1,5 +1,6 @@
 import { db } from '@/lib/firebase';
-import { collection, doc, getDoc, updateDoc } from 'firebase/firestore';
+import { stripUndefined } from '@/lib/firestoreUtils';
+import { doc, getDoc, updateDoc } from 'firebase/firestore';
 import { Client, ClientNote } from '@/types';
 
 const USERS_COLLECTION = 'users';
@@ -57,10 +58,9 @@ export const ClientService = {
   async updateClient(clientId: string, updates: Partial<Client>): Promise<void> {
     try {
       const clientRef = doc(db, USERS_COLLECTION, clientId);
-      await updateDoc(clientRef, {
-        ...updates,
-        updated_at: new Date().toISOString(),
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(clientRef, payload);
     } catch (error) {
       console.error('Error updating client:', error);
       throw error;

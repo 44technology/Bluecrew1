@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { collection, addDoc, getDocs, query, where, doc, getDoc, updateDoc, deleteDoc, orderBy } from 'firebase/firestore';
 import { Invoice } from '@/types';
 
@@ -7,11 +8,12 @@ const INVOICES_COLLECTION = 'invoices';
 export const InvoiceService = {
   async createInvoice(invoiceData: Omit<Invoice, 'id' | 'created_at'>): Promise<string> {
     try {
-      const docRef = await addDoc(collection(db, INVOICES_COLLECTION), {
+      const payload = stripUndefined({
         ...invoiceData,
         created_at: new Date().toISOString(),
         invoice_date: invoiceData.invoice_date || new Date().toISOString(),
-      });
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, INVOICES_COLLECTION), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating invoice:', error);
@@ -69,10 +71,9 @@ export const InvoiceService = {
   async updateInvoice(invoiceId: string, updates: Partial<Invoice>): Promise<void> {
     try {
       const invoiceRef = doc(db, INVOICES_COLLECTION, invoiceId);
-      await updateDoc(invoiceRef, {
-        ...updates,
-        updated_at: new Date().toISOString()
-      });
+      const payload = stripUndefined({ ...updates, updated_at: new Date().toISOString() } as Record<string, unknown>);
+      if (Object.keys(payload).length === 0) return;
+      await updateDoc(invoiceRef, payload);
     } catch (error) {
       console.error('Error updating invoice:', error);
       throw error;

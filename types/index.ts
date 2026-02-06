@@ -1,8 +1,8 @@
 /** Platform-wide: single name used by all tenant companies */
 export const PLATFORM_NAME = 'Blue Crew';
 
-/** Color palette id: 1 | 2 | 3 - company chooses one */
-export type ColorPaletteId = 1 | 2 | 3;
+/** Color palette id: 1 | 2 | 3 | 4 - company chooses one */
+export type ColorPaletteId = 1 | 2 | 3 | 4;
 
 export interface CompanyTheme {
   primary: string;
@@ -23,6 +23,10 @@ export interface Company {
   address?: string;
   logo_url?: string;
   color_palette: ColorPaletteId;
+  /** Override palette colors; when set, used instead of palette value */
+  custom_primary?: string;
+  custom_accent?: string;
+  custom_background?: string;
   created_at: string;
   updated_at: string;
 }
@@ -425,6 +429,10 @@ export interface Proposal {
   created_by_name: string;
   created_at: string;
   proposal_date: string; // Date when proposal was created
+  // Sent for management approval (cleared when admin clicks "Update Review" so sales can edit again)
+  sent_for_approval_at?: string;
+  sent_for_approval_by?: string;
+  sent_for_approval_by_name?: string;
 }
 
 export interface Invoice {

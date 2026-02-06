@@ -1,19 +1,7 @@
+require File.join(File.dirname(`node --print "require.resolve('expo/package.json')"`), "scripts/autolinking")
+require File.join(File.dirname(`node --print "require.resolve('react-native/package.json')"`), "scripts/react_native_pods")
+
 require 'json'
-
-# Resolve paths without relying on node being in PATH (fixes EAS "Install pods" phase)
-def resolve_module_path(module_name)
-  project_root = File.expand_path('..', __dir__)
-  package_json = File.join(project_root, 'node_modules', module_name, 'package.json')
-  if File.exist?(package_json)
-    File.dirname(package_json)
-  else
-    File.dirname(`node --print "require.resolve('#{module_name}/package.json')"`.strip)
-  end
-end
-
-require File.join(resolve_module_path('expo'), "scripts/autolinking")
-require File.join(resolve_module_path('react-native'), "scripts/react_native_pods")
-
 podfile_properties = JSON.parse(File.read(File.join(__dir__, 'Podfile.properties.json'))) rescue {}
 
 def ccache_enabled?(podfile_properties)

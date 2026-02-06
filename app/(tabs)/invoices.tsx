@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -60,6 +60,7 @@ export default function InvoicesScreen() {
   const [uploadingPaymentDocument, setUploadingPaymentDocument] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const commentInputRef = useRef<TextInput>(null);
   const [filterQuery, setFilterQuery] = useState('');
   const [showFilter, setShowFilter] = useState(false);
   const [relatedProposal, setRelatedProposal] = useState<Proposal | null>(null);
@@ -309,14 +310,17 @@ export default function InvoicesScreen() {
       Alert.alert('Error', 'Please enter a comment');
       return;
     }
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be logged in to add a comment');
+      return;
+    }
 
     try {
-      const commentData = {
+      const commentData: Omit<Comment, 'id' | 'created_at'> = {
         invoice_id: selectedInvoice.id,
-        user_id: user?.id || '',
-        user_name: user?.name || 'Unknown User',
+        user_id: user.id,
+        user_name: user.name || 'Unknown User',
         comment: newComment.trim(),
-        created_at: new Date().toISOString(),
       };
 
       await CommentService.addComment(commentData);
@@ -2402,9 +2406,7 @@ export default function InvoicesScreen() {
                       {(canEditInvoices || userRole === 'admin' || userRole === 'sales') && (
                         <TouchableOpacity
                           style={styles.addCommentButton}
-                          onPress={() => {
-                            // Show comment input
-                          }}
+                          onPress={() => commentInputRef.current?.focus()}
                         >
                           <MessageSquare size={18} color="#000000" />
                           <Text style={styles.addCommentButtonText}>Add Comment</Text>
@@ -2416,6 +2418,7 @@ export default function InvoicesScreen() {
                     {(canEditInvoices || userRole === 'admin' || userRole === 'sales') && (
                       <View style={styles.commentInputContainer}>
                         <TextInput
+                          ref={commentInputRef}
                           style={styles.commentInput}
                           placeholder="Add a comment..."
                           value={newComment}

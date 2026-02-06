@@ -12,6 +12,7 @@ import {
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
+import { useLanguage } from '@/contexts/LanguageContext';
 import { PermissionService } from '@/services/permissionService';
 import {
   Building2,
@@ -54,6 +55,7 @@ export default function HamburgerMenu() {
   const [pageAccess, setPageAccess] = useState<Record<string, boolean>>({});
   const { userRole } = useAuth();
   const { theme } = useTheme();
+  const { t } = useLanguage();
   const router = useRouter();
 
   useEffect(() => {
@@ -114,107 +116,105 @@ export default function HamburgerMenu() {
   const menuItems: MenuItem[] = [
     {
       name: 'index',
-      title: 'Projects',
+      title: t('projects'),
       icon: Building2,
       href: '/projects',
     },
     {
       name: 'notifications',
-      title: 'Notifications',
+      title: t('notifications'),
       icon: Bell,
       href: '/notifications',
     },
     {
       name: 'company-settings',
-      title: 'Company Settings',
+      title: t('companySettings'),
       icon: Building2,
       href: '/company-settings',
     },
     {
       name: 'team',
-      title: 'Team',
+      title: t('employees'),
       icon: Users,
       href: userRole === 'admin' ? '/team' : null,
     },
     {
       name: 'hr',
-      title: 'HR',
+      title: t('hr'),
       icon: UserCog,
       href: userRole === 'admin' ? '/hr' : null,
     },
     {
       name: 'time-clock',
-      title: 'Time Clock',
+      title: t('timeClock'),
       icon: Clock,
       href: (userRole === 'admin' || userRole === 'pm' || userRole === 'sales' || userRole === 'office') ? '/time-clock' : null,
     },
     {
       name: 'sales',
-      title: 'Sales',
+      title: t('sales'),
       icon: Briefcase,
       href: (userRole === 'admin' || (userRole === 'sales' && pageAccess['sales-report'] !== false)) ? '/sales-report' : null,
       submenu: (userRole === 'office' && pageAccess['proposals'] !== false && pageAccess['invoices'] !== false) ? [
         {
           name: 'proposals',
-          title: 'Proposals',
+          title: t('proposals'),
           icon: FileText,
           href: '/proposals',
         },
         {
           name: 'invoices',
-          title: 'Invoices',
+          title: t('invoices'),
           icon: Receipt,
           href: '/invoices',
         },
       ] : undefined,
     },
-    // Client için Proposals menüsü
     {
       name: 'client-proposals',
-      title: 'Proposals',
+      title: t('proposals'),
       icon: FileText,
       href: userRole === 'client' ? '/proposals' : null,
     },
-    // Client için Invoices menüsü
     {
       name: 'client-invoices',
-      title: 'Invoices',
+      title: t('invoices'),
       icon: Receipt,
       href: userRole === 'client' ? '/invoices' : null,
     },
     {
       name: 'project-approval',
-      title: 'Approval',
+      title: t('approval'),
       icon: CheckCircle,
       href: (userRole === 'admin' || userRole === 'sales') ? '/project-approval' : null,
     },
     {
       name: 'tracking',
-      title: 'Tracking',
+      title: t('tracking'),
       icon: Package,
       href: (userRole === 'admin' || userRole === 'pm') ? '/tracking' : null,
     },
     {
       name: 'expenses',
-      title: 'Expenses',
+      title: t('expenses'),
       icon: CreditCard,
       href: userRole === 'admin' ? '/expenses' : null,
     },
     {
       name: 'reports',
-      title: 'Reports',
+      title: t('reports'),
       icon: FileText,
       href: userRole === 'admin' ? '/reports' : null,
     },
     {
       name: 'permissions',
-      title: 'Permissions',
+      title: t('permissions'),
       icon: Shield,
       href: userRole === 'admin' ? '/permissions' : null,
     },
     {
       name: 'settings',
-      title: 'Settings',
+      title: t('settings'),
       icon: Settings,
       href: '/settings',
     },
@@ -273,7 +273,7 @@ export default function HamburgerMenu() {
         <View style={styles.overlay}>
           <View style={styles.menuContainer}>
             <View style={styles.menuHeader}>
-              <Text style={styles.menuTitle}>Menu</Text>
+              <Text style={styles.menuTitle}>{t('menu')}</Text>
               <TouchableOpacity
                 style={styles.closeButton}
                 onPress={() => setIsOpen(false)}

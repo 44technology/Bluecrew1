@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import BackButton from '@/components/BackButton';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import ColorPickerModal from '@/components/ColorPickerModal';
 import { useAuth } from '@/contexts/AuthContext';
 import { useTheme } from '@/contexts/ThemeContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -34,6 +35,8 @@ export default function CompanySettingsScreen() {
   const [address, setAddress] = useState('');
   const [saving, setSaving] = useState(false);
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [colorPickerVisible, setColorPickerVisible] = useState(false);
+  const [colorPickerKey, setColorPickerKey] = useState<'primary' | 'accent' | 'background'>('primary');
 
   const companyId = (user as any)?.company_id;
   const isAdmin = userRole === 'admin';
@@ -93,6 +96,20 @@ export default function CompanySettingsScreen() {
       Alert.alert(t('error'), e?.message || t('saveFailed'));
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSaveColor = async (hex: string) => {
+    if (!companyId || !isAdmin) return;
+    try {
+      const updates: Record<string, string> = {};
+      if (colorPickerKey === 'primary') updates.custom_primary = hex;
+      else if (colorPickerKey === 'accent') updates.custom_accent = hex;
+      else if (colorPickerKey === 'background') updates.custom_background = hex;
+      await CompanyService.updateCompany(companyId, updates);
+      await refreshCompany();
+    } catch (e: any) {
+      Alert.alert(t('error'), e?.message || t('saveFailed'));
     }
   };
 
@@ -238,23 +255,52 @@ export default function CompanySettingsScreen() {
 
                 <Text style={styles.sectionLabel}>{t('colorPalette')}</Text>
                 <View style={styles.paletteRow}>
-                  {([1, 2, 3] as ColorPaletteId[]).map((id) => (
-                    <TouchableOpacity
-                      key={id}
-                      style={[
-                        styles.paletteBtn,
-                        { backgroundColor: COLOR_PALETTES[id].primary, borderRadius: RADIUS.lg },
-                        paletteId === id && [styles.paletteBtnActive, { borderColor: COLOR_PALETTES[id].accent }],
-                      ]}
-                      onPress={() => isAdmin && setPaletteId(id)}
-                      disabled={!isAdmin}
-                      activeOpacity={0.85}
-                    >
-                      <View style={[styles.palettePreview, { backgroundColor: COLOR_PALETTES[id].accent, borderRadius: 10 }]} />
-                      <Text style={styles.paletteLabel}>{t('palette')} {id}</Text>
-                    </TouchableOpacity>
-                  ))}
+                  {([1, 2, 3, 4] as ColorPaletteId[]).map((id) => {
+                    const p = COLOR_PALETTES[id];
+                    const isActive = paletteId === id;
+                    const showColors = isActive ? theme : p;
+                    return (
+                      <TouchableOpacity
+                        key={id}
+                        style={[
+                          styles.paletteBtn,
+                          { borderRadius: RADIUS.lg, backgroundColor: '#f8fafc', borderColor: isActive ? theme.primary : '#e2e8f0' },
+                          isActive && styles.paletteBtnActive,
+                        ]}
+                        onPress={() => isAdmin && setPaletteId(id)}
+                        disabled={!isAdmin}
+                        activeOpacity={0.85}
+                      >
+                        <View style={styles.paletteSwatches}>
+                          {(['primary', 'accent', 'background'] as const).map((key) => (
+                            isAdmin && isActive ? (
+                              <TouchableOpacity
+                                key={key}
+                                style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]}
+                                onPress={() => {
+                                  setColorPickerKey(key);
+                                  setColorPickerVisible(true);
+                                }}
+                                activeOpacity={0.8}
+                              />
+                            ) : (
+                              <View key={key} style={[styles.paletteSwatch, { backgroundColor: showColors[key] }]} />
+                            )
+                          ))}
+                        </View>
+                        <Text style={styles.paletteLabel}>{t(`palette${id}Name` as 'palette1Name' | 'palette2Name' | 'palette3Name' | 'palette4Name')}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
                 </View>
+
+                <ColorPickerModal
+                  visible={colorPickerVisible}
+                  initialHex={colorPickerKey === 'primary' ? theme.primary : colorPickerKey === 'accent' ? theme.accent : theme.background}
+                  title={`${t('chooseColor')} – ${colorPickerKey === 'primary' ? t('colorPrimary') : colorPickerKey === 'accent' ? t('colorAccent') : t('colorBackground')}`}
+                  onSave={handleSaveColor}
+                  onClose={() => setColorPickerVisible(false)}
+                />
 
                 {isAdmin && (
                   <TouchableOpacity
@@ -379,23 +425,30 @@ const styles = StyleSheet.create({
   },
   paletteBtn: {
     flex: 1,
-    padding: 14,
+    padding: 12,
     alignItems: 'center',
-    borderWidth: 3,
-    borderColor: 'transparent',
+    borderWidth: 2,
+    minHeight: 88,
   },
   paletteBtnActive: {
     borderWidth: 3,
   },
-  palettePreview: {
-    width: 28,
-    height: 28,
+  paletteSwatches: {
+    flexDirection: 'row',
+    gap: 4,
     marginBottom: 8,
+  },
+  paletteSwatch: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.1)',
   },
   paletteLabel: {
     fontSize: 12,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#000000',
   },
   saveBtn: {
     paddingVertical: 16,

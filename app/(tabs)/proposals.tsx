@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   View,
   Text,
@@ -48,6 +48,7 @@ export default function ProposalsScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
   const [newComment, setNewComment] = useState('');
+  const commentInputRef = useRef<TextInput>(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
@@ -273,8 +274,16 @@ export default function ProposalsScreen() {
       setClients(clientUsers);
     } catch (error) {
       console.error('Error loading clients:', error);
+      setClients([]);
     }
   };
+
+  // Load clients when Create Proposal modal opens so list is never empty
+  useEffect(() => {
+    if (showCreateModal && (canEditProposals || userRole === 'admin' || userRole === 'sales')) {
+      loadClients();
+    }
+  }, [showCreateModal]);
 
   const loadInvoices = async () => {
     try {
@@ -345,14 +354,17 @@ export default function ProposalsScreen() {
       Alert.alert('Error', 'Please enter a comment');
       return;
     }
+    if (!user?.id) {
+      Alert.alert('Error', 'You must be logged in to add a comment');
+      return;
+    }
 
     try {
-      const commentData: Omit<Comment, 'id'> = {
+      const commentData: Omit<Comment, 'id' | 'created_at'> = {
         proposal_id: selectedProposal.id,
-        user_id: user?.id || '',
-        user_name: user?.name || 'Unknown User',
+        user_id: user.id,
+        user_name: user.name || 'Unknown User',
         comment: newComment.trim(),
-        created_at: new Date().toISOString(),
       };
 
       await CommentService.addComment(commentData);
@@ -1725,13 +1737,6 @@ export default function ProposalsScreen() {
                   : `${proposals.length} total proposals`}
               </Text>
             </View>
-            {viewMode === 'project' && userRole !== 'client' && (canEditProposals || userRole === 'admin' || userRole === 'sales') && (
-              <TouchableOpacity
-                style={styles.addButton}
-                onPress={() => setShowCreateModal(true)}>
-                <Plus size={20} color="#ffffff" />
-              </TouchableOpacity>
-            )}
           </View>
         </View>
 
@@ -1861,7 +1866,7 @@ export default function ProposalsScreen() {
                           Created: {new Date(proposal.created_at).toLocaleDateString()}
                         </Text>
                       </View>
-                      {(userRole === 'sales' || userRole === 'pm') && proposal.management_approval === 'pending' && !(proposal as any).sent_for_approval_at && (
+                      {(userRole === 'sales' || userRole === 'pm') && proposal.management_approval === 'pending' && !proposal.sent_for_approval_at && (
                         <TouchableOpacity
                           style={styles.sendApprovalButton}
                           onPress={(e) => {
@@ -1879,6 +1884,17 @@ export default function ProposalsScreen() {
             )
           )}
         </ScrollView>
+
+        {/* FAB: Create Proposal - bottom-right, rounded + icon (avoids hamburger overlap) */}
+        {viewMode === 'project' && userRole !== 'client' && (canEditProposals || userRole === 'admin' || userRole === 'sales') && (
+          <TouchableOpacity
+            style={styles.fab}
+            onPress={() => setShowCreateModal(true)}
+            activeOpacity={0.9}
+          >
+            <Plus size={28} color="#ffffff" strokeWidth={2.5} />
+          </TouchableOpacity>
+        )}
 
         {/* Create/Edit Proposal Modal - Similar to Create Invoice Modal */}
         <Modal
@@ -2649,6 +2665,127 @@ export default function ProposalsScreen() {
                 <Text style={styles.submitButtonText}>{editingProposal ? 'Update Proposal' : 'Create Proposal'}</Text>
               </TouchableOpacity>
             </ScrollView>
+
+            {/* Overlays inside Create Proposal modal so lists open on iOS (category, client, work title) */}
+            {showCategoryModal && (
+              <View style={styles.pickerOverlay} pointerEvents="box-none">
+                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowCategoryModal(false)} />
+                <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Select Category</Text>
+                    <TouchableOpacity onPress={() => setShowCategoryModal(false)}>
+                      <X size={24} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
+                  <ScrollView style={[styles.categoryList, styles.pickerScrollMinHeight]} contentContainerStyle={styles.categoryListContent} showsVerticalScrollIndicator={false} nestedScrollEnabled>
+                    {['Residential', 'Commercial'].map((category) => (
+                      <TouchableOpacity
+                        key={category}
+                        style={[styles.categoryOption, newProposal.category === category && styles.selectedCategory]}
+                        onPress={() => {
+                          setNewProposal(prev => ({ ...prev, category }));
+                          setShowCategoryModal(false);
+                          if (fieldErrors.category) setFieldErrors(prev => ({ ...prev, category: '' }));
+                        }}
+                      >
+                        <Text style={[styles.categoryText, newProposal.category === category && styles.selectedCategoryText]}>{category}</Text>
+                        {newProposal.category === category && <CheckCircle size={20} color="#000000" />}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            )}
+
+            {showClientDropdown && (
+              <View style={styles.pickerOverlay} pointerEvents="box-none">
+                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => setShowClientDropdown(false)} />
+                <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Select Client</Text>
+                    <TouchableOpacity onPress={() => setShowClientDropdown(false)}>
+                      <X size={24} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
+                  <View style={styles.clientSearchContainer}>
+                    <TextInput
+                      style={styles.clientSearchInput}
+                      placeholder="Search clients..."
+                      value={clientSearchQuery}
+                      onChangeText={setClientSearchQuery}
+                      autoFocus={Platform.OS !== 'web'}
+                    />
+                  </View>
+                  <ScrollView style={[styles.categoryList, styles.pickerScrollMinHeight]} contentContainerStyle={styles.categoryListContent} nestedScrollEnabled>
+                    {clients
+                      .filter(client =>
+                        client.name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                        (client.email && client.email.toLowerCase().includes(clientSearchQuery.toLowerCase()))
+                      )
+                      .map((client) => (
+                        <TouchableOpacity
+                          key={client.id}
+                          style={[styles.clientDropdownOption, newProposal.client_id === client.id && styles.selectedClientDropdownOption]}
+                          onPress={() => {
+                            setNewProposal(prev => ({ ...prev, client_id: client.id, client_name: client.name, client_email: client.email || '' }));
+                            setShowClientDropdown(false);
+                            setClientSearchQuery('');
+                            if (fieldErrors.client_name) setFieldErrors(prev => ({ ...prev, client_name: '' }));
+                          }}
+                        >
+                          <Text style={[styles.clientDropdownOptionText, newProposal.client_id === client.id && styles.selectedClientDropdownOptionText]}>{client.name}</Text>
+                          {client.email && <Text style={styles.clientDropdownOptionEmail}>{client.email}</Text>}
+                          {newProposal.client_id === client.id && <CheckCircle size={20} color="#000000" />}
+                        </TouchableOpacity>
+                      ))}
+                    {clients.filter(c =>
+                      c.name?.toLowerCase().includes(clientSearchQuery.toLowerCase()) ||
+                      (c.email && c.email.toLowerCase().includes(clientSearchQuery.toLowerCase()))
+                    ).length === 0 && (
+                      <View style={styles.clientDropdownEmpty}>
+                        <Text style={styles.clientDropdownEmptyText}>No clients found</Text>
+                      </View>
+                    )}
+                  </ScrollView>
+                </View>
+              </View>
+            )}
+
+            {showWorkTitleModal && (
+              <View style={styles.pickerOverlay} pointerEvents="box-none">
+                <TouchableOpacity style={StyleSheet.absoluteFill} activeOpacity={1} onPress={() => { setShowWorkTitleModal(false); if (selectedWorkTitleFromList !== 'New') setSelectedWorkTitleFromList(''); }} />
+                <View style={[styles.categoryModal, styles.pickerModalMinHeight]}>
+                  <View style={styles.modalHeader}>
+                    <Text style={styles.modalTitle}>Select Work Title</Text>
+                    <TouchableOpacity onPress={() => { setShowWorkTitleModal(false); if (selectedWorkTitleFromList !== 'New') setSelectedWorkTitleFromList(''); }}>
+                      <X size={24} color="#000000" />
+                    </TouchableOpacity>
+                  </View>
+                  <ScrollView style={[styles.categoryList, styles.pickerScrollMinHeight]} contentContainerStyle={styles.categoryListContent} showsVerticalScrollIndicator={true} nestedScrollEnabled>
+                    {predefinedWorkTitles.map((title) => (
+                      <TouchableOpacity
+                        key={title}
+                        style={[styles.categoryOption, selectedWorkTitleFromList === title && styles.selectedCategory]}
+                        onPress={() => {
+                          if (title === 'New') {
+                            setSelectedWorkTitleFromList('New');
+                            setNewWorkTitle(prev => ({ ...prev, name: '' }));
+                            setShowWorkTitleModal(false);
+                          } else {
+                            setSelectedWorkTitleFromList(title);
+                            setNewWorkTitle(prev => ({ ...prev, name: title }));
+                            setShowWorkTitleModal(false);
+                          }
+                        }}
+                      >
+                        <Text style={[styles.categoryText, selectedWorkTitleFromList === title && styles.selectedCategoryText]}>{title}</Text>
+                        {selectedWorkTitleFromList === title && title !== 'New' && <View style={styles.selectedIndicator} />}
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              </View>
+            )}
           </View>
         </Modal>
 
@@ -2797,9 +2934,7 @@ export default function ProposalsScreen() {
                       {(canEditProposals || userRole === 'admin' || userRole === 'sales') && (
                         <TouchableOpacity
                           style={styles.addCommentButton}
-                          onPress={() => {
-                            // Show comment input
-                          }}
+                          onPress={() => commentInputRef.current?.focus()}
                         >
                           <MessageSquare size={18} color="#000000" />
                           <Text style={styles.addCommentButtonText}>Add Comment</Text>
@@ -2811,6 +2946,7 @@ export default function ProposalsScreen() {
                     {(canEditProposals || userRole === 'admin' || userRole === 'sales') && (
                       <View style={styles.commentInputContainer}>
                         <TextInput
+                          ref={commentInputRef}
                           style={styles.commentInput}
                           placeholder="Add a comment..."
                           value={newComment}
@@ -2845,9 +2981,9 @@ export default function ProposalsScreen() {
                     )}
                   </View>
 
-                  {/* Sales can edit proposal before sending for approval */}
-                  {/* Admin can edit proposal if it's not approved yet */}
-                  {((selectedProposal.management_approval === 'pending' && userRole === 'sales' && !(selectedProposal as any).sent_for_approval_at) ||
+                  {/* Sales: can edit when pending and (not yet sent for approval OR sent back for update review) */}
+                  {/* Admin: can edit when proposal is not approved */}
+                  {((selectedProposal.management_approval === 'pending' && userRole === 'sales' && !selectedProposal.sent_for_approval_at) ||
                     (selectedProposal.management_approval !== 'approved' && userRole === 'admin')) && (
                     <View style={styles.modalActions}>
                       <TouchableOpacity
@@ -3275,9 +3411,9 @@ export default function ProposalsScreen() {
           </View>
         </Modal>
 
-        {/* Category Selection Modal */}
+        {/* Category Selection Modal (only when not inside Create Proposal modal; inside create we use overlay) */}
         <Modal
-          visible={showCategoryModal}
+          visible={showCategoryModal && !showCreateModal}
           transparent={true}
           animationType="fade">
           <View style={styles.modalOverlay}>
@@ -3385,9 +3521,9 @@ export default function ProposalsScreen() {
           </View>
         </Modal>
 
-        {/* Work Title Selection Modal */}
+        {/* Work Title Selection Modal (only when not inside Create Proposal modal; inside create we use overlay) */}
         <Modal
-          visible={showWorkTitleModal}
+          visible={showWorkTitleModal && !showCreateModal}
           transparent={true}
           animationType="fade">
           <View style={styles.modalOverlay}>
@@ -3640,6 +3776,23 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,
+  },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    bottom: 88,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: '#000000',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    zIndex: 10,
   },
   addButtonText: {
     color: '#1f2937',
@@ -4030,6 +4183,12 @@ const styles = StyleSheet.create({
     maxWidth: 500,
     margin: 20,
     overflow: 'hidden',
+  },
+  pickerModalMinHeight: {
+    minHeight: 320,
+  },
+  pickerScrollMinHeight: {
+    minHeight: 260,
   },
   categorySelectButton: {
     backgroundColor: '#f9fafb',
@@ -4635,6 +4794,13 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 14,
     fontWeight: '600',
+  },
+  pickerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
   },
   modalOverlay: {
     flex: 1,

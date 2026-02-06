@@ -1,4 +1,5 @@
 import { db } from '@/lib/firebase';
+import { stripUndefined } from '@/lib/firestoreUtils';
 import { 
   collection, 
   addDoc, 
@@ -31,13 +32,12 @@ export class NotificationService {
   // Create a notification
   static async createNotification(notification: Omit<Notification, 'id' | 'created_at'>): Promise<string> {
     try {
-      const notificationData = {
+      const payload = stripUndefined({
         ...notification,
         is_read: false,
         created_at: new Date().toISOString(),
-      };
-
-      const docRef = await addDoc(collection(db, 'notifications'), notificationData);
+      } as Record<string, unknown>);
+      const docRef = await addDoc(collection(db, 'notifications'), payload);
       return docRef.id;
     } catch (error) {
       console.error('Error creating notification:', error);
