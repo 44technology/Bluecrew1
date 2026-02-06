@@ -267,8 +267,8 @@
 				"$(SRCROOT)/Pods/Target Support Files/Pods-BlueCrew/ExpoModulesProvider.swift",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# [Expo] Configure project - ensure NODE_BINARY for EAS/CI\ncd \"${SRCROOT}\"\n[ -f .xcode.env ] && . .xcode.env\n[ -f .xcode.env.local ] && . .xcode.env.local\nexport PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\"\nNODE_BINARY=${NODE_BINARY:-$(command -v node)}\n[ -z \"$NODE_BINARY\" ] && NODE_BINARY=\"/usr/local/bin/node\"\n[ ! -x \"$NODE_BINARY\" ] && [ -x \"/opt/homebrew/bin/node\" ] && NODE_BINARY=\"/opt/homebrew/bin/node\"\n[ ! -x \"$NODE_BINARY\" ] && [ -x \"/usr/local/bin/node\" ] && NODE_BINARY=\"/usr/local/bin/node\"\nexport NODE_BINARY\n\"${SRCROOT}/Pods/Target Support Files/Pods-BlueCrew/expo-configure-project.sh\"\n";
+			shellPath = /bin/bash;
+			shellScript = "# [Expo] Configure project - run autolinking directly (no .sh) for EAS compatibility\nset -e\nPROJECT_ROOT=\"${SRCROOT}/..\"\nexport PATH=\"/usr/local/bin:/opt/homebrew/bin:$PATH\"\nNODE=\"$(command -v node 2>/dev/null || true)\"\n[ -z \"$NODE\" ] && NODE=\"/usr/local/bin/node\"\n[ ! -x \"$NODE\" ] && [ -x \"/opt/homebrew/bin/node\" ] && NODE=\"/opt/homebrew/bin/node\"\n[ ! -x \"$NODE\" ] && [ -x \"/usr/local/bin/node\" ] && NODE=\"/usr/local/bin/node\"\ncd \"$PROJECT_ROOT\"\n\"$NODE\" --no-warnings --eval \"require('expo/bin/autolinking')\" expo-modules-autolinking generate-modules-provider \\\n  --target \"${SRCROOT}/Pods/Target Support Files/Pods-BlueCrew/ExpoModulesProvider.swift\" \\\n  --entitlement \"${SRCROOT}/BlueCrew/BlueCrew.entitlements\" \\\n  --platform \"apple\" \\\n  --packages \"expo\" \"expo-asset\" \"expo-blur\" \"expo-camera\" \"expo-constants\" \"expo-dev-launcher\" \"expo-dev-menu\" \"expo-document-picker\" \"expo-file-system\" \"expo-font\" \"expo-haptics\" \"expo-image-picker\" \"expo-keep-awake\" \"expo-linear-gradient\" \"expo-linking\" \"expo-location\" \"expo-router\" \"expo-splash-screen\" \"expo-symbols\" \"expo-system-ui\" \"expo-web-browser\"\n";
 		};
 		800E24972A6A228C8D4807E9 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;

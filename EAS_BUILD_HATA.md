@@ -27,7 +27,7 @@ Bu projede **react-native-reanimated v4** kullanıldığı için `newArchEnabled
 
 ### D) "PhaseScriptExecution [Expo] Configure project" hatası
 
-Hata **"[Expo] Configure project"** script phase’inde düşüyorsa (ARCHIVE FAILED): Bu projede düzeltme yapıldı. Build phase artık `bash -l -c` (login shell) kullanmıyor; script doğrudan çalışıyor, böylece EAS’ta `node` PATH’te bulunuyor. Değişiklik `ios/BlueCrew.xcodeproj/project.pbxproj` içinde. Commit + push sonrası tekrar build alın.
+Hata **"[Expo] Configure project"** script phase’inde düşüyorsa (ARCHIVE FAILED): Bu projede build phase, `.sh` dosyasını çalıştırmak yerine **doğrudan node ile** `expo-modules-autolinking generate-modules-provider` çalıştırıyor; tüm yollar `SRCROOT` ile dinamik (EAS’ta da doğru). Shell `/bin/bash`, PATH fallback’ler var. Değişiklik `ios/BlueCrew.xcodeproj/project.pbxproj`. Commit + push sonrası tekrar build alın.
 
 ### E) Code signing / credentials
 
