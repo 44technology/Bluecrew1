@@ -13,7 +13,7 @@ interface BackButtonProps {
 export default function BackButton({ 
   onPress, 
   color = '#ffffff',
-  backgroundColor = '#ffffff5c',
+  backgroundColor = '#ffffff5d',
   size = 20
 }: BackButtonProps) {
   const router = useRouter();
