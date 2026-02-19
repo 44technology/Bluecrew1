@@ -1061,14 +1061,14 @@ const styles = StyleSheet.create({
   addFirstLogButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#ffffff', // Yellow button like teams
+    backgroundColor: '#ffffff',
     paddingHorizontal: 20,
     paddingVertical: 12,
     borderRadius: 8,
     gap: 8,
   },
   addFirstLogText: {
-    color: '#000000', // Blue text on yellow button
+    color: '#000000',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -1309,7 +1309,7 @@ const styles = StyleSheet.create({
     marginTop: 20,
   },
   submitButtonText: {
-    color: '#000000', // Blue text on yellow button
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },

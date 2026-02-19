@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -27,6 +27,7 @@ import {
   Pencil,
   Clock,
   AlertCircle,
+  Undo2,
 } from 'lucide-react-native';
 import SecondaryButton from '@/components/SecondaryButton';
 import { TodoItem, TodoComment, TodoChecklistItem } from '@/types';
@@ -60,6 +61,15 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const [selectedImageForDrawing, setSelectedImageForDrawing] = useState<string | null>(null);
   const [drawingImageUrl, setDrawingImageUrl] = useState<string | null>(null);
   const [drawingData, setDrawingData] = useState<string | undefined>(undefined);
+  const [showUndoComplete, setShowUndoComplete] = useState(false);
+  const [lastCompletedPreviousStatus, setLastCompletedPreviousStatus] = useState<'pending' | 'in_progress' | null>(null);
+  const undoTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+    };
+  }, []);
 
   const handleImagePicker = async () => {
     try {
@@ -243,13 +253,26 @@ export const TodoCard: React.FC<TodoCardProps> = ({
     }
   };
 
+  const previousStatusRef = useRef<'pending' | 'in_progress' | null>(null);
+
   const handleCompleteTodo = async () => {
     try {
+      previousStatusRef.current = todo.status === 'completed' ? null : (todo.status as 'pending' | 'in_progress');
       await TodoService.completeTodo(
         todo.id,
         user?.id || '',
         user?.name || 'Unknown'
       );
+      if (previousStatusRef.current) {
+        setLastCompletedPreviousStatus(previousStatusRef.current);
+        setShowUndoComplete(true);
+        if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+        undoTimeoutRef.current = setTimeout(() => {
+          setShowUndoComplete(false);
+          setLastCompletedPreviousStatus(null);
+          undoTimeoutRef.current = null;
+        }, 10000);
+      }
       onUpdate();
     } catch (error) {
       Alert.alert('Error', 'Failed to complete todo');
@@ -259,17 +282,44 @@ export const TodoCard: React.FC<TodoCardProps> = ({
   const handleStatusChange = async (newStatus: 'pending' | 'in_progress' | 'completed') => {
     try {
       if (newStatus === 'completed') {
+        previousStatusRef.current = todo.status as 'pending' | 'in_progress';
         await TodoService.completeTodo(
           todo.id,
           user?.id || '',
           user?.name || 'Unknown'
         );
+        if (previousStatusRef.current) {
+          setLastCompletedPreviousStatus(previousStatusRef.current);
+          setShowUndoComplete(true);
+          if (undoTimeoutRef.current) clearTimeout(undoTimeoutRef.current);
+          undoTimeoutRef.current = setTimeout(() => {
+            setShowUndoComplete(false);
+            setLastCompletedPreviousStatus(null);
+            undoTimeoutRef.current = null;
+          }, 10000);
+        }
       } else {
         await TodoService.updateTodo(todo.id, { status: newStatus });
       }
       onUpdate();
     } catch (error) {
       Alert.alert('Error', 'Failed to update todo status');
+    }
+  };
+
+  const handleUndoComplete = async () => {
+    if (!lastCompletedPreviousStatus) return;
+    try {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+        undoTimeoutRef.current = null;
+      }
+      setShowUndoComplete(false);
+      await TodoService.revertCompleteTodo(todo.id, lastCompletedPreviousStatus);
+      setLastCompletedPreviousStatus(null);
+      onUpdate();
+    } catch (error) {
+      Alert.alert('Error', 'Geri alınamadı');
     }
   };
 
@@ -340,9 +390,21 @@ export const TodoCard: React.FC<TodoCardProps> = ({
           </View>
         </View>
         {todo.status === 'completed' && (
-          <View style={styles.completedBadge}>
-            <CheckCircle2 size={16} color="#10b981" />
-            <Text style={styles.completedText}>Completed</Text>
+          <View style={styles.completedBadgeRow}>
+            <View style={styles.completedBadge}>
+              <CheckCircle2 size={16} color="#10b981" />
+              <Text style={styles.completedText}>Completed</Text>
+            </View>
+            {showUndoComplete && lastCompletedPreviousStatus && (
+              <TouchableOpacity
+                onPress={handleUndoComplete}
+                style={styles.undoButton}
+                activeOpacity={0.7}
+              >
+                <Undo2 size={14} color="#3b82f6" />
+                <Text style={styles.undoButtonText}>Geri al</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
       </View>
@@ -705,6 +767,11 @@ const styles = StyleSheet.create({
   deadlineTextOverdue: {
     color: '#ef4444',
   },
+  completedBadgeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
   completedBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -717,6 +784,20 @@ const styles = StyleSheet.create({
   completedText: {
     fontSize: 12,
     color: '#065f46',
+    fontWeight: '600',
+  },
+  undoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    backgroundColor: '#eff6ff',
+  },
+  undoButtonText: {
+    fontSize: 12,
+    color: '#3b82f6',
     fontWeight: '600',
   },
   statusButtonsContainer: {

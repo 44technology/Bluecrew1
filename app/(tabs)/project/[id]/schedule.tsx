@@ -55,24 +55,51 @@ export default function ProjectScheduleScreen() {
     }
   }, [id]);
 
+  useEffect(() => {
+    if (showAddModal || showPMModal) {
+      loadPMList();
+    }
+  }, [showAddModal, showPMModal]);
+
+  const loadPMList = async (): Promise<void> => {
+    try {
+      const [pmByRole, allUsers] = await Promise.all([
+        UserService.getUsersByRole('pm').catch(() => []),
+        UserService.getAllUsers(),
+      ]);
+      let pmList = pmByRole;
+      if (pmList.length === 0) {
+        pmList = allUsers.filter(u => {
+          const r = (u as any).role;
+          return r && (String(r).toLowerCase() === 'pm' || String(r).toLowerCase() === 'office');
+        });
+      }
+      setPms(pmList.map(u => ({
+        id: u.id,
+        name: (u as any).name || (u as any).displayName || u.email || 'Unknown',
+        email: u.email || '',
+        role: (u as any).role,
+      })));
+    } catch (e) {
+      console.error('Error loading PM list:', e);
+      setPms([]);
+    }
+  };
+
   const loadProjectData = async () => {
     try {
       setLoading(true);
-      const [projectData, firebaseUsers, projectSchedules] = await Promise.all([
+      const [projectData, projectSchedules] = await Promise.all([
         ProjectService.getProjectById(id as string),
-        UserService.getAllUsers(),
-        ScheduleService.getSchedules()
+        ScheduleService.getSchedules(),
       ]);
       
       setProject(projectData);
       
-      // Filter schedules for this project
       const projectSchedulesFiltered = projectSchedules.filter(s => s.project_id === id);
       setSchedules(projectSchedulesFiltered);
       
-      // Filter PM users
-      const pmUsers = firebaseUsers.filter(u => u.role === 'pm');
-      setPms(pmUsers);
+      await loadPMList();
     } catch (error) {
       console.error('Error loading project data:', error);
       Alert.alert('Error', 'Failed to load project data');
@@ -144,6 +171,7 @@ export default function ProjectScheduleScreen() {
       });
       setErrors({});
       setSelectedPM(null);
+      setShowPMModal(false);
       setShowAddModal(false);
       Alert.alert('Success', 'Schedule added successfully');
     } catch (error) {
@@ -246,7 +274,7 @@ export default function ProjectScheduleScreen() {
   return (
     <View style={styles.container}>
       <HamburgerMenu />
-      <View style={styles.header}>
+      <View style={[styles.header, styles.headerZIndex]}>
         <BackButton 
           onPress={() => router.push(`/(tabs)/project/${id}`)}
           color="#000000"
@@ -333,7 +361,9 @@ export default function ProjectScheduleScreen() {
       {(userRole === 'admin' || userRole === 'pm') && (
         <TouchableOpacity
           style={styles.fab}
-          onPress={() => setShowAddModal(true)}>
+          onPress={() => setShowAddModal(true)}
+          activeOpacity={0.8}
+          hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}>
           <Plus size={24} color="#000000" />
         </TouchableOpacity>
       )}
@@ -346,7 +376,7 @@ export default function ProjectScheduleScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add Schedule</Text>
-            <TouchableOpacity onPress={() => setShowAddModal(false)}>
+            <TouchableOpacity onPress={() => { setShowAddModal(false); setShowPMModal(false); }}>
               <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
@@ -356,12 +386,43 @@ export default function ProjectScheduleScreen() {
               <Text style={styles.label}>PM *</Text>
               <TouchableOpacity
                 style={[styles.selectButton, errors.pm_id && styles.inputError]}
-                onPress={() => setShowPMModal(true)}>
+                onPress={() => setShowPMModal(prev => !prev)}
+                activeOpacity={0.7}>
                 <Text style={[styles.selectButtonText, !selectedPM && styles.placeholderText]}>
                   {selectedPM ? selectedPM.name : 'Select PM'}
                 </Text>
                 <User size={20} color="#000000" />
               </TouchableOpacity>
+              {showPMModal && (
+                <View style={styles.pmDropdown}>
+                  {pms.length === 0 ? (
+                    <View style={styles.pmEmptyState}>
+                      <Text style={styles.emptyStateText}>No PMs available. Add users with PM role in Team.</Text>
+                    </View>
+                  ) : (
+                    <ScrollView style={styles.pmDropdownScroll} nestedScrollEnabled>
+                      {pms.map((pm) => (
+                        <TouchableOpacity
+                          key={pm.id}
+                          style={[
+                            styles.pmOption,
+                            selectedPM?.id === pm.id && styles.selectedPMOption,
+                          ]}
+                          onPress={() => handlePMSelect(pm)}
+                          activeOpacity={0.7}>
+                          <View style={styles.pmInfo}>
+                            <Text style={[styles.pmName, selectedPM?.id === pm.id && styles.selectedPMOptionText]}>{pm.name}</Text>
+                            <Text style={[styles.pmEmail, selectedPM?.id === pm.id && styles.selectedPMOptionText]}>{pm.email}</Text>
+                          </View>
+                          {selectedPM?.id === pm.id && (
+                            <CheckCircle size={20} color="#ffffff" />
+                          )}
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  )}
+                </View>
+              )}
               {errors.pm_id && (
                 <Text style={styles.errorText}>{errors.pm_id}</Text>
               )}
@@ -527,50 +588,6 @@ export default function ProjectScheduleScreen() {
         </View>
       </Modal>
 
-      {/* PM Selection Modal */}
-      <Modal
-        visible={showPMModal}
-        animationType="slide"
-        transparent={true}>
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Select Project Manager</Text>
-              <TouchableOpacity
-                style={styles.closeButton}
-                onPress={() => setShowPMModal(false)}>
-                <X size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-            <ScrollView style={styles.modalContent}>
-              {pms.length === 0 ? (
-                <View style={styles.emptyState}>
-                  <Text style={styles.emptyStateText}>No PMs available</Text>
-                </View>
-              ) : (
-                pms.map((pm) => (
-                  <TouchableOpacity
-                    key={pm.id}
-                    style={[
-                      styles.pmOption,
-                      selectedPM?.id === pm.id && styles.selectedPMOption
-                    ]}
-                    onPress={() => handlePMSelect(pm)}>
-                    <View style={styles.pmInfo}>
-                      <Text style={[styles.pmName, selectedPM?.id === pm.id && styles.selectedPMOptionText]}>{pm.name}</Text>
-                      <Text style={[styles.pmEmail, selectedPM?.id === pm.id && styles.selectedPMOptionText]}>{pm.email}</Text>
-                    </View>
-                    {selectedPM?.id === pm.id && (
-                      <CheckCircle size={20} color="#ffffff" />
-                    )}
-                  </TouchableOpacity>
-                ))
-              )}
-            </ScrollView>
-          </View>
-        </View>
-      </Modal>
-
       {/* Delete Confirmation Modal */}
       <Modal
         visible={showDeleteModal}
@@ -629,6 +646,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: '#b0b0b0',
   },
+  headerZIndex: {
+    zIndex: 10,
+    elevation: 10,
+  },
   backButton: {
     marginRight: 16,
     padding: 4,
@@ -661,7 +682,8 @@ const styles = StyleSheet.create({
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
-    elevation: 8,
+    elevation: 12,
+    zIndex: 10,
   },
   content: {
     flex: 1,
@@ -803,6 +825,31 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#ffffff',
   },
+  pmDropdown: {
+    marginTop: 8,
+    maxHeight: 220,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    backgroundColor: '#ffffff',
+    overflow: 'hidden',
+  },
+  pmDropdownScroll: {
+    maxHeight: 216,
+  },
+  pmModalContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  pmModalContent: {
+    padding: 20,
+    paddingBottom: 40,
+  },
+  pmEmptyState: {
+    paddingVertical: 32,
+    paddingHorizontal: 16,
+    alignItems: 'center',
+  },
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
@@ -925,6 +972,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     padding: 12,
+    minHeight: 48,
     borderWidth: 1,
     borderColor: '#d1d5db',
     borderRadius: 8,

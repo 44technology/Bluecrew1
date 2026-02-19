@@ -123,6 +123,7 @@ export class DocumentService {
       const fileUrl = await getDownloadURL(storageRef);
 
       // Save document metadata to Firestore (stripUndefined: Firestore rejects undefined)
+      const fileSize = typeof (file as Blob).size === 'number' ? (file as Blob).size : undefined;
       const payload = stripUndefined({
         project_id: projectId,
         category,
@@ -132,7 +133,7 @@ export class DocumentService {
         uploaded_by: uploadedBy,
         uploaded_by_id: uploadedById,
         uploaded_at: new Date().toISOString(),
-        file_size: file.size,
+        ...(fileSize !== undefined && { file_size: fileSize }),
       } as Record<string, unknown>);
       const docRef = await addDoc(collection(db, DOCUMENTS_COLLECTION), payload);
 

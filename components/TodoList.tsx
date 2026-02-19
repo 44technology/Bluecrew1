@@ -12,11 +12,12 @@ import {
   Platform,
   Image as RNImage,
 } from 'react-native';
-import { Plus, X, CheckCircle2, Clock } from 'lucide-react-native';
+import { Plus, X, CheckCircle2, Clock, ChevronDown, User } from 'lucide-react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import * as ImagePicker from 'expo-image-picker';
 import { TodoItem } from '@/types';
 import { TodoService } from '@/services/todoService';
+import { UserService, FirebaseUser } from '@/services/userService';
 import { TodoCard } from './TodoCard';
 import { useAuth } from '@/contexts/AuthContext';
 
@@ -53,6 +54,22 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
   const [newTodoChecklist, setNewTodoChecklist] = useState<string[]>(['']);
   const [uploadingImages, setUploadingImages] = useState(false);
   const [creating, setCreating] = useState(false);
+  const [users, setUsers] = useState<FirebaseUser[]>([]);
+  const [newTodoAssignedTo, setNewTodoAssignedTo] = useState('');
+  const [assigneeDropdownOpen, setAssigneeDropdownOpen] = useState(false);
+  const [parentIdForNew, setParentIdForNew] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const list = await UserService.getAllUsers();
+        setUsers(list);
+      } catch (e) {
+        console.error(e);
+      }
+    };
+    loadUsers();
+  }, []);
 
   useEffect(() => {
     loadTodos();
@@ -66,9 +83,10 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
     return () => unsubscribe();
   }, [projectId]);
 
-  // Expose openCreateModal method via ref
+  // Expose openCreateModal method via ref (optional parentId for subtask)
   useImperativeHandle(ref, () => ({
-    openCreateModal: () => {
+    openCreateModal: (parentId?: string) => {
+      setParentIdForNew(parentId ?? null);
       setShowCreateModal(true);
     },
   }));
@@ -164,12 +182,24 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
     setNewTodoChecklist(updated);
   };
 
+  const assignableUsers = users.filter((u) => u.role !== 'client');
+  const newTodoAssignedToName = newTodoAssignedTo
+    ? (users.find((u) => u.id === newTodoAssignedTo)?.name || users.find((u) => u.id === newTodoAssignedTo)?.email) ?? ''
+    : '';
+
   const handleCreateTodo = async () => {
     if (!newTodoTitle.trim()) {
       Alert.alert('Error', 'Please enter a title');
       return;
     }
-
+    if (!newTodoDeadline) {
+      Alert.alert('Error', 'Due date is required');
+      return;
+    }
+    if (!newTodoAssignedTo) {
+      Alert.alert('Error', 'Please assign a team member');
+      return;
+    }
     if (!user?.id) {
       Alert.alert('Error', 'User not authenticated');
       return;
@@ -179,7 +209,6 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
       setCreating(true);
       setUploadingImages(true);
 
-      // Create checklist items array
       const checklistItems = newTodoChecklist
         .filter(item => item.trim())
         .map(item => ({
@@ -187,15 +216,17 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
           completed: false,
         }));
 
-      // Create todo first
       const todoId = await TodoService.createTodo({
         project_id: projectId,
+        parent_id: parentIdForNew ?? undefined,
         title: newTodoTitle.trim(),
         description: newTodoDescription.trim(),
         status: 'pending',
-        deadline: newTodoDeadline ? newTodoDeadline.toISOString() : undefined,
+        deadline: newTodoDeadline.toISOString(),
         created_by: user.id,
         created_by_name: user.name || 'Unknown',
+        assigned_to: newTodoAssignedTo,
+        assigned_to_name: newTodoAssignedToName,
         images: [],
         comments: [],
         checklist: [],
@@ -234,13 +265,15 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
       setNewTodoTitle('');
       setNewTodoDescription('');
       setNewTodoDeadline(null);
+      setNewTodoAssignedTo('');
       setNewTodoImages([]);
       setNewTodoChecklist(['']);
+      setParentIdForNew(null);
       setShowCreateModal(false);
     } catch (error: any) {
       console.error('Error creating todo:', error);
       const errorMessage = error?.message || 'Failed to create todo';
-      Alert.alert('Error', `Failed to create todo: ${errorMessage}`);
+      Alert.alert('Error', `Failed to create task: ${errorMessage}`);
       setUploadingImages(false);
     } finally {
       setCreating(false);
@@ -249,8 +282,8 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
 
   const handleDeleteTodo = async (todoId: string) => {
     Alert.alert(
-      'Delete Todo',
-      'Are you sure you want to delete this todo?',
+      'Delete Task',
+      'Are you sure you want to delete this task?',
       [
         { text: 'Cancel', style: 'cancel' },
         {
@@ -273,11 +306,58 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
   const inProgressTodos = todos.filter(todo => todo.status === 'in_progress');
   const completedTodos = todos.filter(todo => todo.status === 'completed');
 
+  const getTaskTree = (list: TodoItem[]) => {
+    const topLevel = list.filter((t) => !t.parent_id).sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0));
+    const childrenByParent: Record<string, TodoItem[]> = {};
+    list.forEach((t) => {
+      if (t.parent_id) {
+        if (!childrenByParent[t.parent_id]) childrenByParent[t.parent_id] = [];
+        childrenByParent[t.parent_id].push(t);
+      }
+    });
+    Object.keys(childrenByParent).forEach((id) =>
+      childrenByParent[id].sort((a, b) => (a.order_index ?? 0) - (b.order_index ?? 0))
+    );
+    return { topLevel, childrenByParent };
+  };
+
+  const renderTaskSection = (sectionTodos: TodoItem[], sectionTitle: string) => {
+    const { topLevel, childrenByParent } = getTaskTree(sectionTodos);
+    if (topLevel.length === 0) return null;
+    return (
+      <View style={styles.section} key={sectionTitle}>
+        <Text style={styles.sectionTitle}>{sectionTitle}</Text>
+        {topLevel.map((parent) => (
+          <View key={parent.id}>
+            <TodoCard todo={parent} onUpdate={loadTodos} canEdit={canEdit} canDelete={canDelete} />
+            {canCreate && (
+              <TouchableOpacity
+                style={styles.addSubtaskRow}
+                onPress={() => {
+                  setParentIdForNew(parent.id);
+                  setShowCreateModal(true);
+                }}
+              >
+                <Plus size={14} color="#3b82f6" />
+                <Text style={styles.addSubtaskText}>New subtask</Text>
+              </TouchableOpacity>
+            )}
+            {(childrenByParent[parent.id] ?? []).map((child) => (
+              <View key={child.id} style={styles.subtaskWrap}>
+                <TodoCard todo={child} onUpdate={loadTodos} canEdit={canEdit} canDelete={canDelete} />
+              </View>
+            ))}
+          </View>
+        ))}
+      </View>
+    );
+  };
+
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#3b82f6" />
-        <Text style={styles.loadingText}>Loading todos...</Text>
+        <Text style={styles.loadingText}>Loading tasks...</Text>
       </View>
     );
   }
@@ -286,10 +366,11 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
     <View style={styles.container}>
       {!hideHeader && (
         <View style={styles.header}>
-          <Text style={styles.title}>To-Do List</Text>
+          <Text style={styles.title}>Tasks</Text>
           {canCreate && !hideCreateButton && (
             <TouchableOpacity
               onPress={() => {
+                setParentIdForNew(null);
                 if (onCreateButtonPress) {
                   onCreateButtonPress();
                 } else {
@@ -299,77 +380,31 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
               style={styles.createButton}
             >
               <Plus size={20} color="#fff" />
-              <Text style={styles.createButtonText}>New Todo</Text>
+              <Text style={styles.createButtonText}>New Task</Text>
             </TouchableOpacity>
           )}
         </View>
       )}
 
       <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* Pending Todos */}
-        {pendingTodos.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Pending ({pendingTodos.length})</Text>
-            {pendingTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onUpdate={loadTodos}
-                canEdit={canEdit}
-                canDelete={canDelete}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* In Progress Todos */}
-        {inProgressTodos.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>In Progress ({inProgressTodos.length})</Text>
-            {inProgressTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onUpdate={loadTodos}
-                canEdit={canEdit}
-                canDelete={canDelete}
-              />
-            ))}
-          </View>
-        )}
-
-        {/* Completed Todos */}
-        {completedTodos.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>
-              Completed ({completedTodos.length})
-            </Text>
-            {completedTodos.map((todo) => (
-              <TodoCard
-                key={todo.id}
-                todo={todo}
-                onUpdate={loadTodos}
-                canEdit={canEdit}
-                canDelete={canDelete}
-              />
-            ))}
-          </View>
-        )}
+        {renderTaskSection(pendingTodos, `Pending (${pendingTodos.length})`)}
+        {renderTaskSection(inProgressTodos, `In Progress (${inProgressTodos.length})`)}
+        {renderTaskSection(completedTodos, `Completed (${completedTodos.length})`)}
 
         {/* Empty State */}
         {todos.length === 0 && (
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>No todos yet</Text>
+            <Text style={styles.emptyText}>No tasks yet</Text>
             {canCreate && (
               <Text style={styles.emptySubtext}>
-                Tap "New Todo" to create your first todo item
+                Tap "New Task" to create your first task
               </Text>
             )}
           </View>
         )}
       </ScrollView>
 
-      {/* Create Todo Modal */}
+      {/* Create Task Modal */}
       <Modal
         visible={showCreateModal}
         transparent
@@ -379,16 +414,17 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Create New Todo</Text>
+              <Text style={styles.modalTitle}>{parentIdForNew ? 'New Subtask' : 'Create New Task'}</Text>
               <TouchableOpacity
                 onPress={() => {
                   setShowCreateModal(false);
-                  // Reset form
                   setNewTodoTitle('');
                   setNewTodoDescription('');
                   setNewTodoDeadline(null);
+                  setNewTodoAssignedTo('');
                   setNewTodoImages([]);
                   setNewTodoChecklist(['']);
+                  setParentIdForNew(null);
                 }}
                 style={styles.closeModalButton}
                 disabled={creating}
@@ -404,10 +440,51 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                 style={styles.titleInput}
                 value={newTodoTitle}
                 onChangeText={setNewTodoTitle}
-                placeholder="Todo title..."
+                placeholder="Task title..."
                 placeholderTextColor="#000000"
                 autoFocus
               />
+
+              {/* Assignees (required) */}
+              <Text style={styles.inputLabel}>Assignees *</Text>
+              <TouchableOpacity
+                style={styles.assigneeSelect}
+                onPress={() => setAssigneeDropdownOpen(!assigneeDropdownOpen)}
+              >
+                <User size={18} color="#6b7280" />
+                <Text style={[styles.assigneeSelectText, !newTodoAssignedToName && styles.assigneePlaceholder]}>
+                  {newTodoAssignedToName || 'Select assignee...'}
+                </Text>
+                <ChevronDown size={18} color="#6b7280" />
+              </TouchableOpacity>
+              {assigneeDropdownOpen && (
+                <View style={styles.assigneeDropdown}>
+                  <ScrollView
+                    style={styles.assigneeDropdownScroll}
+                    nestedScrollEnabled
+                    keyboardShouldPersistTaps="handled"
+                  >
+                    {assignableUsers.length === 0 ? (
+                      <Text style={styles.assigneeEmptyText}>No team members found</Text>
+                    ) : (
+                      assignableUsers.map((u) => (
+                        <TouchableOpacity
+                          key={u.id}
+                          style={[styles.assigneeOption, newTodoAssignedTo === u.id && styles.assigneeOptionActive]}
+                          onPress={() => {
+                            setNewTodoAssignedTo(u.id);
+                            setAssigneeDropdownOpen(false);
+                          }}
+                        >
+                          <Text style={styles.assigneeOptionText} numberOfLines={1}>
+                            {u.name || u.email || 'Unknown'}
+                          </Text>
+                        </TouchableOpacity>
+                      ))
+                    )}
+                  </ScrollView>
+                </View>
+              )}
 
               {/* Description */}
               <Text style={styles.inputLabel}>Description</Text>
@@ -421,8 +498,8 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                 numberOfLines={4}
               />
 
-              {/* Deadline */}
-              <Text style={styles.inputLabel}>Deadline</Text>
+              {/* Due date (required) */}
+              <Text style={styles.inputLabel}>Due date *</Text>
               {Platform.OS === 'web' ? (
                 <View>
                   <input
@@ -485,9 +562,12 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                       mode="date"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       onChange={(event, selectedDate) => {
-                        setShowDeadlinePicker(Platform.OS === 'ios');
                         if (selectedDate) {
                           setNewTodoDeadline(selectedDate);
+                          setShowDeadlinePicker(false);
+                        }
+                        if (event?.type === 'dismissed') {
+                          setShowDeadlinePicker(false);
                         }
                       }}
                       minimumDate={new Date()}
@@ -523,15 +603,15 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                 </ScrollView>
               )}
 
-              {/* Checklist */}
-              <Text style={styles.inputLabel}>Checklist</Text>
+              {/* Subtasks */}
+              <Text style={styles.inputLabel}>Subtasks</Text>
               {newTodoChecklist.map((item, index) => (
                 <View key={index} style={styles.checklistItemRow}>
                   <TextInput
                     style={styles.checklistInput}
                     value={item}
                     onChangeText={(value) => handleChecklistItemChange(index, value)}
-                    placeholder={`Checklist item ${index + 1}...`}
+                    placeholder={`Subtask ${index + 1}...`}
                     placeholderTextColor="#000000"
                   />
                   {newTodoChecklist.length > 1 && (
@@ -549,7 +629,7 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
                 onPress={handleAddChecklistItem}
               >
                 <Plus size={16} color="#3b82f6" />
-                <Text style={styles.addChecklistButtonText}>Add Checklist Item</Text>
+                <Text style={styles.addChecklistButtonText}>New</Text>
               </TouchableOpacity>
             </ScrollView>
 
@@ -557,12 +637,13 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
               <TouchableOpacity
                 onPress={() => {
                   setShowCreateModal(false);
-                  // Reset form
                   setNewTodoTitle('');
                   setNewTodoDescription('');
                   setNewTodoDeadline(null);
+                  setNewTodoAssignedTo('');
                   setNewTodoImages([]);
                   setNewTodoChecklist(['']);
+                  setParentIdForNew(null);
                 }}
                 style={styles.modalCancelButton}
                 disabled={creating}
@@ -572,7 +653,7 @@ export const TodoList = React.forwardRef<{ openCreateModal: () => void }, TodoLi
               <TouchableOpacity
                 onPress={handleCreateTodo}
                 style={[styles.modalCreateButton, creating && styles.modalCreateButtonDisabled]}
-                disabled={creating || !newTodoTitle.trim()}
+                disabled={creating || !newTodoTitle.trim() || !newTodoDeadline || !newTodoAssignedTo}
               >
                 {creating ? (
                   <ActivityIndicator size="small" color="#fff" />
@@ -637,6 +718,16 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: 12,
   },
+  addSubtaskRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingLeft: 16,
+    marginBottom: 4,
+  },
+  addSubtaskText: { fontSize: 14, color: '#3b82f6', fontWeight: '500' },
+  subtaskWrap: { marginLeft: 24, marginBottom: 4 },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
@@ -698,6 +789,38 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginBottom: 8,
   },
+  assigneeSelect: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    padding: 12,
+    marginBottom: 8,
+  },
+  assigneeSelectText: { flex: 1, fontSize: 16, color: '#111827' },
+  assigneePlaceholder: { color: '#9ca3af' },
+  assigneeDropdown: {
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    borderRadius: 8,
+    marginBottom: 8,
+    maxHeight: 200,
+    backgroundColor: '#ffffff',
+    zIndex: 10,
+  },
+  assigneeDropdownScroll: {
+    maxHeight: 196,
+  },
+  assigneeEmptyText: {
+    padding: 16,
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  assigneeOption: { paddingVertical: 12, paddingHorizontal: 12 },
+  assigneeOptionActive: { backgroundColor: 'rgba(59, 130, 246, 0.1)' },
+  assigneeOptionText: { fontSize: 14, color: '#111827' },
   descriptionInput: {
     borderWidth: 1,
     borderColor: '#d1d5db',

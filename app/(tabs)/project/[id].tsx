@@ -787,24 +787,37 @@ export default function ProjectDetailScreen() {
   const [officeUsers, setOfficeUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
   const [allUsers, setAllUsers] = useState<{ id: string; name: string; email: string; role: string }[]>([]);
 
-  // Load PMs, Clients, and Office users for mentions
+  // Load PMs, Clients, and Office users for mentions and Assign PM modal
   useEffect(() => {
     const loadUsers = async () => {
       try {
-        const allUsersData = await UserService.getAllUsers();
+        const [allUsersData, pmByRole] = await Promise.all([
+          UserService.getAllUsers(),
+          UserService.getUsersByRole('pm').catch(() => []),
+        ]);
         
-        const pmUsers = allUsersData.filter(u => u.role === 'pm');
-        setPMs(pmUsers.map(pm => ({ id: pm.id, name: pm.name, email: pm.email, role: 'pm' })));
+        let pmUsers = pmByRole;
+        if (pmUsers.length === 0) {
+          pmUsers = allUsersData.filter(u => {
+            const r = (u as any).role;
+            return r && String(r).toLowerCase() === 'pm';
+          });
+        }
+        setPMs(pmUsers.map(pm => ({
+          id: pm.id,
+          name: (pm as any).name || (pm as any).displayName || pm.email || 'Unknown',
+          email: pm.email || '',
+          role: 'pm',
+        })));
         
         const clientUsers = allUsersData.filter(u => u.role === 'client');
         setClients(clientUsers.map(client => ({ id: client.id, name: client.name, email: client.email, role: 'client' })));
         
-        const officeUsers = allUsersData.filter(u => u.role === 'office');
+        const officeUsers = allUsersData.filter(u => (u as any).role === 'office');
         setOfficeUsers(officeUsers.map(office => ({ id: office.id, name: office.name, email: office.email, role: 'office' })));
         
-        // Combine all users for mention suggestions
         const allUsersList = [
-          ...pmUsers.map(pm => ({ id: pm.id, name: pm.name, email: pm.email, role: 'pm' })),
+          ...pmUsers.map(pm => ({ id: pm.id, name: (pm as any).name || pm.email || 'Unknown', email: pm.email || '', role: 'pm' })),
           ...clientUsers.map(client => ({ id: client.id, name: client.name, email: client.email, role: 'client' })),
           ...officeUsers.map(office => ({ id: office.id, name: office.name, email: office.email, role: 'office' })),
         ];
@@ -862,17 +875,12 @@ export default function ProjectDetailScreen() {
     }
 
     try {
-      // Update project with assigned PMs
+      const pmIds = Array.isArray(selectedPMs) ? [...selectedPMs] : [];
       await ProjectService.updateProject(project.id, {
-        assigned_pms: selectedPMs,
+        assigned_pms: pmIds,
       });
 
-      // Update local state
-      setProject(prev => ({
-        ...prev,
-        assigned_pms: selectedPMs,
-      }));
-
+      setProject(prev => prev ? { ...prev, assigned_pms: pmIds } : null);
       Alert.alert('Success', 'Project managers updated successfully');
       setShowPMAssignmentModal(false);
       setSelectedPMs([]);
@@ -2316,7 +2324,7 @@ export default function ProjectDetailScreen() {
 
       </ScrollView>
 
-      {/* To-Do List Modal */}
+      {/* Tasks Modal */}
       <Modal
         visible={showTodoModal}
         transparent={true}
@@ -2326,7 +2334,7 @@ export default function ProjectDetailScreen() {
         <View style={styles.todoModalOverlay}>
           <View style={styles.todoModalContent}>
             <View style={styles.todoModalHeader}>
-              <Text style={styles.todoModalTitle}>To-Do List</Text>
+              <Text style={styles.todoModalTitle}>Tasks</Text>
               <View style={styles.todoModalHeaderButtons}>
                 {userRole === 'admin' && (
                   <TouchableOpacity
@@ -2338,7 +2346,7 @@ export default function ProjectDetailScreen() {
                     style={styles.todoModalNewButton}
                   >
                     <Plus size={20} color="#ffffff" />
-                    <Text style={styles.todoModalNewButtonText}>New Todo</Text>
+                    <Text style={styles.todoModalNewButtonText}>New Task</Text>
                   </TouchableOpacity>
                 )}
                 <TouchableOpacity

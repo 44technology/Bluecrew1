@@ -352,7 +352,7 @@ export default function HamburgerMenu() {
 const styles = StyleSheet.create({
   hamburgerButton: {
     position: 'absolute',
-    top: Platform.OS === 'web' ? 58 : 50,
+    top: 8,
     right: 8,
     zIndex: 10000,
     backgroundColor: '#ffffff',

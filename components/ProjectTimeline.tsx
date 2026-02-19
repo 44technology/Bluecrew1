@@ -31,139 +31,123 @@ export const ProjectTimeline: React.FC<ProjectTimelineProps> = ({
     }
   };
 
-  const sortedSteps = [...steps].sort((a, b) => a.order_index - b.order_index);
+  // Sadece parent (work title) adımlarını kullan; kareler ve yüzde çizgisi bunlara göre güncellenir
+  const parentSteps = steps.filter(
+    (s) => s.step_type === 'parent' || !s.parent_step_id
+  );
+  const sortedSteps = [...parentSteps].sort((a, b) => a.order_index - b.order_index);
   const totalSteps = sortedSteps.length;
-  
-  // Calculate percentage per step (each work title gets equal share)
+
   const stepPercentage = totalSteps > 0 ? 100 / totalSteps : 0;
-  
-  // Calculate progress width for each step based on status
+
+  // Parent'ın görünen statusu: child_steps varsa onlardan türet (in_progress/finished güncel kalsın)
+  const getEffectiveStatus = (step: ProjectStep): ProjectStep['status'] => {
+    if (step.step_type === 'child' || !step.child_steps || step.child_steps.length === 0) {
+      return step.status;
+    }
+    const allFinished = step.child_steps.every(
+      (c) => c.status === 'finished' || c.manual_checkmark
+    );
+    const anyInProgress = step.child_steps.some((c) => c.status === 'in_progress');
+    const anyStarted = step.child_steps.some(
+      (c) => c.status === 'in_progress' || c.status === 'finished' || c.manual_checkmark
+    );
+    if (allFinished) return 'finished';
+    if (anyInProgress || anyStarted) return 'in_progress';
+    return 'pending';
+  };
+
   const getStepProgressWidth = (status: ProjectStep['status']) => {
     switch (status) {
       case 'finished':
-        return stepPercentage; // Full percentage (e.g., 20% if 5 steps)
+        return stepPercentage;
       case 'in_progress':
-        return stepPercentage * 0.5; // Half percentage (e.g., 10% if 5 steps)
-      case 'pending':
-        return 0; // No progress
+        return stepPercentage * 0.5;
       default:
         return 0;
     }
   };
 
-  // Calculate minimum width per step for mobile
-  // On mobile, use fixed minimum width to ensure scrollability
-  const getStepMinWidth = () => {
-    if (IS_MOBILE) {
-      // On mobile, use fixed width so it scrolls properly
-      if (totalSteps <= 5) {
-        return SCREEN_WIDTH / totalSteps - 16; // Fit all on screen if 5 or less
-      }
-      return 80; // Fixed width for many steps
-    }
-    return undefined; // Use flex on desktop
-  };
+  // Toplam ilerleme: karelerle aynı effective status kullanılıyor, çizgi güncel kalır
+  const totalProgressPercent = sortedSteps.reduce(
+    (sum, step) => sum + getStepProgressWidth(getEffectiveStatus(step)),
+    0
+  );
+  const progressFillColor =
+    sortedSteps.some((s) => getEffectiveStatus(s) === 'finished')
+      ? '#22c55e'
+      : sortedSteps.some((s) => getEffectiveStatus(s) === 'in_progress')
+        ? '#f97316'
+        : '#000000';
 
-  const stepMinWidth = getStepMinWidth();
+  const renderStepBox = (step: ProjectStep, index: number) => {
+    const status = getEffectiveStatus(step);
+    return (
+      <TouchableOpacity
+        key={step.id}
+        style={styles.stepTouchable}
+        onPress={() => step.name.length > 12 && setTooltipVisible(tooltipVisible === step.id ? null : step.id)}
+        activeOpacity={step.name.length > 12 ? 0.7 : 1}
+      >
+        <View style={[styles.arrowSegment, { backgroundColor: getStepColor(status) }]}>
+          <Text style={styles.stepNumber}>{String(index + 1).padStart(2, '0')}</Text>
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   return (
     <View style={styles.container}>
-      {/* Progress bar showing overall progress - each work title gets equal space */}
-      <View style={styles.progressBarContainer}>
-        <View style={styles.progressBarBackground}>
-          {sortedSteps.map((step, index) => {
-            const progressWidth = getStepProgressWidth(step.status);
-            const color = getStepColor(step.status);
-            
-            // Calculate fill percentage: finished = 100%, in_progress = 50%, pending = 0%
-            const fillPercentage = step.status === 'finished' ? 100 : 
-                                   step.status === 'in_progress' ? 50 : 0;
-            
-            return (
-              <View
-                key={step.id}
-                style={[
-                  styles.progressBarSegment,
-                  totalSteps > 0 ? {
-                    width: `${100 / totalSteps}%`,
-                  } : {},
-                ]}
-              >
-                {fillPercentage > 0 && (
-                  <View
-                    style={[
-                      styles.progressBarFill,
-                      {
-                        width: `${fillPercentage}%`,
-                        backgroundColor: color,
-                      },
-                    ]}
-                  />
-                )}
-              </View>
-            );
-          })}
-        </View>
-      </View>
-      
-      <ScrollView 
-        horizontal 
+      <ScrollView
+        horizontal
         showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.timelineContainer}
+        contentContainerStyle={[
+          styles.scrollContent,
+          IS_MOBILE && totalSteps > 0 ? { minWidth: totalSteps * 84 } : {},
+        ]}
       >
-        {sortedSteps.map((step, index) => {
-          const color = getStepColor(step.status);
-          const isCompleted = step.status === 'finished';
-          const isLongName = step.name.length > 12;
-          const isLast = index === sortedSteps.length - 1;
-          const progressWidth = getStepProgressWidth(step.status);
-          
-          return (
-            <View key={step.id} style={[styles.stepContainer, { flex: 1, minWidth: 0 }]}>
-              {/* Arrow-shaped segment */}
-              <View style={styles.stepRow}>
-                <TouchableOpacity
-                  style={styles.stepTouchable}
-                  onPress={() => isLongName && setTooltipVisible(tooltipVisible === step.id ? null : step.id)}
-                  activeOpacity={isLongName ? 0.7 : 1}
-                >
-                  <View style={[styles.arrowSegment, { backgroundColor: color }]}>
-                    <Text style={styles.stepNumber}>
-                      {String(index + 1).padStart(2, '0')}
-                    </Text>
+        {/* Bastan sona birleşik tek çizgi – doluluk soldan totalProgressPercent kadar */}
+        <View style={styles.progressBarRow}>
+          <View style={styles.progressBarTrack}>
+            {totalProgressPercent > 0 && (
+              <View
+                style={[
+                  styles.progressBarFill,
+                  { width: `${totalProgressPercent}%`, backgroundColor: progressFillColor },
+                ]}
+              />
+            )}
+          </View>
+        </View>
+        {/* Tüm kareler yan yana tek sıra */}
+        <View style={styles.timelineRow}>
+          {sortedSteps.map((step, index) => (
+            <View key={step.id} style={[styles.stepColumn, totalSteps > 0 && !IS_MOBILE ? { flex: 1 } : {}]}>
+              <View style={styles.boxRow}>
+                {renderStepBox(step, index)}
+              </View>
+            </View>
+          ))}
+        </View>
+        {/* Etiketler */}
+        {showLabels && (
+          <View style={styles.timelineRow}>
+            {sortedSteps.map((step, index) => (
+              <View key={`label-${step.id}`} style={[styles.stepColumn, totalSteps > 0 && !IS_MOBILE ? { flex: 1 } : {}]}>
+                <View style={styles.labelContainer}>
+                  <Text style={[styles.stepLabel, { color: getStepColor(getEffectiveStatus(step)) }]} numberOfLines={2}>
+                    {step.name.length > 12 ? step.name.substring(0, 12) + '...' : step.name}
+                  </Text>
+                </View>
+                {tooltipVisible === step.id && step.name.length > 12 && (
+                  <View style={styles.tooltip}>
+                    <Text style={styles.tooltipText}>{step.name}</Text>
                   </View>
-                </TouchableOpacity>
-                
-                {/* Connection line to next segment (except for last) */}
-                {!isLast && (
-                  <View style={[styles.connectionLine, { 
-                    backgroundColor: step.status === 'finished' ? color : '#e5e7eb',
-                    opacity: step.status === 'finished' ? 1 : 0.3,
-                  }]} />
                 )}
               </View>
-              
-              {/* Step label */}
-              {showLabels && (
-                <View style={styles.labelContainer}>
-                  <Text style={[styles.stepLabel, { color }]} numberOfLines={2}>
-                    {isLongName ? step.name.substring(0, 12) + '...' : step.name}
-                  </Text>
-                  <Text style={styles.progressLabel}>
-                    {progressWidth.toFixed(0)}%
-                  </Text>
-                </View>
-              )}
-              
-              {/* Tooltip */}
-              {tooltipVisible === step.id && isLongName && (
-                <View style={styles.tooltip}>
-                  <Text style={styles.tooltipText}>{step.name}</Text>
-                </View>
-              )}
-            </View>
-          );
-        })}
+            ))}
+          </View>
+        )}
       </ScrollView>
     </View>
   );
@@ -174,46 +158,43 @@ const styles = StyleSheet.create({
     marginVertical: 16,
     paddingVertical: 8,
   },
-  progressBarContainer: {
-    marginBottom: 16,
+  scrollContent: {
+    flexDirection: 'column',
     paddingHorizontal: 8,
+    ...(IS_MOBILE ? {} : { width: '100%' }),
   },
-  progressBarBackground: {
+  timelineRow: {
+    flexDirection: 'row',
+    alignItems: 'stretch',
+    width: '100%',
+    ...(IS_MOBILE ? {} : { flex: 1 }),
+  },
+  stepColumn: {
+    alignItems: 'center',
+    position: 'relative',
+    minWidth: 0,
+    ...(IS_MOBILE ? { minWidth: 84 } : {}),
+  },
+  boxRow: {
+    minHeight: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  progressBarRow: {
+    width: '100%',
+    height: 8,
+  },
+  progressBarTrack: {
+    width: '100%',
     height: 8,
     backgroundColor: '#e5e7eb',
     borderRadius: 4,
     overflow: 'hidden',
-    flexDirection: 'row',
-    width: '100%',
-    position: 'relative',
-  },
-  progressBarSegment: {
-    height: '100%',
-    backgroundColor: '#e5e7eb',
-    overflow: 'hidden',
-    position: 'relative',
   },
   progressBarFill: {
     height: '100%',
     borderRadius: 4,
-  },
-  timelineScrollView: {
-    maxHeight: 120,
-  },
-  timelineContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    ...(IS_MOBILE ? {} : { width: '100%', justifyContent: 'space-between' }),
-  },
-  stepContainer: {
-    alignItems: 'center',
-    position: 'relative',
-    flex: 1,
-  },
-  stepRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
   },
   stepTouchable: {
     alignItems: 'center',
@@ -234,13 +215,6 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 16,
     fontWeight: '700',
-  },
-  connectionLine: {
-    width: 24,
-    height: 4,
-    marginLeft: -1,
-    borderRadius: 2,
-    alignSelf: 'center',
   },
   labelContainer: {
     marginTop: 8,

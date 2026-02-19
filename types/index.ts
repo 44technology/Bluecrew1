@@ -582,4 +582,8 @@ export interface TodoItem {
   created_at: string;
   updated_at?: string;
   order_index?: number; // For sorting
+  assigned_to?: string;
+  assigned_to_name?: string;
+  tags?: string[];
+  parent_id?: string; // Subtask: parent task id
 }

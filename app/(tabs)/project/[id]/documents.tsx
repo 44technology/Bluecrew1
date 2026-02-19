@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,6 +10,7 @@ import {
   Image,
   ActivityIndicator,
   Platform,
+  InteractionManager,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Plus, Camera, FileText, Folder, X, Image as ImageIcon, File } from 'lucide-react-native';
@@ -27,19 +28,28 @@ type DocumentCategory = 'Plans' | 'Permits' | 'Designs' | 'Inspection' | 'Insura
 export default function DocumentsScreen() {
   const { id } = useLocalSearchParams();
   const { user, userRole } = useAuth();
-  const [selectedCategory, setSelectedCategory] = useState<DocumentCategory>('Plans');
+  const [selectedCategory, setSelectedCategory] = useState<DocumentCategory | 'All'>('All');
+  const [uploadCategory, setUploadCategory] = useState<DocumentCategory>('Plans');
   const [documents, setDocuments] = useState<DocumentType[]>([]);
   const [project, setProject] = useState<Project | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showUploadModal, setShowUploadModal] = useState(false);
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const documentPickerInProgress = useRef(false);
+  const imagePickerInProgress = useRef(false);
+
+  const closeUploadModal = () => {
+    setShowUploadModal(false);
+    setUploading(false);
+  };
 
   // All categories - Insurance and Licence only visible to admin and office
   const allCategories: DocumentCategory[] = ['Plans', 'Permits', 'Designs', 'Inspection', 'Insurance', 'Licence', 'Other'];
   const categories: DocumentCategory[] = (userRole === 'admin' || userRole === 'office') 
     ? allCategories 
     : allCategories.filter(cat => cat !== 'Insurance' && cat !== 'Licence');
+  const tabCategories: (DocumentCategory | 'All')[] = ['All', ...categories];
 
   useEffect(() => {
     loadProject();
@@ -50,6 +60,10 @@ export default function DocumentsScreen() {
       loadDocuments();
     }
   }, [id, selectedCategory, project?.id]);
+
+  useEffect(() => {
+    if (showUploadModal) setUploading(false);
+  }, [showUploadModal]);
 
   const loadProject = async () => {
     try {
@@ -65,11 +79,16 @@ export default function DocumentsScreen() {
     if (!id) return;
     try {
       setLoading(true);
-      const projectDocuments = await DocumentService.getDocumentsByProjectAndCategory(
-        id as string,
-        selectedCategory
-      );
-      setDocuments(projectDocuments);
+      if (selectedCategory === 'All') {
+        const allDocs = await DocumentService.getDocumentsByProjectId(id as string);
+        setDocuments(allDocs);
+      } else {
+        const projectDocuments = await DocumentService.getDocumentsByProjectAndCategory(
+          id as string,
+          selectedCategory
+        );
+        setDocuments(projectDocuments);
+      }
     } catch (error) {
       console.error('Error loading documents:', error);
       setDocuments([]);
@@ -106,37 +125,55 @@ export default function DocumentsScreen() {
           const target = e.target as HTMLInputElement;
           if (target.files && target.files[0]) {
             const file = target.files[0];
-            await uploadImageFile(file);
+            await uploadImageFile(file, file.name);
           }
         };
         input.click();
         return;
       } else {
-        // Mobile: Use ImagePicker
-        setShowUploadModal(false);
+        // Mobile: Prevent multiple pickers at once; keep modal open until picker returns (avoids native state issues)
+        if (imagePickerInProgress.current || documentPickerInProgress.current) {
+          Alert.alert('Please wait', 'Finish the current action first.');
+          return;
+        }
+        imagePickerInProgress.current = true;
         setUploading(true);
-        const result = await ImagePicker.launchCameraAsync({
-          mediaTypes: ImagePicker.MediaTypeOptions.Images,
-          allowsEditing: true,
-          aspect: [4, 3],
-          quality: 0.8,
-        });
-
-        if (!result.canceled && result.assets && result.assets[0]) {
-          const asset = result.assets[0];
+        let result: Awaited<ReturnType<typeof ImagePicker.launchCameraAsync>>;
+        try {
+          result = await ImagePicker.launchCameraAsync({
+            mediaTypes: ImagePicker.MediaTypeOptions.Images,
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.8,
+          });
+        } finally {
+          imagePickerInProgress.current = false;
+        }
+        setShowUploadModal(false);
+        if (!result!.canceled && result!.assets && result!.assets[0]) {
+          const asset = result!.assets[0];
           const fileName = asset.uri.split('/').pop() || `photo_${Date.now()}.jpg`;
-          
-          // Convert URI to blob/file
-          const response = await fetch(asset.uri);
-          const blob = await response.blob();
-          
-          await uploadImageFile(blob, fileName);
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            const response = await fetch(asset.uri, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const blob = await response.blob();
+            await uploadImageFile(blob, fileName);
+          } catch (fetchError) {
+            console.error('Error reading photo:', fetchError);
+            Alert.alert('Error', 'Could not read the photo. Try again.');
+          }
+        } else {
+          setUploading(false);
         }
       }
     } catch (error) {
       console.error('Error taking photo:', error);
       Alert.alert('Error', 'Failed to take photo');
     } finally {
+      imagePickerInProgress.current = false;
       setUploading(false);
     }
   };
@@ -154,35 +191,58 @@ export default function DocumentsScreen() {
           const target = e.target as HTMLInputElement;
           if (target.files && target.files[0]) {
             const file = target.files[0];
-            await uploadDocumentFile(file);
+            await uploadDocumentFile(file, file.name);
           }
         };
         input.click();
         return;
       } else {
-        // Mobile: Use DocumentPicker
-        setShowUploadModal(false);
+        // Mobile: Prevent "Different document picking in progress" – only one picker at a time
+        if (documentPickerInProgress.current || imagePickerInProgress.current) {
+          Alert.alert('Please wait', 'Finish the current action first.');
+          return;
+        }
+        documentPickerInProgress.current = true;
         setUploading(true);
-        const result = await DocumentPicker.getDocumentAsync({
-          type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain', 'application/rtf'],
-          copyToCacheDirectory: true,
-        });
-
-        if (!result.canceled && result.assets && result.assets[0]) {
-          const asset = result.assets[0];
+        let result: Awaited<ReturnType<typeof DocumentPicker.getDocumentAsync>>;
+        try {
+          await new Promise<void>((resolve) => {
+            InteractionManager.runAfterInteractions(() => {
+              setTimeout(resolve, 400);
+            });
+          });
+          result = await DocumentPicker.getDocumentAsync({
+            type: ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/vnd.ms-excel', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'text/plain', 'application/rtf'],
+            copyToCacheDirectory: true,
+          });
+        } finally {
+          documentPickerInProgress.current = false;
+        }
+        setShowUploadModal(false);
+        if (!result!.canceled && result!.assets && result!.assets[0]) {
+          const asset = result!.assets[0];
           const fileName = asset.name;
-          
-          // Convert URI to blob/file
-          const response = await fetch(asset.uri);
-          const blob = await response.blob();
-          
-          await uploadDocumentFile(blob, fileName);
+          try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
+            const response = await fetch(asset.uri, { signal: controller.signal });
+            clearTimeout(timeoutId);
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            const blob = await response.blob();
+            await uploadDocumentFile(blob, fileName);
+          } catch (fetchError) {
+            console.error('Error reading document file:', fetchError);
+            Alert.alert('Error', 'Could not read the selected file. Try again or choose another file.');
+          }
+        } else {
+          setUploading(false);
         }
       }
     } catch (error) {
       console.error('Error uploading document:', error);
       Alert.alert('Error', 'Failed to upload document');
     } finally {
+      documentPickerInProgress.current = false;
       setUploading(false);
     }
   };
@@ -197,7 +257,7 @@ export default function DocumentsScreen() {
 
       await DocumentService.uploadDocument(
         id as string,
-        selectedCategory,
+        uploadCategory,
         file,
         finalFileName,
         'image',
@@ -215,17 +275,18 @@ export default function DocumentsScreen() {
     }
   };
 
-  const uploadDocumentFile = async (file: Blob | File, fileName: string) => {
+  const uploadDocumentFile = async (file: Blob | File, fileName?: string) => {
     if (!id || !user) return;
 
+    const resolvedName = fileName || (file instanceof File ? file.name : undefined) || `document_${Date.now()}`;
     try {
       setUploading(true);
 
       await DocumentService.uploadDocument(
         id as string,
-        selectedCategory,
+        uploadCategory,
         file,
-        fileName,
+        resolvedName,
         'document',
         user.name || user.email || 'Unknown',
         user.id
@@ -277,25 +338,36 @@ export default function DocumentsScreen() {
         <Text style={styles.headerTitle} numberOfLines={1}>Documents</Text>
       </View>
 
-      {/* Category Tabs */}
-      <View style={styles.categoryTabs}>
-        {categories.map((category) => (
-          <TouchableOpacity
-            key={category}
-            style={[
-              styles.categoryTab,
-              selectedCategory === category && styles.categoryTabActive,
-            ]}
-            onPress={() => setSelectedCategory(category)}>
-            <Text
+      {/* Category Tabs - horizontal scroll */}
+      <View style={styles.categoryTabsWrapper}>
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={true}
+          bounces={false}
+          style={styles.categoryTabsScroll}
+          contentContainerStyle={styles.categoryTabsContent}>
+          {tabCategories.map((category) => (
+            <TouchableOpacity
+              key={category}
               style={[
-                styles.categoryTabText,
-                selectedCategory === category && styles.categoryTabTextActive,
-              ]}>
-              {category}
-            </Text>
-          </TouchableOpacity>
-        ))}
+                styles.categoryTab,
+                selectedCategory === category && styles.categoryTabActive,
+              ]}
+              onPress={() => {
+                setSelectedCategory(category);
+                if (category !== 'All') setUploadCategory(category);
+              }}>
+              <Text
+                style={[
+                  styles.categoryTabText,
+                  selectedCategory === category && styles.categoryTabTextActive,
+                ]}
+                numberOfLines={1}>
+                {category}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
       </View>
 
       {/* Documents List */}
@@ -307,8 +379,55 @@ export default function DocumentsScreen() {
         ) : documents.length === 0 ? (
           <View style={styles.emptyState}>
             <Folder size={48} color="#ffffff" />
-            <Text style={styles.emptyText}>No documents in {selectedCategory}</Text>
+            <Text style={styles.emptyText}>
+              {selectedCategory === 'All' ? 'No documents' : `No documents in ${selectedCategory}`}
+            </Text>
             <Text style={styles.emptySubtext}>Add a document to get started</Text>
+          </View>
+        ) : selectedCategory === 'All' ? (
+          <View style={styles.documentsByCategory}>
+            {categories.map((cat) => {
+              const docsInCategory = documents.filter((d) => d.category === cat);
+              if (docsInCategory.length === 0) return null;
+              return (
+                <View key={cat} style={styles.categorySection}>
+                  <Text style={styles.categorySectionTitle}>{cat}</Text>
+                  <View style={styles.documentsGrid}>
+                    {docsInCategory.map((document) => (
+                      <View key={document.id} style={styles.documentCard}>
+                        {document.file_type === 'image' ? (
+                          <Image
+                            source={{ uri: document.file_url }}
+                            style={styles.documentImage}
+                            resizeMode="cover"
+                          />
+                        ) : (
+                          <View style={styles.documentIconContainer}>
+                            <FileText size={40} color="#000000" />
+                          </View>
+                        )}
+                        <View style={styles.documentInfo}>
+                          <Text style={styles.documentName} numberOfLines={2}>
+                            {document.name}
+                          </Text>
+                          <Text style={styles.documentMeta}>
+                            {new Date(document.uploaded_at).toLocaleDateString()}
+                          </Text>
+                          <Text style={styles.documentMeta}>by {document.uploaded_by}</Text>
+                        </View>
+                        {userRole === 'admin' && (
+                          <TouchableOpacity
+                            style={styles.deleteButton}
+                            onPress={() => handleDeleteDocument(document.id)}>
+                            <X size={16} color="#ef4444" />
+                          </TouchableOpacity>
+                        )}
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              );
+            })}
           </View>
         ) : (
           <View style={styles.documentsGrid}>
@@ -361,7 +480,7 @@ export default function DocumentsScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Upload Document</Text>
-            <TouchableOpacity onPress={() => setShowUploadModal(false)}>
+            <TouchableOpacity onPress={closeUploadModal}>
               <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
@@ -399,13 +518,13 @@ export default function DocumentsScreen() {
                     key={category}
                     style={[
                       styles.categoryButton,
-                      selectedCategory === category && styles.categoryButtonActive,
+                      uploadCategory === category && styles.categoryButtonActive,
                     ]}
-                    onPress={() => setSelectedCategory(category)}>
+                    onPress={() => setUploadCategory(category)}>
                     <Text
                       style={[
                         styles.categoryButtonText,
-                        selectedCategory === category && styles.categoryButtonTextActive,
+                        uploadCategory === category && styles.categoryButtonTextActive,
                       ]}>
                       {category}
                     </Text>
@@ -464,22 +583,32 @@ const styles = StyleSheet.create({
     shadowRadius: 8,
     elevation: 8,
   },
-  categoryTabs: {
-    flexDirection: 'row',
+  categoryTabsWrapper: {
+    width: '100%',
     backgroundColor: '#f5f5f5',
-    paddingHorizontal: 20,
-    paddingVertical: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#b0b0b0',
-    gap: 8,
+  },
+  categoryTabsScroll: {
+    flexGrow: 0,
+    flexShrink: 0,
+  },
+  categoryTabsContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingLeft: 20,
+    paddingRight: 20,
   },
   categoryTab: {
     paddingVertical: 8,
     paddingHorizontal: 16,
+    marginRight: 8,
     borderRadius: 8,
     backgroundColor: '#ffffff',
     borderWidth: 1,
     borderColor: '#b0b0b0',
+    flexShrink: 0,
   },
   categoryTabActive: {
     backgroundColor: '#000000',
@@ -517,6 +646,21 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#f5f5f5', // Light yellow like teams
     marginTop: 4,
+  },
+  documentsByCategory: {
+    gap: 24,
+  },
+  categorySection: {
+    marginBottom: 8,
+  },
+  categorySectionTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#1f2937',
+    marginBottom: 12,
+    paddingBottom: 6,
+    borderBottomWidth: 2,
+    borderBottomColor: '#b0b0b0',
   },
   documentsGrid: {
     flexDirection: 'row',

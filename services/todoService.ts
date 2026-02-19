@@ -4,6 +4,7 @@ import {
   addDoc, 
   updateDoc, 
   deleteDoc, 
+  deleteField,
   getDocs, 
   getDoc, 
   query, 
@@ -13,7 +14,7 @@ import {
 } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL, deleteObject } from 'firebase/storage';
 import { db, storage } from '@/lib/firebase';
-import { stripUndefined } from '@/lib/firestoreUtils';
+import { stripUndefined, stripUndefinedFromArray } from '@/lib/firestoreUtils';
 import { TodoItem, TodoImage, TodoComment, TodoChecklistItem } from '@/types';
 
 const TODOS_COLLECTION = 'todos';
@@ -93,23 +94,22 @@ export class TodoService {
     }
   }
 
-  // Create new todo
+  // Create new todo (optionally subtask via parent_id)
   static async createTodo(todo: Omit<TodoItem, 'id'>): Promise<string> {
     try {
-      // Get current max order_index
       const todosQuery = query(
         collection(db, TODOS_COLLECTION),
         where('project_id', '==', todo.project_id)
       );
       const todosSnapshot = await getDocs(todosQuery);
-      const maxOrder = todosSnapshot.docs.reduce((max, doc) => {
-        const data = doc.data();
-        return Math.max(max, data.order_index || 0);
-      }, -1);
+      const parentKey = todo.parent_id ?? null;
+      const siblings = todosSnapshot.docs.filter((d) => (d.data().parent_id ?? null) === parentKey);
+      const maxOrder = siblings.reduce((max, d) => Math.max(max, d.data().order_index ?? 0), -1);
 
       const payload = stripUndefined({
         ...todo,
         order_index: maxOrder + 1,
+        parent_id: todo.parent_id,
         created_at: new Date().toISOString(),
         status: 'pending' as const,
         images: todo.images || [],
@@ -317,7 +317,7 @@ export class TodoService {
     }
   }
 
-  // Update checklist item
+  // Update checklist item (strips undefined so Firestore accepts; sets task in_progress when a subtask is completed)
   static async updateChecklistItem(
     todoId: string,
     itemId: string,
@@ -330,10 +330,18 @@ export class TodoService {
       const updatedChecklist = todo.checklist.map(item =>
         item.id === itemId ? { ...item, ...updates } : item
       );
+      const sanitizedChecklist = stripUndefinedFromArray(
+        updatedChecklist as unknown as Record<string, unknown>[]
+      ) as TodoChecklistItem[];
 
       await this.updateTodo(todoId, {
-        checklist: updatedChecklist
+        checklist: sanitizedChecklist
       });
+
+      const isMarkingCompleted = updates.completed === true;
+      if (isMarkingCompleted && todo.status === 'pending') {
+        await this.updateTodo(todoId, { status: 'in_progress' });
+      }
     } catch (error) {
       console.error('Error updating checklist item:', error);
       throw error;
@@ -371,6 +379,44 @@ export class TodoService {
       });
     } catch (error) {
       console.error('Error completing todo:', error);
+      throw error;
+    }
+  }
+
+  // Revert task from completed back to previous status (for undo). Also unchecks one checklist item so at least one is in progress.
+  static async revertCompleteTodo(
+    todoId: string,
+    previousStatus: 'pending' | 'in_progress'
+  ): Promise<void> {
+    try {
+      const todo = await this.getTodoById(todoId);
+      const todoRef = doc(db, TODOS_COLLECTION, todoId);
+      const updates: Record<string, unknown> = {
+        status: previousStatus,
+        updated_at: new Date().toISOString(),
+        completed_by: deleteField(),
+        completed_by_name: deleteField(),
+        completed_at: deleteField(),
+      };
+
+      if (todo?.checklist && todo.checklist.length > 0) {
+        const completedItems = todo.checklist.filter((item) => item.completed);
+        if (completedItems.length > 0) {
+          const lastCompleted = completedItems[completedItems.length - 1];
+          const revertedChecklist = todo.checklist.map((item) =>
+            item.id === lastCompleted.id
+              ? { id: item.id, text: item.text, completed: false }
+              : item
+          );
+          updates.checklist = stripUndefinedFromArray(
+            revertedChecklist as unknown as Record<string, unknown>[]
+          );
+        }
+      }
+
+      await updateDoc(todoRef, updates);
+    } catch (error) {
+      console.error('Error reverting todo completion:', error);
       throw error;
     }
   }

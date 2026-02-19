@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Tabs } from 'expo-router';
 import { Platform, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Building2, Users, UserCheck, User, FileText, Clock, CheckCircle, UserCog, Database, Receipt, Briefcase, Shield, DollarSign, TrendingUp, Package, CreditCard } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useLanguage } from '@/contexts/LanguageContext';
@@ -10,6 +11,7 @@ import { PermissionService } from '@/services/permissionService';
 export default function TabLayout() {
   const { userRole } = useAuth();
   const { t } = useLanguage();
+  const insets = useSafeAreaInsets();
   const [isMobile, setIsMobile] = useState(false);
   const [isWebDesktop, setIsWebDesktop] = useState(false);
   const [pageAccess, setPageAccess] = useState<Record<string, boolean>>({});
@@ -79,10 +81,11 @@ export default function TabLayout() {
     loadPageAccess();
   }, [userRole]);
   
+  const topPadding = isWebDesktop ? 65 : (insets.top > 0 ? insets.top : 0);
   return (
     <View style={{ flex: 1 }}>
       {isWebDesktop && <TopNavigationBar />}
-      <View style={isWebDesktop ? { flex: 1, paddingTop: 65 } : { flex: 1 }}>
+      <View style={{ flex: 1, paddingTop: topPadding }}>
         <Tabs
         screenOptions={{
           headerShown: false,

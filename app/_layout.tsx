@@ -8,6 +8,7 @@ import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
 import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 // Splash'i uygulama hazır olana kadar göster (beyaz ekranı önler)
 SplashScreen.preventAutoHideAsync?.();
@@ -428,14 +429,16 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <AuthProvider>
-        <ThemeProvider>
-          <LanguageProvider>
-            <AppContent />
-            <StatusBar style="auto" />
-          </LanguageProvider>
-        </ThemeProvider>
-      </AuthProvider>
+      <SafeAreaProvider>
+        <AuthProvider>
+          <ThemeProvider>
+            <LanguageProvider>
+              <AppContent />
+              <StatusBar style="auto" />
+            </LanguageProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      </SafeAreaProvider>
     </GestureHandlerRootView>
   );
 }

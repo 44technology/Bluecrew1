@@ -41,6 +41,7 @@ export default function TimeClockScreen() {
   const [selectedWeek, setSelectedWeek] = useState<string>('');
   const [searchName, setSearchName] = useState('');
   const [selectedUserId, setSelectedUserId] = useState<string>('all');
+  const [selectedDay, setSelectedDay] = useState<string | null>(null);
   
   // Temporary filter states for modal
   const [tempSelectedRole, setTempSelectedRole] = useState<'all' | 'pm' | 'sales' | 'office'>('all');
@@ -477,7 +478,17 @@ export default function TimeClockScreen() {
     }
   };
 
-  // Calculate weekly hours per user
+  // Get effective hours for an entry (for clocked_in: partial hours from clock_in to now)
+  const getEntryHours = (entry: TimeClockEntry): number => {
+    if (entry.total_hours != null && entry.total_hours > 0) return entry.total_hours;
+    if (entry.status === 'clocked_in' && entry.clock_in) {
+      const ms = Date.now() - new Date(entry.clock_in).getTime();
+      return Math.round((ms / (1000 * 60 * 60)) * 100) / 100;
+    }
+    return 0;
+  };
+
+  // Calculate weekly hours per user (includes partial hours for clocked-in entries)
   const getUserWeeklyHours = (entries: TimeClockEntry[]) => {
     const userHoursMap = new Map<string, { user_name: string; user_role: string; total_hours: number }>();
     
@@ -492,7 +503,7 @@ export default function TimeClockScreen() {
       }
       
       const userHours = userHoursMap.get(key)!;
-      userHours.total_hours += entry.total_hours || 0;
+      userHours.total_hours += getEntryHours(entry);
     });
     
     return Array.from(userHoursMap.values()).sort((a, b) => b.total_hours - a.total_hours);
@@ -521,6 +532,10 @@ export default function TimeClockScreen() {
       filtered = filtered.filter(entry => 
         entry.user_name.toLowerCase().includes(searchName.toLowerCase())
       );
+    }
+    
+    if (selectedDay) {
+      filtered = filtered.filter(entry => entry.date === selectedDay);
     }
     
     return filtered;
@@ -649,6 +664,12 @@ export default function TimeClockScreen() {
           </View>
         </View>
 
+      <ScrollView
+        style={styles.mainScroll}
+        contentContainerStyle={styles.mainScrollContent}
+        showsVerticalScrollIndicator={true}
+        bounces={true}
+      >
       {/* Filter Button - Moved to content area */}
       {userRole === 'admin' && (
         <View style={styles.contentActions}>
@@ -692,32 +713,52 @@ export default function TimeClockScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Weekly View */}
+      {/* Weekly View - tap a day to show that day's entries */}
       <View style={styles.weeklySection}>
         <Text style={styles.sectionTitle}>This Week</Text>
         <View style={styles.weekDays}>
-          {getWeekDays().map((day, index) => (
-            <View key={index} style={[styles.dayColumn, day.isToday && styles.todayColumn]}>
-              <Text style={[styles.dayName, day.isToday && styles.todayText]}>{day.dayName}</Text>
-              <Text style={[styles.dayDate, day.isToday && styles.todayText]}>{day.fullDate}</Text>
-              <View style={[styles.dayIndicator, day.isToday && styles.todayIndicator]} />
-            </View>
-          ))}
+          {getWeekDays().map((day, index) => {
+            const isSelected = selectedDay === day.date;
+            return (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.dayColumn,
+                  day.isToday && styles.todayColumn,
+                  isSelected && styles.selectedDayColumn,
+                ]}
+                onPress={() => setSelectedDay(prev => prev === day.date ? null : day.date)}
+                activeOpacity={0.7}>
+                <Text style={[styles.dayName, (day.isToday || isSelected) && styles.todayText]}>{day.dayName}</Text>
+                <Text style={[styles.dayDate, (day.isToday || isSelected) && styles.todayText]}>{day.fullDate}</Text>
+                <View style={[styles.dayIndicator, (day.isToday || isSelected) && styles.todayIndicator]} />
+              </TouchableOpacity>
+            );
+          })}
         </View>
+        {selectedDay && (
+          <TouchableOpacity
+            style={styles.clearDayButton}
+            onPress={() => setSelectedDay(null)}>
+            <Text style={styles.clearDayText}>Show all days</Text>
+          </TouchableOpacity>
+        )}
       </View>
 
       {/* Weekly Hours Summary */}
       {selectedWeek === 'current' && weeklyData.length > 0 && (
         <View style={styles.weeklySummaryContainer}>
           <Text style={styles.sectionTitle}>Weekly Hours Summary</Text>
-          {weeklyData.map((week, index) => (
+          {weeklyData.map((week, index) => {
+            const computedTotal = week.entries.reduce((sum, e) => sum + getEntryHours(e), 0);
+            return (
             <View key={index} style={styles.weeklyCard}>
               <View style={styles.weeklyHeader}>
                 <Text style={styles.weeklyTitle}>
                   Week of {formatDate(week.week_start)} - {formatDate(week.week_end)}
                 </Text>
                 <Text style={styles.weeklyTotalHours}>
-                  Total: {week.total_hours.toFixed(1)} hours
+                  Total: {computedTotal.toFixed(1)} hours
                 </Text>
               </View>
               
@@ -736,21 +777,37 @@ export default function TimeClockScreen() {
                 ))}
               </View>
             </View>
-          ))}
+          );
+          })}
         </View>
       )}
 
       {/* Time Entries */}
-      <ScrollView 
-        style={styles.entriesContainer} 
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-        bounces={true}
-        alwaysBounceVertical={true}
-        scrollEventThrottle={16}
-      >
+      <View style={styles.entriesSection}>
+        {userRole === 'admin' && (
+          <View style={styles.inlineSearchRow}>
+            <TextInput
+              style={styles.inlineSearchInput}
+              value={searchName}
+              onChangeText={setSearchName}
+              placeholder="Search by name..."
+              placeholderTextColor="#9ca3af"
+            />
+            {(searchName || selectedUserId !== 'all') && (
+              <TouchableOpacity
+                style={styles.clearSearchButton}
+                onPress={() => { setSearchName(''); setSelectedUserId('all'); }}>
+                <Text style={styles.clearSearchText}>Clear</Text>
+              </TouchableOpacity>
+            )}
+          </View>
+        )}
         <Text style={styles.sectionTitle}>
-          {userRole === 'admin' ? 'All Time Entries' : 'Recent Entries'}
+          {selectedDay
+            ? `Entries for ${formatDate(selectedDay)}`
+            : userRole === 'admin'
+              ? 'All Time Entries'
+              : 'Recent Entries'}
         </Text>
         
         {userRole === 'admin' ? (
@@ -890,6 +947,7 @@ export default function TimeClockScreen() {
             </View>
           ))
         )}
+      </View>
       </ScrollView>
 
       {/* Filter Modal */}
@@ -1196,8 +1254,64 @@ const styles = StyleSheet.create({
     color: '#000000',
     fontWeight: '700',
   },
+  selectedDayColumn: {
+    backgroundColor: '#e0e7ff',
+    borderColor: '#6366f1',
+    borderWidth: 2,
+    borderRadius: 8,
+    padding: 8,
+  },
+  clearDayButton: {
+    marginTop: 8,
+    alignSelf: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+  },
+  clearDayText: {
+    fontSize: 14,
+    color: '#6366f1',
+    fontWeight: '600',
+  },
+  inlineSearchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 12,
+    gap: 8,
+  },
+  inlineSearchInput: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#d1d5db',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 16,
+    backgroundColor: '#ffffff',
+    color: '#000000',
+  },
+  clearSearchButton: {
+    paddingVertical: 10,
+    paddingHorizontal: 14,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 8,
+  },
+  clearSearchText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#374151',
+  },
   todayIndicator: {
     backgroundColor: '#ffffff',
+  },
+  mainScroll: {
+    flex: 1,
+  },
+  mainScrollContent: {
+    paddingBottom: 40,
+    paddingHorizontal: 16,
+  },
+  entriesSection: {
+    paddingHorizontal: 0,
   },
   entriesContainer: {
     flex: 1,
@@ -1362,8 +1476,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#f9fafb',
   },
   selectedRoleButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '#000000',
+    backgroundColor: '#1f2937',
+    borderColor: '#1f2937',
   },
   roleButtonText: {
     fontSize: 12,
@@ -1383,7 +1497,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   applyButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1f2937',
     paddingVertical: 12,
     paddingHorizontal: 16,
     borderRadius: 8,
@@ -1411,8 +1525,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   selectedWeekButton: {
-    backgroundColor: '#ffffff',
-    borderColor: '#000000',
+    backgroundColor: '#1f2937',
+    borderColor: '#1f2937',
   },
   weekButtonText: {
     fontSize: 14,
@@ -1530,7 +1644,7 @@ const styles = StyleSheet.create({
     borderBottomColor: '#e5e7eb',
   },
   selectedUserOption: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#1f2937',
   },
   userOptionText: {
     fontSize: 14,
