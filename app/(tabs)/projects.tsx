@@ -67,6 +67,9 @@ export default function ProjectsScreen() {
   const [showClientSelectModal, setShowClientSelectModal] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', temporaryPassword: '' });
+  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const pendingNewClientRef = useRef<typeof newClient | null>(null);
   const [canCreateProject, setCanCreateProject] = useState(false);
   const [clientBudget, setClientBudget] = useState<string>(''); // Client-facing budget from proposal
   // Admin budget settings
@@ -900,108 +903,113 @@ export default function ProjectsScreen() {
     setWorkTitles(prev => prev.filter((_, i) => i !== index));
   };
 
+  const doCreateClientAndRestore = async (
+    clientData: { name: string; email: string; phone: string; temporaryPassword: string },
+    adminPassword: string
+  ) => {
+    const currentUserEmail = auth.currentUser?.email;
+    if (!currentUserEmail) return;
+
+    const { AuthService } = await import('@/services/authService');
+    await AuthService.signUp(clientData.email, clientData.temporaryPassword, {
+      name: clientData.name,
+      role: 'client',
+      phone: clientData.phone || undefined,
+    });
+
+    try {
+      await signOut(auth);
+      await signInWithEmailAndPassword(auth, currentUserEmail, adminPassword);
+    } catch (restoreError: any) {
+      console.error('Error restoring admin session:', restoreError);
+    }
+
+    await loadClients();
+    const allUsers = await UserService.getAllUsers();
+    const newClientUser = allUsers.find(u => u.email === clientData.email && u.role === 'client');
+    if (newClientUser) {
+      setNewProject(prev => ({
+        ...prev,
+        client_id: newClientUser.id,
+        client_name: newClientUser.name
+      }));
+    }
+
+    setShowNewClientModal(false);
+    setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
+    setShowAdminPasswordModal(false);
+    setAdminPasswordInput('');
+    pendingNewClientRef.current = null;
+
+    const appUrl = Platform.OS === 'web' ? window.location.origin : 'https://bluecrew-app.netlify.app';
+    const loginUrl = `${appUrl}/auth/login`;
+    const tempPassword = clientData.temporaryPassword;
+    Alert.alert(
+      'Success',
+      `Client created successfully!\n\nEmail: ${clientData.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
+      Platform.OS === 'web' ? [
+        { text: 'Copy Password', onPress: () => { navigator.clipboard?.writeText(tempPassword); Alert.alert('Copied', 'Password copied to clipboard'); } },
+        { text: 'OK' }
+      ] : [{ text: 'OK' }]
+    );
+  };
+
   const handleAddNewClient = async () => {
     if (!newClient.name || !newClient.email) {
       Alert.alert('Error', 'Please fill in name and email fields');
       return;
     }
-
     if (!newClient.temporaryPassword || newClient.temporaryPassword.length < 6) {
       Alert.alert('Error', 'Please provide a temporary password (minimum 6 characters)');
       return;
     }
-
-    // Check if email already exists
     const existingClient = clients.find(c => c.email === newClient.email);
     if (existingClient) {
       Alert.alert('Error', 'A client with this email already exists');
       return;
     }
 
+    const currentUserEmail = auth.currentUser?.email;
+    let adminPassword: string | null = null;
     try {
-      // Save current admin user email and password before creating new user
-      const currentUser = auth.currentUser;
-      const currentUserEmail = currentUser?.email;
-      
-      // Try to get admin password from AsyncStorage (if remember me was used)
-      let adminPassword: string | null = null;
+      const savedEmail = await AsyncStorage.getItem('saved_email');
+      const savedPassword = await AsyncStorage.getItem('saved_password');
+      const rememberMe = await AsyncStorage.getItem('remember_me');
+      if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
+        adminPassword = savedPassword;
+      }
+    } catch (e) {
+      console.log('Could not retrieve admin password from storage:', e);
+    }
+
+    if (adminPassword && currentUserEmail) {
       try {
-        const savedEmail = await AsyncStorage.getItem('saved_email');
-        const savedPassword = await AsyncStorage.getItem('saved_password');
-        const rememberMe = await AsyncStorage.getItem('remember_me');
-        
-        // If remember me is active and email matches, use saved password
-        if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
-          adminPassword = savedPassword;
-        }
-      } catch (error) {
-        console.log('Could not retrieve admin password from storage:', error);
+        await doCreateClientAndRestore(newClient, adminPassword);
+      } catch (error: any) {
+        console.error('Error creating client:', error);
+        Alert.alert('Error', error.message || 'Failed to create client');
       }
-      
-      // Create client in Firebase Auth with temporary password
-      const { AuthService } = await import('@/services/authService');
-      await AuthService.signUp(newClient.email, newClient.temporaryPassword, {
-        name: newClient.name,
-        role: 'client',
-        phone: newClient.phone || undefined,
-      });
-      
-      // Restore admin session if password is available
-      if (adminPassword && currentUserEmail) {
-        try {
-          // Sign out the new user
-          await signOut(auth);
-          
-          // Sign in the admin again to restore admin session
-          await signInWithEmailAndPassword(auth, currentUserEmail, adminPassword);
-          console.log('Admin session restored successfully');
-        } catch (restoreError: any) {
-          console.error('Error restoring admin session:', restoreError);
-        }
-      }
-      
-      // Reload clients
-      await loadClients();
-      
-      // Set the newly created client as selected
-      const allUsers = await UserService.getAllUsers();
-      const newClientUser = allUsers.find(u => u.email === newClient.email && u.role === 'client');
-      if (newClientUser) {
-        setNewProject(prev => ({
-          ...prev,
-          client_id: newClientUser.id,
-          client_name: newClientUser.name
-        }));
-      }
-      
-      const tempPassword = newClient.temporaryPassword; // Save before clearing
-      
-      // Close modal and reset form
-      setShowNewClientModal(false);
-      setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-      
-      // Generate login URL
-      const appUrl = Platform.OS === 'web' 
-        ? window.location.origin 
-        : 'https://bluecrew-app.netlify.app';
-      const loginUrl = `${appUrl}/auth/login`;
-      
-      Alert.alert(
-        'Success',
-        `Client created successfully!\n\nEmail: ${newClient.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
-        Platform.OS === 'web' ? [
-          {
-            text: 'Copy Password',
-            onPress: () => {
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(tempPassword);
-                Alert.alert('Copied', 'Password copied to clipboard');
-              }
-            }
-          },
-          { text: 'OK' }
-        ] : [{ text: 'OK' }]
-      );
+      return;
+    }
+
+    if (currentUserEmail) {
+      pendingNewClientRef.current = { ...newClient };
+      setShowAdminPasswordModal(true);
+      return;
+    }
+
+    Alert.alert('Error', 'Could not restore your session. Please try again.');
+  };
+
+  const handleAdminPasswordSubmit = async () => {
+    if (!adminPasswordInput.trim()) {
+      Alert.alert('Error', 'Please enter your password');
+      return;
+    }
+    const pending = pendingNewClientRef.current;
+    if (!pending) return;
+    try {
+      await doCreateClientAndRestore(pending, adminPasswordInput.trim());
     } catch (error: any) {
       console.error('Error creating client:', error);
       Alert.alert('Error', error.message || 'Failed to create client');
@@ -2705,6 +2713,45 @@ export default function ProjectsScreen() {
               <Text style={styles.submitButtonText}>Add Client</Text>
             </TouchableOpacity>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Admin password modal: stay logged in after creating client */}
+      <Modal visible={showAdminPasswordModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmModal}>
+            <Text style={styles.confirmModalTitle}>Your password</Text>
+            <Text style={styles.confirmModalMessage}>
+              Enter your password so you stay logged in after creating the client.
+            </Text>
+            <TextInput
+              style={[styles.input, { marginBottom: 16 }]}
+              placeholder="Your password"
+              value={adminPasswordInput}
+              onChangeText={setAdminPasswordInput}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+            <View style={styles.confirmModalButtons}>
+              <SecondaryButton
+                style={[styles.confirmModalButton, styles.confirmModalButtonCancel]}
+                onPress={() => {
+                  setShowAdminPasswordModal(false);
+                  setAdminPasswordInput('');
+                  pendingNewClientRef.current = null;
+                }}
+                textStyle={styles.confirmModalButtonCancelText}
+              >
+                Cancel
+              </SecondaryButton>
+              <TouchableOpacity
+                style={[styles.confirmModalButton, styles.confirmModalButtonConfirm]}
+                onPress={handleAdminPasswordSubmit}
+              >
+                <Text style={styles.confirmModalButtonConfirmText}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
