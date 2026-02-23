@@ -3242,7 +3242,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#ffffff',
+    color: '#1f2937',
     fontWeight: '500',
   },
   emptyState: {
@@ -3253,7 +3253,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: '#1f2937',
     textAlign: 'center',
   },
   invoiceCard: {
@@ -3530,7 +3530,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   workTitleNumberText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 14,
     fontWeight: '700',
   },

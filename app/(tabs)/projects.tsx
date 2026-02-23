@@ -2029,6 +2029,7 @@ export default function ProjectsScreen() {
                       onPress={handleAddWorkTitle}
                     >
                       <Plus size={18} color="#ffffff" />
+                      <Text style={styles.addWorkTitleButtonText}>Add Work Title</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
@@ -3477,13 +3478,19 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   addWorkTitleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
     backgroundColor: '#000000',
     borderRadius: 8,
     padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
-    minWidth: 40,
     minHeight: 40,
+  },
+  addWorkTitleButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   workDescriptionsList: {
     marginTop: 8,

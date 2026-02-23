@@ -2464,7 +2464,10 @@ export default function ProposalsScreen() {
                       {editingWorkTitleIndex !== null ? (
                         <Text style={styles.addWorkTitleButtonText}>Update</Text>
                       ) : (
-                        <Plus size={18} color="#ffffff" />
+                        <>
+                          <Plus size={18} color="#ffffff" />
+                          <Text style={styles.addWorkTitleButtonText}>Add Work Title</Text>
+                        </>
                       )}
                     </TouchableOpacity>
                     {editingWorkTitleIndex !== null && (
@@ -3841,7 +3844,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#ffffff',
+    color: '#1f2937',
     fontWeight: '500',
   },
   emptyState: {
@@ -3852,7 +3855,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#ffffff',
+    color: '#1f2937',
     textAlign: 'center',
   },
   proposalsGrid: {
@@ -3976,7 +3979,7 @@ const styles = StyleSheet.create({
     marginTop: Platform.OS === 'web' ? 8 : 8,
   },
   sendApprovalButtonText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: Platform.OS === 'web' ? 14 : 14,
     fontWeight: '600',
   },
@@ -4017,13 +4020,13 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   generateButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f3f4f6',
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 6,
   },
   generateButtonText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 12,
     fontWeight: '600',
   },
@@ -4324,7 +4327,7 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   workTitleNumberText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 14,
     fontWeight: '700',
   },
@@ -4528,11 +4531,13 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   addWorkTitleButton: {
-    backgroundColor: '#ffffff',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#000000',
     borderRadius: 8,
     padding: 12,
-    justifyContent: 'center',
-    alignItems: 'center',
     minWidth: 44,
     minHeight: 44,
   },

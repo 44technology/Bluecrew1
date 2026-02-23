@@ -756,12 +756,12 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff', // White text on blue background
+    color: '#1f2937',
     marginTop: 16,
   },
   emptySubtext: {
     fontSize: 14,
-    color: '#f5f5f5', // Light yellow like teams
+    color: '#6b7280',
     marginTop: 4,
   },
   documentsByCategory: {

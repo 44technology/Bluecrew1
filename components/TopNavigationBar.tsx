@@ -290,7 +290,7 @@ export default function TopNavigationBar() {
               >
                 <IconComponent 
                   size={18} 
-                  color={(active || submenuActive) ? '#000000' : '#000000'} 
+                  color="#1e3a5f"
                 />
                 <Text style={[styles.navText, (active || submenuActive) && styles.navTextActive]}>
                   {item.title}
@@ -298,7 +298,7 @@ export default function TopNavigationBar() {
                 {hasSubmenu && (
                   <ChevronDown 
                     size={16} 
-                    color={(active || submenuActive) ? '#000000' : '#000000'}
+                    color="#1e3a5f"
                     style={[styles.chevron, isExpanded && styles.chevronExpanded]}
                   />
                 )}
@@ -327,7 +327,7 @@ export default function TopNavigationBar() {
                       >
                         <SubIconComponent 
                           size={16} 
-                          color={subActive ? '#000000' : '#000000'} 
+                          color="#1e3a5f"
                         />
                         <Text style={[styles.subNavText, subActive && styles.subNavTextActive]}>
                           {subItem.title}
@@ -345,6 +345,10 @@ export default function TopNavigationBar() {
   );
 }
 
+const NAV_BG = '#FFCC00';   // Blue Crew yellow
+const NAV_TEXT = '#1e3a5f'; // Dark blue for contrast on yellow
+const NAV_ACTIVE_BG = 'rgba(255,255,255,0.5)';
+
 const styles = StyleSheet.create({
   container: {
     ...(Platform.OS === 'web' ? {
@@ -359,12 +363,12 @@ const styles = StyleSheet.create({
       right: 0,
     }),
     zIndex: 1000,
-    backgroundColor: '#ffffff',
+    backgroundColor: NAV_BG,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: 'rgba(0,0,0,0.12)',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.12,
     shadowRadius: 4,
     elevation: 8,
   },
@@ -390,15 +394,15 @@ const styles = StyleSheet.create({
     transition: 'all 0.2s',
   },
   navItemActive: {
-    backgroundColor: '#f3f4f6',
+    backgroundColor: NAV_ACTIVE_BG,
   },
   navText: {
     fontSize: 14,
     fontWeight: '500',
-    color: '#000000',
+    color: NAV_TEXT,
   },
   navTextActive: {
-    color: '#000000',
+    color: NAV_TEXT,
     fontWeight: '600',
   },
   navItemContainer: {
@@ -421,11 +425,13 @@ const styles = StyleSheet.create({
     marginTop: 4,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
+    shadowOpacity: 0.15,
     shadowRadius: 8,
     elevation: 5,
     minWidth: 180,
     zIndex: 1000,
+    borderWidth: 1,
+    borderColor: 'rgba(0,0,0,0.08)',
   },
   subNavItem: {
     flexDirection: 'row',
@@ -435,15 +441,15 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   subNavItemActive: {
-    backgroundColor: '#eff6ff',
+    backgroundColor: 'rgba(255,204,0,0.25)',
   },
   subNavText: {
     fontSize: 14,
-    color: '#000000',
+    color: '#1e3a5f',
     fontWeight: '500',
   },
   subNavTextActive: {
-    color: '#000000',
+    color: '#1e3a5f',
     fontWeight: '600',
   },
 });

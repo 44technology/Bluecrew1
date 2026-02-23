@@ -640,7 +640,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 10,
     fontSize: 16,
-    color: '#ffffff',
+    color: '#1f2937',
   },
   header: {
     flexDirection: 'row',
@@ -679,7 +679,7 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 18,
     fontWeight: '600',
-    color: '#ffffff',
+    color: '#1f2937',
     marginTop: 16,
   },
   emptySubtext: {
