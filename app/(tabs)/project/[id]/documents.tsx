@@ -303,27 +303,32 @@ export default function DocumentsScreen() {
   };
 
   const handleDeleteDocument = async (docId: string) => {
-    Alert.alert(
-      'Delete Document',
-      'Are you sure you want to delete this document?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: async () => {
-            try {
-              await DocumentService.deleteDocument(docId);
-              setDocuments(prev => prev.filter(doc => doc.id !== docId));
-              Alert.alert('Success', 'Document deleted');
-            } catch (error) {
-              console.error('Error deleting document:', error);
-              Alert.alert('Error', 'Failed to delete document');
-            }
-          },
-        },
-      ]
-    );
+    const doDelete = async () => {
+      try {
+        await DocumentService.deleteDocument(docId);
+        setDocuments(prev => prev.filter(doc => doc.id !== docId));
+        if (Platform.OS === 'web') window.alert('Document deleted');
+        else Alert.alert('Success', 'Document deleted');
+      } catch (error) {
+        console.error('Error deleting document:', error);
+        if (Platform.OS === 'web') window.alert('Failed to delete document');
+        else Alert.alert('Error', 'Failed to delete document');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      const ok = window.confirm('Are you sure you want to delete this document?');
+      if (ok) await doDelete();
+    } else {
+      Alert.alert(
+        'Delete Document',
+        'Are you sure you want to delete this document?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Delete', style: 'destructive', onPress: doDelete },
+        ]
+      );
+    }
   };
 
   return (
@@ -418,7 +423,9 @@ export default function DocumentsScreen() {
                         {userRole === 'admin' && (
                           <TouchableOpacity
                             style={styles.deleteButton}
-                            onPress={() => handleDeleteDocument(document.id)}>
+                            onPress={() => handleDeleteDocument(document.id)}
+                            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                            activeOpacity={0.7}>
                             <X size={16} color="#ef4444" />
                           </TouchableOpacity>
                         )}
@@ -456,7 +463,9 @@ export default function DocumentsScreen() {
                 {userRole === 'admin' && (
                   <TouchableOpacity
                     style={styles.deleteButton}
-                    onPress={() => handleDeleteDocument(document.id)}>
+                    onPress={() => handleDeleteDocument(document.id)}
+                    hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                    activeOpacity={0.7}>
                     <X size={16} color="#ef4444" />
                   </TouchableOpacity>
                 )}
@@ -749,6 +758,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 8,
     right: 8,
+    zIndex: 10,
     backgroundColor: '#ffffff',
     borderRadius: 16,
     padding: 6,
