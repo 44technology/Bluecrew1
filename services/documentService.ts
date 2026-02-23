@@ -28,9 +28,23 @@ export interface Document {
   uploaded_at: string;
   thumbnail_url?: string;
   file_size?: number;
+  /** Storage path for delete (e.g. documents/projectId/123_name.pdf). If missing, derived from file_url. */
+  storage_path?: string;
 }
 
 const DOCUMENTS_COLLECTION = 'documents';
+
+/** Extract Storage path from Firebase download URL (for docs saved before storage_path was stored). */
+function getStoragePathFromDownloadUrl(fileUrl: string): string | null {
+  try {
+    // Format: https://firebasestorage.googleapis.com/v0/b/BUCKET/o/PATH_ENCODED?alt=media&token=...
+    const match = fileUrl.match(/\/o\/(.+?)(\?|$)/);
+    if (!match || !match[1]) return null;
+    return decodeURIComponent(match[1]);
+  } catch {
+    return null;
+  }
+}
 
 export class DocumentService {
   // Get documents by project ID
@@ -117,8 +131,9 @@ export class DocumentService {
     uploadedById?: string
   ): Promise<string> {
     try {
-      // Upload file to Firebase Storage
-      const storageRef = ref(storage, `documents/${projectId}/${Date.now()}_${fileName}`);
+      // Upload file to Firebase Storage (store path for reliable delete later)
+      const storagePath = `documents/${projectId}/${Date.now()}_${fileName}`;
+      const storageRef = ref(storage, storagePath);
       await uploadBytes(storageRef, file);
       const fileUrl = await getDownloadURL(storageRef);
 
@@ -133,6 +148,7 @@ export class DocumentService {
         uploaded_by: uploadedBy,
         uploaded_by_id: uploadedById,
         uploaded_at: new Date().toISOString(),
+        storage_path: storagePath,
         ...(fileSize !== undefined && { file_size: fileSize }),
       } as Record<string, unknown>);
       const docRef = await addDoc(collection(db, DOCUMENTS_COLLECTION), payload);
@@ -157,14 +173,19 @@ export class DocumentService {
       }
 
       const documentData = documentDoc.data() as Document;
-      
+
+      // Get Storage path: prefer stored storage_path; fallback parse from download URL
+      const storagePath = documentData.storage_path ?? getStoragePathFromDownloadUrl(documentData.file_url);
+
       // Delete file from Storage
-      try {
-        const fileRef = ref(storage, documentData.file_url);
-        await deleteObject(fileRef);
-      } catch (storageError) {
-        console.error('Error deleting file from storage:', storageError);
-        // Continue with Firestore deletion even if storage deletion fails
+      if (storagePath) {
+        try {
+          const fileRef = ref(storage, storagePath);
+          await deleteObject(fileRef);
+        } catch (storageError) {
+          console.error('Error deleting file from storage:', storageError);
+          // Continue with Firestore deletion even if storage deletion fails
+        }
       }
 
       // Delete document from Firestore
