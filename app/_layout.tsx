@@ -6,16 +6,16 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { LanguageProvider } from '@/contexts/LanguageContext';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
-import { ThemeProvider, useTheme } from '@/contexts/ThemeContext';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { ThemeProvider } from '@/contexts/ThemeContext';
+import { StyleSheet, Platform } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import BlueCrewSplash, { BLUE_CREW_SPLASH_BG } from '@/components/BlueCrewSplash';
 
 // Splash'i uygulama hazır olana kadar göster (beyaz ekranı önler)
 SplashScreen.preventAutoHideAsync?.();
 
 function AppContent() {
   const { user, isLoading } = useAuth();
-  const { theme } = useTheme();
   const segments = useSegments();
   useFrameworkReady();
 
@@ -37,18 +37,17 @@ function AppContent() {
   }, [isLoading]);
 
   if (isLoading) {
-    // Beyaz ekran yerine splash görünsün; boş view (splash arkada)
-    return <View style={[styles.loadingContainer, { backgroundColor: theme.background }]} />;
+    return <BlueCrewSplash showLoader />;
   }
 
   return (
     <Stack 
       screenOptions={{ 
         headerShown: false,
-        // Disable web navigation bar
         presentation: 'card',
-        // Prevent automatic tab opening on web
         animation: 'none',
+        // Use yellow splash background so transitions show Blue Crew style instead of white flash
+        contentStyle: { backgroundColor: BLUE_CREW_SPLASH_BG },
       }}>
       <Stack.Screen 
         name="login" 
@@ -443,10 +442,4 @@ export default function RootLayout() {
   );
 }
 
-const styles = StyleSheet.create({
-  loadingContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-});
+const styles = StyleSheet.create({});

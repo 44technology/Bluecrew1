@@ -7,7 +7,7 @@ headers = []
 [functions."*"]
 
 [build]
-publish = "/Users/aliakda/Desktop/bluecrew1/project/dist"
+publish = "/Users/info44technology.com/Desktop/bluecrew1/project/dist"
 publishOrigin = "config"
 commandOrigin = "config"
 command = "npm run build:web"

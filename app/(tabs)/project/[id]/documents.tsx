@@ -535,6 +535,15 @@ export default function DocumentsScreen() {
           </View>
         </View>
       </Modal>
+      {/* Global uploading overlay - visible even when modal is closed (e.g. on web after file picker) */}
+      {uploading && (
+        <View style={styles.uploadingOverlay} pointerEvents="box-none">
+          <View style={styles.uploadingBanner}>
+            <ActivityIndicator size="large" color="#000000" />
+            <Text style={styles.uploadingBannerText}>Uploading...</Text>
+          </View>
+        </View>
+      )}
     </View>
   );
 }
@@ -543,6 +552,36 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#ffffff', // Blue background like teams
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    justifyContent: 'flex-start',
+    alignItems: 'center',
+    paddingTop: Platform.OS === 'web' ? 80 : 100,
+    zIndex: 9999,
+  },
+  uploadingBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
+    gap: 12,
+  },
+  uploadingBannerText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#000000',
   },
   header: {
     flexDirection: 'row',

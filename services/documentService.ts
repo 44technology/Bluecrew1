@@ -138,8 +138,11 @@ export class DocumentService {
       const docRef = await addDoc(collection(db, DOCUMENTS_COLLECTION), payload);
 
       return docRef.id;
-    } catch (error) {
+    } catch (error: unknown) {
+      const err = error as { code?: string; message?: string; serverResponse?: string };
       console.error('Error uploading document:', error);
+      if (err?.serverResponse) console.error('Storage serverResponse:', err.serverResponse);
+      if (err?.message) console.error('Storage message:', err.message);
       throw error;
     }
   }
