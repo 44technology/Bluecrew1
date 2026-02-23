@@ -556,6 +556,7 @@ export default function SalesScreen() {
                 multiline
                 numberOfLines={4}
                 placeholder="Enter rejection reason..."
+                placeholderTextColor="#374151"
                 value={rejectionReason}
                 onChangeText={setRejectionReason}
               />
@@ -597,6 +598,7 @@ export default function SalesScreen() {
                 multiline
                 numberOfLines={4}
                 placeholder="Describe the changes needed..."
+                placeholderTextColor="#374151"
                 value={changeRequestReason}
                 onChangeText={setChangeRequestReason}
               />

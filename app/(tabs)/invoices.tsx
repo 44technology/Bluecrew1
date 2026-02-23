@@ -1599,6 +1599,7 @@ export default function InvoicesScreen() {
               <TextInput
                 style={styles.filterInput}
                 placeholder="Search by invoice number, client name, date, amount..."
+                placeholderTextColor="#374151"
                 value={filterQuery}
                 onChangeText={setFilterQuery}
               />
@@ -1789,6 +1790,7 @@ export default function InvoicesScreen() {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Enter client address"
+                  placeholderTextColor="#374151"
                   value={newInvoice.client_address}
                   onChangeText={(text) => setNewInvoice(prev => ({ ...prev, client_address: text }))}
                   multiline
@@ -1906,6 +1908,7 @@ export default function InvoicesScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="Enter custom work title *"
+                        placeholderTextColor="#374151"
                         value={newWorkTitle.name}
                         onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, name: text }))}
                       />
@@ -1914,6 +1917,7 @@ export default function InvoicesScreen() {
                   <TextInput
                     style={[styles.input, styles.textArea]}
                     placeholder="Work Description (optional)"
+                    placeholderTextColor="#374151"
                     value={newWorkTitle.description}
                     onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, description: text }))}
                     multiline
@@ -1925,6 +1929,7 @@ export default function InvoicesScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="0"
+                        placeholderTextColor="#374151"
                         value={newWorkTitle.quantity}
                         onChangeText={(text) => {
                           setNewWorkTitle(prev => {
@@ -1942,6 +1947,7 @@ export default function InvoicesScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="e.g., sq ft, hours"
+                        placeholderTextColor="#374151"
                         value={newWorkTitle.unit}
                         onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, unit: text }))}
                       />
@@ -1952,6 +1958,7 @@ export default function InvoicesScreen() {
                     <TextInput
                       style={[styles.input, styles.priceInput]}
                       placeholder="Unit Price *"
+                      placeholderTextColor="#374151"
                       value={newWorkTitle.unit_price}
                       onChangeText={(text) => {
                         setNewWorkTitle(prev => {
@@ -1987,6 +1994,7 @@ export default function InvoicesScreen() {
                   <TextInput
                     style={[styles.input, styles.percentageInput]}
                     placeholder="18.5"
+                    placeholderTextColor="#374151"
                     value={newInvoice.general_conditions_percentage}
                     onChangeText={(text) => setNewInvoice(prev => ({ ...prev, general_conditions_percentage: text }))}
                     keyboardType="numeric"
@@ -2017,6 +2025,7 @@ export default function InvoicesScreen() {
                   <TextInput
                     style={styles.input}
                     placeholder="Enter supervision fee amount"
+                    placeholderTextColor="#374151"
                     value={newInvoice.supervision_fee}
                     onChangeText={(text) => setNewInvoice(prev => ({ ...prev, supervision_fee: text }))}
                     keyboardType="numeric"
@@ -2029,6 +2038,7 @@ export default function InvoicesScreen() {
                 <TextInput
                   style={[styles.input, styles.totalBudgetInput]}
                   placeholder="Auto-calculated"
+                  placeholderTextColor="#374151"
                   value={totalCost > 0 ? `$${totalCost.toLocaleString()}` : ''}
                   editable={false}
                 />
@@ -2430,6 +2440,7 @@ export default function InvoicesScreen() {
                           ref={commentInputRef}
                           style={styles.commentInput}
                           placeholder="Add a comment..."
+                          placeholderTextColor="#374151"
                           value={newComment}
                           onChangeText={setNewComment}
                           multiline
@@ -2580,6 +2591,7 @@ export default function InvoicesScreen() {
                         setPartialPaidAmount(cleaned);
                       }}
                       placeholder="Enter amount paid"
+                      placeholderTextColor="#374151"
                       keyboardType="numeric"
                     />
                     <Text style={{ fontSize: 12, color: '#000000', marginTop: 4 }}>
@@ -2656,6 +2668,7 @@ export default function InvoicesScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="Enter payment amount"
+                        placeholderTextColor="#374151"
                         placeholderTextColor="#000000"
                         value={payAmount}
                         onChangeText={setPayAmount}
@@ -2772,6 +2785,7 @@ export default function InvoicesScreen() {
                   value={newClient.name}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, name: text }))}
                   placeholder="Enter client name"
+                  placeholderTextColor="#374151"
                 />
               </View>
 
@@ -2782,6 +2796,7 @@ export default function InvoicesScreen() {
                   value={newClient.email}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, email: text }))}
                   placeholder="Enter email address"
+                  placeholderTextColor="#374151"
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -2794,6 +2809,7 @@ export default function InvoicesScreen() {
                   value={newClient.phone}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, phone: text }))}
                   placeholder="Enter phone number"
+                  placeholderTextColor="#374151"
                   keyboardType="phone-pad"
                 />
               </View>
@@ -2805,6 +2821,7 @@ export default function InvoicesScreen() {
                   value={newClient.temporaryPassword}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, temporaryPassword: text }))}
                   placeholder="Enter temporary password (min 6 characters)"
+                  placeholderTextColor="#374151"
                   secureTextEntry
                   autoCapitalize="none"
                 />

@@ -83,6 +83,15 @@ export default function RootLayout() {
         const style = document.createElement('style');
         style.id = 'tab-bar-symmetric-style';
         style.textContent = `
+          /* Placeholder text dark on white background (readable) */
+          input::placeholder,
+          textarea::placeholder {
+            color: #374151 !important;
+            opacity: 1;
+          }
+          input, input[type="date"], input[type="datetime-local"], textarea {
+            color: #111827;
+          }
           /* Make tab bar symmetric on web */
           [role="tablist"],
           [class*="tab-bar"],

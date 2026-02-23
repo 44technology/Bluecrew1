@@ -1982,6 +1982,7 @@ export default function ProposalsScreen() {
                       <TextInput
                         style={styles.clientSearchInput}
                         placeholder="Search clients..."
+                        placeholderTextColor="#374151"
                         value={clientSearchQuery}
                         onChangeText={setClientSearchQuery}
                         autoFocus={Platform.OS === 'web'}
@@ -2050,6 +2051,7 @@ export default function ProposalsScreen() {
                 <TextInput
                   style={[styles.input, fieldErrors.client_street && styles.inputError]}
                   placeholder="Enter street address"
+                  placeholderTextColor="#374151"
                   value={newProposal.client_street}
                   onChangeText={(text) => {
                     setNewProposal(prev => ({ ...prev, client_street: text }));
@@ -2068,6 +2070,7 @@ export default function ProposalsScreen() {
                 <TextInput
                   style={[styles.input, fieldErrors.client_city && styles.inputError]}
                   placeholder="Enter city"
+                  placeholderTextColor="#374151"
                   value={newProposal.client_city}
                   onChangeText={(text) => {
                     setNewProposal(prev => ({ ...prev, client_city: text }));
@@ -2086,6 +2089,7 @@ export default function ProposalsScreen() {
                 <TextInput
                   style={[styles.input, fieldErrors.client_state && styles.inputError]}
                   placeholder="Enter state"
+                  placeholderTextColor="#374151"
                   value={newProposal.client_state}
                   onChangeText={(text) => {
                     setNewProposal(prev => ({ ...prev, client_state: text }));
@@ -2104,6 +2108,7 @@ export default function ProposalsScreen() {
                 <TextInput
                   style={[styles.input, fieldErrors.client_zip && styles.inputError]}
                   placeholder="Enter ZIP code"
+                  placeholderTextColor="#374151"
                   value={newProposal.client_zip}
                   onChangeText={(text) => {
                     setNewProposal(prev => ({ ...prev, client_zip: text }));
@@ -2277,6 +2282,7 @@ export default function ProposalsScreen() {
                       <TextInput
                         style={styles.input}
                         placeholder="Enter custom work title *"
+                        placeholderTextColor="#374151"
                         value={newWorkTitle.name}
                         onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, name: text }))}
                       />
@@ -2311,6 +2317,7 @@ export default function ProposalsScreen() {
                         <TextInput
                           style={[styles.input, styles.textArea]}
                           placeholder="Enter work description"
+                          placeholderTextColor="#374151"
                           value={newDescription}
                           onChangeText={setNewDescription}
                           multiline
@@ -2368,6 +2375,7 @@ export default function ProposalsScreen() {
                         <TextInput
                           style={[styles.input, fieldErrors.workTitle_quantity && styles.inputError]}
                           placeholder="0"
+                          placeholderTextColor="#374151"
                           value={newWorkTitle.quantity}
                           onChangeText={(text) => {
                             setNewWorkTitle(prev => {
@@ -2434,6 +2442,7 @@ export default function ProposalsScreen() {
                       <TextInput
                         style={[styles.input, styles.priceInput, fieldErrors.workTitle_unit_price && styles.inputError]}
                         placeholder="Unit Price *"
+                        placeholderTextColor="#374151"
                         value={newWorkTitle.unit_price}
                         onChangeText={(text) => {
                           setNewWorkTitle(prev => {
@@ -2521,6 +2530,7 @@ export default function ProposalsScreen() {
                     <TextInput
                       style={[styles.input, styles.percentageInput]}
                       placeholder="18.5"
+                      placeholderTextColor="#374151"
                       value={newProposal.general_conditions_percentage}
                       onChangeText={(text) => setNewProposal(prev => ({ ...prev, general_conditions_percentage: text }))}
                       keyboardType="numeric"
@@ -2606,6 +2616,7 @@ export default function ProposalsScreen() {
                     <TextInput
                       style={[styles.input, fieldErrors.supervision_weeks && styles.inputError]}
                       placeholder="Enter number of weeks"
+                      placeholderTextColor="#374151"
                       value={newProposal.supervision_weeks}
                       onChangeText={(text) => {
                         setNewProposal(prev => ({ ...prev, supervision_weeks: text }));
@@ -2657,6 +2668,7 @@ export default function ProposalsScreen() {
                     <TextInput
                       style={styles.input}
                       placeholder="Enter discount amount"
+                      placeholderTextColor="#374151"
                       value={newProposal.discount}
                       onChangeText={(text) => setNewProposal(prev => ({ ...prev, discount: text }))}
                       keyboardType="numeric"
@@ -2670,6 +2682,7 @@ export default function ProposalsScreen() {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Enter proposal description or notes"
+                  placeholderTextColor="#374151"
                   value={newProposal.description}
                   onChangeText={(text) => setNewProposal(prev => ({ ...prev, description: text }))}
                   multiline
@@ -2682,6 +2695,7 @@ export default function ProposalsScreen() {
                 <TextInput
                   style={[styles.input, styles.totalBudgetInput]}
                   placeholder="Auto-calculated"
+                  placeholderTextColor="#374151"
                   value={totalCost > 0 ? `$${totalCost.toLocaleString()}` : ''}
                   editable={false}
                 />
@@ -2978,6 +2992,7 @@ export default function ProposalsScreen() {
                           ref={commentInputRef}
                           style={styles.commentInput}
                           placeholder="Add a comment..."
+                          placeholderTextColor="#374151"
                           value={newComment}
                           onChangeText={setNewComment}
                           multiline
@@ -3329,6 +3344,7 @@ export default function ProposalsScreen() {
                 value={rejectionReason}
                 onChangeText={setRejectionReason}
                 placeholder="Enter rejection reason..."
+                placeholderTextColor="#374151"
                 multiline
                 numberOfLines={3}
               />
@@ -3633,6 +3649,7 @@ export default function ProposalsScreen() {
                   value={newClient.name}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, name: text }))}
                   placeholder="Enter client name"
+                  placeholderTextColor="#374151"
                 />
               </View>
 
@@ -3643,6 +3660,7 @@ export default function ProposalsScreen() {
                   value={newClient.email}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, email: text }))}
                   placeholder="Enter email address"
+                  placeholderTextColor="#374151"
                   keyboardType="email-address"
                   autoCapitalize="none"
                 />
@@ -3655,6 +3673,7 @@ export default function ProposalsScreen() {
                   value={newClient.phone}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, phone: text }))}
                   placeholder="Enter phone number"
+                  placeholderTextColor="#374151"
                   keyboardType="phone-pad"
                 />
               </View>
@@ -3689,6 +3708,7 @@ export default function ProposalsScreen() {
                   value={newClient.temporaryPassword}
                   onChangeText={(text) => setNewClient(prev => ({ ...prev, temporaryPassword: text }))}
                   placeholder="Enter temporary password (min 6 characters)"
+                  placeholderTextColor="#374151"
                   secureTextEntry
                   autoCapitalize="none"
                 />

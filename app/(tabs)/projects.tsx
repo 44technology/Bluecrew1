@@ -1537,6 +1537,7 @@ export default function ProjectsScreen() {
               <TextInput
                 style={[styles.input, fieldErrors.title && styles.inputError]}
                 placeholder="Enter project title"
+                placeholderTextColor="#374151"
                 value={newProject.title}
                 onChangeText={(text) => {
                   setNewProject(prev => ({ ...prev, title: text }));
@@ -1556,6 +1557,7 @@ export default function ProjectsScreen() {
                 <TextInput
                   style={[styles.input, styles.textArea]}
                   placeholder="Enter internal notes (optional)"
+                  placeholderTextColor="#374151"
                   value={newProject.description}
                   onChangeText={(text) => setNewProject(prev => ({ ...prev, description: text }))}
                   multiline
@@ -1646,6 +1648,7 @@ export default function ProjectsScreen() {
                     fontSize: '16px',
                     marginTop: '8px',
                     backgroundColor: '#ffffff',
+                    color: '#111827',
                   }}
                 />
               ) : (
@@ -1704,6 +1707,7 @@ export default function ProjectsScreen() {
                     fontSize: '16px',
                     marginTop: '8px',
                     backgroundColor: '#ffffff',
+                    color: '#111827',
                   }}
                 />
               ) : (
@@ -1747,6 +1751,7 @@ export default function ProjectsScreen() {
               <TextInput
                 style={[styles.input, fieldErrors.project_street && styles.inputError]}
                 placeholder="Enter street address"
+                placeholderTextColor="#374151"
                 value={newProject.project_street}
                 onChangeText={(text) => {
                   setNewProject(prev => ({ ...prev, project_street: text }));
@@ -1765,6 +1770,7 @@ export default function ProjectsScreen() {
               <TextInput
                 style={[styles.input, fieldErrors.project_city && styles.inputError]}
                 placeholder="Enter city"
+                placeholderTextColor="#374151"
                 value={newProject.project_city}
                 onChangeText={(text) => {
                   setNewProject(prev => ({ ...prev, project_city: text }));
@@ -1783,6 +1789,7 @@ export default function ProjectsScreen() {
               <TextInput
                 style={[styles.input, fieldErrors.project_state && styles.inputError]}
                 placeholder="Enter state"
+                placeholderTextColor="#374151"
                 value={newProject.project_state}
                 onChangeText={(text) => {
                   setNewProject(prev => ({ ...prev, project_state: text }));
@@ -1801,6 +1808,7 @@ export default function ProjectsScreen() {
               <TextInput
                 style={[styles.input, fieldErrors.project_zip && styles.inputError]}
                 placeholder="Enter ZIP code"
+                placeholderTextColor="#374151"
                 value={newProject.project_zip}
                 onChangeText={(text) => {
                   setNewProject(prev => ({ ...prev, project_zip: text }));
@@ -1877,6 +1885,7 @@ export default function ProjectsScreen() {
                   <TextInput
                     style={styles.input}
                         placeholder="Enter custom work title *"
+                        placeholderTextColor="#374151"
                     value={newWorkTitle.name}
                     onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, name: text }))}
                   />
@@ -1906,6 +1915,7 @@ export default function ProjectsScreen() {
                       <TextInput
                         style={[styles.input, styles.textArea]}
                         placeholder="Enter work description"
+                        placeholderTextColor="#374151"
                         value={newDescription}
                         onChangeText={setNewDescription}
                         multiline
@@ -2240,6 +2250,7 @@ export default function ProjectsScreen() {
               <TextInput
                 style={[styles.input, styles.textArea]}
                 placeholder="Enter project description or notes"
+                placeholderTextColor="#374151"
                 value={newProject.project_description}
                 onChangeText={(text) => setNewProject(prev => ({ ...prev, project_description: text }))}
                 multiline
@@ -2252,6 +2263,7 @@ export default function ProjectsScreen() {
               <TextInput
                 style={[styles.input, styles.totalBudgetInput]}
                 placeholder="Auto-calculated from work titles, general conditions, supervision fee, and discount"
+                placeholderTextColor="#374151"
                 value={newProject.total_budget ? `$${parseFloat(newProject.total_budget).toLocaleString()}` : ''}
                 editable={false}
               />
@@ -2468,6 +2480,7 @@ export default function ProjectsScreen() {
                   <TextInput
                     style={styles.searchInput}
                     placeholder="Search clients..."
+                    placeholderTextColor="#374151"
                     value={clientSearchQuery}
                     onChangeText={setClientSearchQuery}
                     autoCapitalize="none"
@@ -2633,11 +2646,16 @@ export default function ProjectsScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Add New Client</Text>
-            <TouchableOpacity onPress={() => {
-              setShowNewClientModal(false);
-              setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-            }}>
-              <X size={24} color="#000000" />
+            <TouchableOpacity
+              hitSlop={{ top: 16, right: 16, bottom: 16, left: 16 }}
+              onPress={() => {
+                setShowNewClientModal(false);
+                setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
+                pendingNewClientRef.current = null;
+              }}
+              style={{ padding: 8 }}
+            >
+              <X size={28} color="#ffffff" />
             </TouchableOpacity>
           </View>
 
@@ -2649,6 +2667,7 @@ export default function ProjectsScreen() {
                 value={newClient.name}
                 onChangeText={(text) => setNewClient(prev => ({ ...prev, name: text }))}
                 placeholder="Enter client name"
+                placeholderTextColor="#374151"
               />
             </View>
 
@@ -2659,6 +2678,7 @@ export default function ProjectsScreen() {
                 value={newClient.email}
                 onChangeText={(text) => setNewClient(prev => ({ ...prev, email: text }))}
                 placeholder="Enter email address"
+                placeholderTextColor="#374151"
                 keyboardType="email-address"
                 autoCapitalize="none"
               />
@@ -2671,6 +2691,7 @@ export default function ProjectsScreen() {
                 value={newClient.phone}
                 onChangeText={(text) => setNewClient(prev => ({ ...prev, phone: text }))}
                 placeholder="Enter phone number"
+                placeholderTextColor="#374151"
                 keyboardType="phone-pad"
               />
             </View>
@@ -2705,14 +2726,27 @@ export default function ProjectsScreen() {
                 value={newClient.temporaryPassword}
                 onChangeText={(text) => setNewClient(prev => ({ ...prev, temporaryPassword: text }))}
                 placeholder="Enter temporary password (min 6 characters)"
+              placeholderTextColor="#374151"
                 secureTextEntry
                 autoCapitalize="none"
               />
             </View>
 
-            <TouchableOpacity style={styles.submitButton} onPress={handleAddNewClient}>
-              <Text style={styles.submitButtonText}>Add Client</Text>
-            </TouchableOpacity>
+            <View style={{ flexDirection: 'row', marginTop: 8, marginHorizontal: 0 }}>
+              <TouchableOpacity
+                style={[styles.submitButton, { flex: 1, backgroundColor: '#6b7280', marginRight: 6 }]}
+                onPress={() => {
+                  setShowNewClientModal(false);
+                  setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
+                  pendingNewClientRef.current = null;
+                }}
+              >
+                <Text style={styles.submitButtonText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.submitButton, { flex: 1, marginLeft: 6 }]} onPress={handleAddNewClient}>
+                <Text style={styles.submitButtonText}>Add Client</Text>
+              </TouchableOpacity>
+            </View>
           </ScrollView>
         </View>
       </Modal>
@@ -2728,6 +2762,7 @@ export default function ProjectsScreen() {
             <TextInput
               style={[styles.input, { marginBottom: 16 }]}
               placeholder="Your password"
+              placeholderTextColor="#374151"
               value={adminPasswordInput}
               onChangeText={setAdminPasswordInput}
               secureTextEntry
