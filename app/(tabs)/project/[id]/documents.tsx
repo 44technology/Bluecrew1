@@ -11,9 +11,10 @@ import {
   ActivityIndicator,
   Platform,
   InteractionManager,
+  Linking,
 } from 'react-native';
 import { useLocalSearchParams, router } from 'expo-router';
-import { Plus, Camera, FileText, Folder, X, Image as ImageIcon, File } from 'lucide-react-native';
+import { Plus, Camera, FileText, Folder, X, Image as ImageIcon, File, Download, ExternalLink } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import { useAuth } from '@/contexts/AuthContext';
@@ -302,6 +303,36 @@ export default function DocumentsScreen() {
     }
   };
 
+  const handleOpenDocument = (doc: DocumentType) => {
+    const url = doc.file_url;
+    if (Platform.OS === 'web') {
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } else {
+      Linking.openURL(url).catch(() => {
+        Alert.alert('Error', 'Could not open document');
+      });
+    }
+  };
+
+  const handleDownloadDocument = (doc: DocumentType) => {
+    const url = doc.file_url;
+    const name = doc.name || 'document';
+    if (Platform.OS === 'web') {
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = name;
+      a.rel = 'noopener noreferrer';
+      a.target = '_blank';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    } else {
+      Linking.openURL(url).catch(() => {
+        Alert.alert('Error', 'Could not download document');
+      });
+    }
+  };
+
   const handleDeleteDocument = async (docId: string) => {
     const doDelete = async () => {
       try {
@@ -400,25 +431,44 @@ export default function DocumentsScreen() {
                   <View style={styles.documentsGrid}>
                     {docsInCategory.map((document) => (
                       <View key={document.id} style={styles.documentCard}>
-                        {document.file_type === 'image' ? (
-                          <Image
-                            source={{ uri: document.file_url }}
-                            style={styles.documentImage}
-                            resizeMode="cover"
-                          />
-                        ) : (
-                          <View style={styles.documentIconContainer}>
-                            <FileText size={40} color="#000000" />
+                        <TouchableOpacity
+                          style={styles.documentCardContent}
+                          onPress={() => handleOpenDocument(document)}
+                          activeOpacity={0.9}>
+                          {document.file_type === 'image' ? (
+                            <Image
+                              source={{ uri: document.file_url }}
+                              style={styles.documentImage}
+                              resizeMode="cover"
+                            />
+                          ) : (
+                            <View style={styles.documentIconContainer}>
+                              <FileText size={40} color="#000000" />
+                            </View>
+                          )}
+                          <View style={styles.documentInfo}>
+                            <Text style={styles.documentName} numberOfLines={2}>
+                              {document.name}
+                            </Text>
+                            <Text style={styles.documentMeta}>
+                              {new Date(document.uploaded_at).toLocaleDateString()}
+                            </Text>
+                            <Text style={styles.documentMeta}>by {document.uploaded_by}</Text>
                           </View>
-                        )}
-                        <View style={styles.documentInfo}>
-                          <Text style={styles.documentName} numberOfLines={2}>
-                            {document.name}
-                          </Text>
-                          <Text style={styles.documentMeta}>
-                            {new Date(document.uploaded_at).toLocaleDateString()}
-                          </Text>
-                          <Text style={styles.documentMeta}>by {document.uploaded_by}</Text>
+                        </TouchableOpacity>
+                        <View style={styles.documentActions}>
+                          <TouchableOpacity
+                            style={styles.documentActionBtn}
+                            onPress={() => handleOpenDocument(document)}>
+                            <ExternalLink size={14} color="#236ECF" />
+                            <Text style={styles.documentActionText}>View</Text>
+                          </TouchableOpacity>
+                          <TouchableOpacity
+                            style={styles.documentActionBtn}
+                            onPress={() => handleDownloadDocument(document)}>
+                            <Download size={14} color="#236ECF" />
+                            <Text style={styles.documentActionText}>Download</Text>
+                          </TouchableOpacity>
                         </View>
                         {userRole === 'admin' && (
                           <TouchableOpacity
@@ -440,25 +490,44 @@ export default function DocumentsScreen() {
           <View style={styles.documentsGrid}>
             {documents.map((document) => (
               <View key={document.id} style={styles.documentCard}>
-                {document.file_type === 'image' ? (
-                  <Image
-                    source={{ uri: document.file_url }}
-                    style={styles.documentImage}
-                    resizeMode="cover"
-                  />
-                ) : (
-                  <View style={styles.documentIconContainer}>
-                    <FileText size={40} color="#000000" />
+                <TouchableOpacity
+                  style={styles.documentCardContent}
+                  onPress={() => handleOpenDocument(document)}
+                  activeOpacity={0.9}>
+                  {document.file_type === 'image' ? (
+                    <Image
+                      source={{ uri: document.file_url }}
+                      style={styles.documentImage}
+                      resizeMode="cover"
+                    />
+                  ) : (
+                    <View style={styles.documentIconContainer}>
+                      <FileText size={40} color="#000000" />
+                    </View>
+                  )}
+                  <View style={styles.documentInfo}>
+                    <Text style={styles.documentName} numberOfLines={2}>
+                      {document.name}
+                    </Text>
+                    <Text style={styles.documentMeta}>
+                      {new Date(document.uploaded_at).toLocaleDateString()}
+                    </Text>
+                    <Text style={styles.documentMeta}>by {document.uploaded_by}</Text>
                   </View>
-                )}
-                <View style={styles.documentInfo}>
-                  <Text style={styles.documentName} numberOfLines={2}>
-                    {document.name}
-                  </Text>
-                  <Text style={styles.documentMeta}>
-                    {new Date(document.uploaded_at).toLocaleDateString()}
-                  </Text>
-                  <Text style={styles.documentMeta}>by {document.uploaded_by}</Text>
+                </TouchableOpacity>
+                <View style={styles.documentActions}>
+                  <TouchableOpacity
+                    style={styles.documentActionBtn}
+                    onPress={() => handleOpenDocument(document)}>
+                    <ExternalLink size={14} color="#236ECF" />
+                    <Text style={styles.documentActionText}>View</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.documentActionBtn}
+                    onPress={() => handleDownloadDocument(document)}>
+                    <Download size={14} color="#236ECF" />
+                    <Text style={styles.documentActionText}>Download</Text>
+                  </TouchableOpacity>
                 </View>
                 {userRole === 'admin' && (
                   <TouchableOpacity
@@ -727,7 +796,28 @@ const styles = StyleSheet.create({
     elevation: 3,
     position: 'relative',
     borderLeftWidth: 4,
-    borderLeftColor: '#ffffff', // Yellow border like teams
+    borderLeftColor: '#ffffff',
+  },
+  documentCardContent: {
+    flex: 1,
+  },
+  documentActions: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    gap: 12,
+  },
+  documentActionBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  documentActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#236ECF',
   },
   documentImage: {
     width: '100%',
