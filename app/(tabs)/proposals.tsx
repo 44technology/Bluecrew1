@@ -45,11 +45,8 @@ function normalizeDesc(d: string | WorkDescriptionItem): WorkDescriptionItem {
   return typeof d === 'string' ? { text: d } : { text: (d as any).text || '', quantity: (d as any).quantity, unit_price: (d as any).unit_price };
 }
 
-type WorkTitleForm = { name: string; descriptions: WorkDescriptionItem[]; price: string; quantity?: string; unit?: string; unit_price?: string };
+type WorkTitleForm = { name: string; descriptions: WorkDescriptionItem[]; price: string };
 function workTitlePrice(wt: WorkTitleForm): number {
-  const q = parseFloat(wt.quantity || '0') || 0;
-  const u = parseFloat(wt.unit_price || '0') || 0;
-  if (q > 0 && u > 0) return q * u;
   return descTotal(wt.descriptions);
 }
 
@@ -254,7 +251,7 @@ export default function ProposalsScreen() {
     const discount = parseFloat(newProposal.discount) || 0;
     const total = totalWorkTitles + generalConditions + supervisionFee - discount;
     return total;
-  }, [workTitles, newWorkTitle.descriptions, newWorkTitle.quantity, newWorkTitle.unit_price, newProposal.supervision_weeks, newProposal.supervision_type, newProposal.general_conditions_percentage, newProposal.discount]);
+  }, [workTitles, newWorkTitle.descriptions, newProposal.supervision_weeks, newProposal.supervision_type, newProposal.general_conditions_percentage, newProposal.discount]);
 
   const loadProposals = async () => {
     try {
@@ -500,7 +497,7 @@ export default function ProposalsScreen() {
       return;
     }
     const total = workTitlePrice(newWorkTitle);
-    setWorkTitles(prev => [...prev, { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString(), quantity: newWorkTitle.quantity, unit: newWorkTitle.unit, unit_price: newWorkTitle.unit_price }]);
+    setWorkTitles(prev => [...prev, { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString() }]);
     setNewWorkTitle({ name: '', descriptions: [], price: '' });
     setSelectedWorkTitleFromList('');
     setNewDescription('');
@@ -534,9 +531,6 @@ export default function ProposalsScreen() {
       name: workTitle.name,
       descriptions: workTitle.descriptions?.length ? [...workTitle.descriptions] : [],
       price: workTitle.price,
-      quantity: workTitle.quantity ?? '',
-      unit: workTitle.unit ?? '',
-      unit_price: workTitle.unit_price ?? '',
     });
     setEditingWorkTitleIndex(index);
     setSelectedWorkTitleFromList('');
@@ -550,7 +544,7 @@ export default function ProposalsScreen() {
     if (editingWorkTitleIndex === null) return;
     const total = workTitlePrice(newWorkTitle);
     setWorkTitles(prev => prev.map((wt, i) =>
-      i === editingWorkTitleIndex ? { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString(), quantity: newWorkTitle.quantity, unit: newWorkTitle.unit, unit_price: newWorkTitle.unit_price } : wt
+      i === editingWorkTitleIndex ? { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString() } : wt
     ));
     setNewWorkTitle({ name: '', descriptions: [], price: '' });
     setEditingWorkTitleIndex(null);
@@ -582,7 +576,7 @@ export default function ProposalsScreen() {
     // Auto-add current form work title if it has a name
     if (newWorkTitle.name.trim()) {
       const total = workTitlePrice(newWorkTitle);
-      finalWorkTitles = [...finalWorkTitles, { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString(), quantity: newWorkTitle.quantity, unit: newWorkTitle.unit, unit_price: newWorkTitle.unit_price }];
+      finalWorkTitles = [...finalWorkTitles, { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString() }];
     }
 
     if (finalWorkTitles.length === 0) {
@@ -721,13 +715,12 @@ export default function ProposalsScreen() {
         category: newProposal.category,
         work_titles: finalWorkTitles.map(wt => {
           const calculatedPrice = workTitlePrice(wt);
-          const qty = parseFloat(wt.quantity || '0') || 0;
-          const unitPrice = parseFloat(wt.unit_price || '0') || 0;
+          const hasAnyDescQtyPrice = wt.descriptions?.some(d => (parseFloat(d.quantity || '0') || 0) > 0 && (parseFloat(d.unit_price || '0') || 0) > 0) ?? false;
           const workTitle: any = {
             name: wt.name,
-            quantity: qty,
-            unit: wt.unit || '',
-            unit_price: unitPrice,
+            quantity: hasAnyDescQtyPrice ? 0 : 1,
+            unit: '',
+            unit_price: hasAnyDescQtyPrice ? 0 : calculatedPrice,
             price: calculatedPrice,
           };
           if (wt.descriptions && wt.descriptions.length > 0) {
@@ -2244,7 +2237,7 @@ export default function ProposalsScreen() {
                                   </Text>
                                   {typeof desc !== 'string' && ((desc as WorkDescriptionItem).quantity || (desc as WorkDescriptionItem).unit_price) && (
                                     <Text style={[styles.workTitleDetailText, { marginLeft: 12, fontSize: 12 }]}>
-                                      {(parseFloat((desc as WorkDescriptionItem).quantity || '0') * parseFloat((desc as WorkDescriptionItem).unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2 })} (Qty × Unit Price)
+                                      Qty: {(desc as WorkDescriptionItem).quantity || '0'} × ${(parseFloat((desc as WorkDescriptionItem).unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2 })} = ${(parseFloat((desc as WorkDescriptionItem).quantity || '0') * parseFloat((desc as WorkDescriptionItem).unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2 })}
                                     </Text>
                                   )}
                                 </View>
@@ -2252,11 +2245,6 @@ export default function ProposalsScreen() {
                             </View>
                           )}
                           <View style={styles.workTitleDetails}>
-                            {parseFloat(workTitle.quantity || '0') > 0 && parseFloat(workTitle.unit_price || '0') > 0 && (
-                              <Text style={styles.workTitleDetailText}>
-                                Qty: {workTitle.quantity} {workTitle.unit || ''} × ${parseFloat(workTitle.unit_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                              </Text>
-                            )}
                             <Text style={styles.workTitlePrice}>
                               Total: ${parseFloat(workTitle.price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </Text>
@@ -2346,51 +2334,14 @@ export default function ProposalsScreen() {
                       </TouchableOpacity>
                     </View>
                   </View>
-                  {(newWorkTitle.descriptions.length > 0 && descTotal(newWorkTitle.descriptions) > 0) && !(parseFloat(newWorkTitle.quantity || '0') > 0 && parseFloat(newWorkTitle.unit_price || '0') > 0) && (
+                  {(newWorkTitle.descriptions.length > 0 && descTotal(newWorkTitle.descriptions) > 0) && (
                     <View style={styles.calculatedPriceContainer}>
-                      <Text style={styles.calculatedPriceLabel}>Total (all lines):</Text>
+                      <Text style={styles.calculatedPriceLabel}>Total:</Text>
                       <Text style={styles.calculatedPriceValue}>
                         ${descTotal(newWorkTitle.descriptions).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Text>
                     </View>
                   )}
-                  {(parseFloat(newWorkTitle.quantity || '0') > 0 && parseFloat(newWorkTitle.unit_price || '0') > 0) && (
-                    <View style={styles.calculatedPriceContainer}>
-                      <Text style={styles.calculatedPriceLabel}>Total (Qty × Unit Price):</Text>
-                      <Text style={styles.calculatedPriceValue}>
-                        ${(parseFloat(newWorkTitle.quantity || '0') * parseFloat(newWorkTitle.unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </Text>
-                    </View>
-                  )}
-
-                  <View style={styles.inputGroup}>
-                    <Text style={[styles.label, { marginBottom: 6 }]}>Qty / Unit / Unit Price (optional – for PDF)</Text>
-                    <View style={[styles.quantityUnitRow, { marginBottom: 0 }]}>
-                      <View style={styles.quantityInputContainer}>
-                        <Text style={[styles.label, { fontSize: 12, color: '#6b7280' }]}>Qty</Text>
-                        {Platform.OS === 'web' ? (
-                          <input type="number" placeholder="0" value={newWorkTitle.quantity ?? ''} onChange={(e) => setNewWorkTitle(prev => ({ ...prev, quantity: e.target.value }))} style={{ width: '100%', padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }} className="no-spinner" onWheel={(e) => e.currentTarget.blur()} />
-                        ) : (
-                          <TextInput style={styles.input} placeholder="0" placeholderTextColor="#9ca3af" value={newWorkTitle.quantity ?? ''} onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, quantity: text }))} keyboardType="numeric" />
-                        )}
-                      </View>
-                      <View style={[styles.quantityInputContainer, { flex: 0.8 }]}>
-                        <Text style={[styles.label, { fontSize: 12, color: '#6b7280' }]}>Unit</Text>
-                        <TextInput style={styles.input} placeholder="ea, sf…" placeholderTextColor="#9ca3af" value={newWorkTitle.unit ?? ''} onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, unit: text }))} />
-                      </View>
-                      <View style={[styles.priceInputRow, { flex: 1 }]}>
-                        <Text style={[styles.label, { fontSize: 12, color: '#6b7280' }]}>Unit Price</Text>
-                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
-                          <Text style={styles.priceLabel}>$</Text>
-                          {Platform.OS === 'web' ? (
-                            <input type="number" step="0.01" placeholder="0" value={newWorkTitle.unit_price ?? ''} onChange={(e) => setNewWorkTitle(prev => ({ ...prev, unit_price: e.target.value }))} style={{ flex: 1, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }} className="no-spinner" onWheel={(e) => e.currentTarget.blur()} />
-                          ) : (
-                            <TextInput style={[styles.input, styles.priceInput]} placeholder="0" placeholderTextColor="#9ca3af" value={newWorkTitle.unit_price ?? ''} onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, unit_price: text }))} keyboardType="numeric" />
-                          )}
-                        </View>
-                      </View>
-                    </View>
-                  </View>
 
                   <View style={styles.inputGroup}>
                     {editingWorkTitleIndex !== null ? (
@@ -2993,14 +2944,7 @@ export default function ProposalsScreen() {
                               items = [{ text: '', quantity: (wt.quantity || 0).toString(), unit_price: (wt.unit_price || 0).toString() }];
                               total = (wt.quantity || 0) * (wt.unit_price || 0);
                             }
-                            return {
-                              name: wt.name,
-                              descriptions: items,
-                              price: total.toString(),
-                              quantity: wt.quantity != null ? String(wt.quantity) : '',
-                              unit: wt.unit || '',
-                              unit_price: wt.unit_price != null ? String(wt.unit_price) : '',
-                            };
+                            return { name: wt.name, descriptions: items, price: total.toString() };
                           });
                           setWorkTitles(proposalWorkTitles);
                           // Close detail modal and open create/edit modal
