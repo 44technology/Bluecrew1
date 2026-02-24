@@ -33,6 +33,34 @@ import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 
+type WorkDescriptionItem = { text: string; quantity?: string; unit_price?: string };
+function descTotal(descriptions: WorkDescriptionItem[]): number {
+  return descriptions.reduce((sum, d) => {
+    const q = parseFloat(d.quantity || '0') || 0;
+    const u = parseFloat(d.unit_price || '0') || 0;
+    return sum + q * u;
+  }, 0);
+}
+function normalizeDesc(d: string | WorkDescriptionItem): WorkDescriptionItem {
+  return typeof d === 'string' ? { text: d } : { text: (d as any).text || '', quantity: (d as any).quantity, unit_price: (d as any).unit_price };
+}
+
+type WorkTitleForm = { name: string; descriptions: WorkDescriptionItem[]; price: string; quantity?: string; unit?: string; unit_price?: string };
+function workTitlePrice(wt: WorkTitleForm): number {
+  const q = parseFloat(wt.quantity || '0') || 0;
+  const u = parseFloat(wt.unit_price || '0') || 0;
+  if (q > 0 && u > 0) return q * u;
+  return descTotal(wt.descriptions);
+}
+
+const DEFAULT_PAYMENT_PLAN_TEXT = `20% upon invoice approval
+20% upon permit approval
+20% upon wood delivery
+20% upon all exterior work complete
+10% upon completion of wall paint repair of structure complete
+5% upon completion of all tile work
+5% upon passing all inspections`;
+
 export default function ProposalsScreen() {
   const { t } = useLanguage();
   const { userRole, user } = useAuth();
@@ -82,6 +110,7 @@ export default function ProposalsScreen() {
     supervision_weeks: '',
     discount: '',
     description: '',
+    payment_plan_text: DEFAULT_PAYMENT_PLAN_TEXT,
     proposal_date: '',
   });
   const [showProposalDatePicker, setShowProposalDatePicker] = useState(false);
@@ -103,11 +132,13 @@ export default function ProposalsScreen() {
     }
     return password;
   };
-  const [workTitles, setWorkTitles] = useState<Array<{ name: string; descriptions: string[]; quantity: string; unit_price: string; price: string }>>([]);
-  const [newWorkTitle, setNewWorkTitle] = useState({ name: '', descriptions: [] as string[], quantity: '', unit_price: '', price: '' });
+  const [workTitles, setWorkTitles] = useState<WorkTitleForm[]>([]);
+  const [newWorkTitle, setNewWorkTitle] = useState<WorkTitleForm>({ name: '', descriptions: [], price: '' });
   const [editingWorkTitleIndex, setEditingWorkTitleIndex] = useState<number | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
   const [newDescription, setNewDescription] = useState('');
+  const [newDescriptionQty, setNewDescriptionQty] = useState('');
+  const [newDescriptionUnitPrice, setNewDescriptionUnitPrice] = useState('');
   const [showWorkTitleModal, setShowWorkTitleModal] = useState(false);
   const [selectedWorkTitleFromList, setSelectedWorkTitleFromList] = useState<string>('');
   
@@ -209,25 +240,9 @@ export default function ProposalsScreen() {
     }
   }, []);
 
-  // Calculate total cost - this is used in the form display
   const totalCost = useMemo(() => {
-    const workTitlesTotal = workTitles.reduce((sum, workTitle) => {
-      const quantity = parseFloat(workTitle.quantity) || 0;
-      const unitPrice = parseFloat(workTitle.unit_price) || 0;
-      const price = quantity * unitPrice;
-      return sum + price;
-    }, 0);
-    
-    // Add current work title being entered (if valid)
-    const currentWorkTitleTotal = (() => {
-      const quantity = parseFloat(newWorkTitle.quantity) || 0;
-      const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-      if (quantity > 0 && unitPrice > 0) {
-        return quantity * unitPrice;
-      }
-      return 0;
-    })();
-    
+    const workTitlesTotal = workTitles.reduce((sum, wt) => sum + workTitlePrice(wt), 0);
+    const currentWorkTitleTotal = workTitlePrice(newWorkTitle);
     const totalWorkTitles = workTitlesTotal + currentWorkTitleTotal;
     // Calculate supervision fee based on type and weeks
     const supervisionWeeks = parseFloat(newProposal.supervision_weeks) || 0;
@@ -239,7 +254,7 @@ export default function ProposalsScreen() {
     const discount = parseFloat(newProposal.discount) || 0;
     const total = totalWorkTitles + generalConditions + supervisionFee - discount;
     return total;
-  }, [workTitles, newWorkTitle.quantity, newWorkTitle.unit_price, newProposal.supervision_weeks, newProposal.supervision_type, newProposal.general_conditions_percentage, newProposal.discount]);
+  }, [workTitles, newWorkTitle.descriptions, newWorkTitle.quantity, newWorkTitle.unit_price, newProposal.supervision_weeks, newProposal.supervision_type, newProposal.general_conditions_percentage, newProposal.discount]);
 
   const loadProposals = async () => {
     try {
@@ -480,19 +495,17 @@ export default function ProposalsScreen() {
   };
 
   const handleAddWorkTitle = () => {
-    if (!newWorkTitle.name || !newWorkTitle.quantity || !newWorkTitle.unit_price) {
-      Alert.alert('Error', 'Please fill in work title name, quantity, and unit price');
+    if (!newWorkTitle.name.trim()) {
+      Alert.alert('Error', 'Please enter work title name');
       return;
     }
-    
-    const quantity = parseFloat(newWorkTitle.quantity) || 0;
-    const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-    const calculatedPrice = (quantity * unitPrice).toString();
-    
-    setWorkTitles(prev => [...prev, { ...newWorkTitle, price: calculatedPrice }]);
-    setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+    const total = workTitlePrice(newWorkTitle);
+    setWorkTitles(prev => [...prev, { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString(), quantity: newWorkTitle.quantity, unit: newWorkTitle.unit, unit_price: newWorkTitle.unit_price }]);
+    setNewWorkTitle({ name: '', descriptions: [], price: '' });
     setSelectedWorkTitleFromList('');
     setNewDescription('');
+    setNewDescriptionQty('');
+    setNewDescriptionUnitPrice('');
   };
 
   const handleAddDescription = () => {
@@ -500,55 +513,51 @@ export default function ProposalsScreen() {
       Alert.alert('Error', 'Please enter a description');
       return;
     }
-    // No limit on descriptions - users can add as many as needed
-    setNewWorkTitle(prev => ({
-      ...prev,
-      descriptions: [...prev.descriptions, newDescription.trim()]
-    }));
+    const item: WorkDescriptionItem = {
+      text: newDescription.trim(),
+      ...(newDescriptionQty.trim() ? { quantity: newDescriptionQty.trim() } : {}),
+      ...(newDescriptionUnitPrice.trim() ? { unit_price: newDescriptionUnitPrice.trim() } : {}),
+    };
+    setNewWorkTitle(prev => ({ ...prev, descriptions: [...prev.descriptions, item] }));
     setNewDescription('');
+    setNewDescriptionQty('');
+    setNewDescriptionUnitPrice('');
   };
 
   const handleRemoveDescription = (index: number) => {
-    setNewWorkTitle(prev => ({
-      ...prev,
-      descriptions: prev.descriptions.filter((_, i) => i !== index)
-    }));
+    setNewWorkTitle(prev => ({ ...prev, descriptions: prev.descriptions.filter((_, i) => i !== index) }));
   };
 
   const handleEditWorkTitle = (index: number) => {
     const workTitle = workTitles[index];
     setNewWorkTitle({
       name: workTitle.name,
-      descriptions: workTitle.descriptions || [],
-      quantity: workTitle.quantity,
-      unit_price: workTitle.unit_price,
+      descriptions: workTitle.descriptions?.length ? [...workTitle.descriptions] : [],
       price: workTitle.price,
+      quantity: workTitle.quantity ?? '',
+      unit: workTitle.unit ?? '',
+      unit_price: workTitle.unit_price ?? '',
     });
     setEditingWorkTitleIndex(index);
     setSelectedWorkTitleFromList('');
   };
 
   const handleUpdateWorkTitle = () => {
-    if (!newWorkTitle.name || !newWorkTitle.quantity || !newWorkTitle.unit_price) {
-      Alert.alert('Error', 'Please fill in work title name, quantity, and unit price');
+    if (!newWorkTitle.name.trim()) {
+      Alert.alert('Error', 'Please enter work title name');
       return;
     }
-    
     if (editingWorkTitleIndex === null) return;
-    
-    const quantity = parseFloat(newWorkTitle.quantity) || 0;
-    const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-    const calculatedPrice = (quantity * unitPrice).toString();
-    
-    setWorkTitles(prev => prev.map((wt, i) => 
-      i === editingWorkTitleIndex 
-        ? { ...newWorkTitle, price: calculatedPrice }
-        : wt
+    const total = workTitlePrice(newWorkTitle);
+    setWorkTitles(prev => prev.map((wt, i) =>
+      i === editingWorkTitleIndex ? { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString(), quantity: newWorkTitle.quantity, unit: newWorkTitle.unit, unit_price: newWorkTitle.unit_price } : wt
     ));
-    setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+    setNewWorkTitle({ name: '', descriptions: [], price: '' });
     setEditingWorkTitleIndex(null);
     setSelectedWorkTitleFromList('');
     setNewDescription('');
+    setNewDescriptionQty('');
+    setNewDescriptionUnitPrice('');
   };
 
   const handleRemoveWorkTitle = (index: number) => {
@@ -570,35 +579,15 @@ export default function ProposalsScreen() {
     const missingFields: string[] = [];
     const errors: { [key: string]: string } = {};
     
-    // Check if there's a work title in the form that should be added
-    const hasIncompleteWorkTitle = newWorkTitle.name && (!newWorkTitle.quantity || !newWorkTitle.quantity.trim() || parseFloat(newWorkTitle.quantity) <= 0 || !newWorkTitle.unit_price || !newWorkTitle.unit_price.trim() || parseFloat(newWorkTitle.unit_price) <= 0);
-    
-    // Validate work titles
-    if (finalWorkTitles.length === 0 && !newWorkTitle.name) {
+    // Auto-add current form work title if it has a name
+    if (newWorkTitle.name.trim()) {
+      const total = workTitlePrice(newWorkTitle);
+      finalWorkTitles = [...finalWorkTitles, { name: newWorkTitle.name.trim(), descriptions: [...newWorkTitle.descriptions], price: total.toString(), quantity: newWorkTitle.quantity, unit: newWorkTitle.unit, unit_price: newWorkTitle.unit_price }];
+    }
+
+    if (finalWorkTitles.length === 0) {
       missingFields.push('Work Titles (at least one required)');
       errors.workTitles = 'At least one work title is required';
-    } else {
-      // Validate each work title in the list has quantity and unit_price
-      finalWorkTitles.forEach((wt, index) => {
-        if (!wt.quantity || !wt.quantity.trim() || parseFloat(wt.quantity) <= 0) {
-          missingFields.push(`Work Title ${index + 1}: Quantity is required`);
-        }
-        if (!wt.unit_price || !wt.unit_price.trim() || parseFloat(wt.unit_price) <= 0) {
-          missingFields.push(`Work Title ${index + 1}: Unit Price is required`);
-        }
-      });
-      
-      // Also validate the form work title if it exists
-      if (newWorkTitle.name) {
-        if (!newWorkTitle.quantity || !newWorkTitle.quantity.trim() || parseFloat(newWorkTitle.quantity) <= 0) {
-          missingFields.push('Work Title: Quantity is required');
-          errors.workTitle_quantity = 'Quantity is required and must be greater than 0';
-        }
-        if (!newWorkTitle.unit_price || !newWorkTitle.unit_price.trim() || parseFloat(newWorkTitle.unit_price) <= 0) {
-          missingFields.push('Work Title: Unit Price is required');
-          errors.workTitle_unit_price = 'Unit Price is required and must be greater than 0';
-        }
-      }
     }
     if (!newProposal.client_name || !newProposal.client_name.trim()) {
       missingFields.push('Client Name');
@@ -650,12 +639,7 @@ export default function ProposalsScreen() {
     }
 
     try {
-      const workTitlesTotal = finalWorkTitles.reduce((sum, workTitle) => {
-        const quantity = parseFloat(workTitle.quantity) || 0;
-        const unitPrice = parseFloat(workTitle.unit_price) || 0;
-        const price = quantity * unitPrice;
-        return sum + price;
-      }, 0);
+      const workTitlesTotal = finalWorkTitles.reduce((sum, wt) => sum + workTitlePrice(wt), 0);
       // Calculate supervision fee based on type and weeks
       // When editing, preserve original supervision_fee if supervision_type or supervision_weeks are not provided
       let supervisionFee = 0;
@@ -736,26 +720,18 @@ export default function ProposalsScreen() {
         client_zip: clientZip,
         category: newProposal.category,
         work_titles: finalWorkTitles.map(wt => {
-          const quantity = parseFloat(wt.quantity) || 0;
-          const unitPrice = parseFloat(wt.unit_price) || 0;
-          const calculatedPrice = quantity * unitPrice;
+          const calculatedPrice = workTitlePrice(wt);
+          const qty = parseFloat(wt.quantity || '0') || 0;
+          const unitPrice = parseFloat(wt.unit_price || '0') || 0;
           const workTitle: any = {
             name: wt.name,
-            quantity: quantity,
-            unit: '', // Unit field removed
+            quantity: qty,
+            unit: wt.unit || '',
             unit_price: unitPrice,
             price: calculatedPrice,
           };
-          // Add descriptions array if it has values
           if (wt.descriptions && wt.descriptions.length > 0) {
-            workTitle.descriptions = wt.descriptions.filter(d => d && d.trim());
-          }
-          // Legacy support - if single description exists, convert to array
-          if ((wt as any).description && (wt as any).description.trim()) {
-            if (!workTitle.descriptions) {
-              workTitle.descriptions = [];
-            }
-            workTitle.descriptions.push((wt as any).description.trim());
+            workTitle.descriptions = wt.descriptions.map(d => (typeof d === 'string' ? d : d.text) || '');
           }
           return workTitle;
         }),
@@ -781,6 +757,9 @@ export default function ProposalsScreen() {
       }
       if (newProposal.description && newProposal.description.trim()) {
         proposalDataRaw.description = newProposal.description.trim();
+      }
+      if (newProposal.payment_plan_text != null && newProposal.payment_plan_text.trim() !== '') {
+        proposalDataRaw.payment_plan_text = newProposal.payment_plan_text.trim();
       }
       
       const proposalData = proposalDataRaw as Omit<Proposal, 'id' | 'created_at'>;
@@ -816,12 +795,15 @@ export default function ProposalsScreen() {
         supervision_weeks: '',
         discount: '',
         description: '',
+        payment_plan_text: DEFAULT_PAYMENT_PLAN_TEXT,
         proposal_date: '',
       });
       setShowProposalDatePicker(false);
       setWorkTitles([]);
-      setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+      setNewWorkTitle({ name: '', descriptions: [], price: '' });
       setNewDescription('');
+      setNewDescriptionQty('');
+      setNewDescriptionUnitPrice('');
     } catch (error) {
       console.error('Error creating proposal:', error);
       Alert.alert('Error', 'Failed to create proposal');
@@ -1173,19 +1155,36 @@ export default function ProposalsScreen() {
     try {
       let logoBase64 = '';
       if (Platform.OS === 'web') {
-        try {
-          const logoPath = '/assets/images/logo.png';
-          const response = await fetch(logoPath);
-          if (response.ok) {
-            const blob = await response.blob();
-            const reader = new FileReader();
-            logoBase64 = await new Promise((resolve) => {
-              reader.onloadend = () => resolve(reader.result as string);
-              reader.readAsDataURL(blob);
-            });
-          }
-        } catch (_) {}
+        const logoPaths = [
+          '/assets/images/logo.png',
+          './assets/images/logo.png',
+          'assets/images/logo.png',
+          (typeof window !== 'undefined' && (window as any).location?.origin) ? (window as any).location.origin + '/assets/images/logo.png' : '',
+        ].filter(Boolean);
+        for (const logoPath of logoPaths) {
+          try {
+            const response = await fetch(logoPath as string);
+            if (response.ok) {
+              const blob = await response.blob();
+              const reader = new FileReader();
+              logoBase64 = await new Promise((resolve) => {
+                reader.onloadend = () => resolve(reader.result as string);
+                reader.readAsDataURL(blob);
+              });
+              if (logoBase64) break;
+            }
+          } catch (_) {}
+        }
       }
+
+      const paymentPlanText = (proposal.payment_plan_text || DEFAULT_PAYMENT_PLAN_TEXT).trim();
+      const paymentPlanLines = paymentPlanText.split(/\r?\n/).map(s => s.trim()).filter(Boolean);
+      const escapeHtml = (s: string) => s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+      const strip22Prefix = (line: string) => line.replace(/^2\.2\s*/i, '').trim();
+      const paymentPlanHtml = `
+    <p><strong>2.2</strong></p>
+    ${paymentPlanLines.length > 0 ? `<ul style="margin-left: 20px; margin-top: 10px; margin-bottom: 10px;">${paymentPlanLines.map(item => `<li>${escapeHtml(strip22Prefix(item))}</li>`).join('')}</ul>` : ''}
+    <p><strong>2.3</strong> All payments shall be made in accordance with the terms specified and shall be subject to the Contractor's submission of appropriate invoices and lien waivers.</p>`;
 
       const htmlContent = `<!DOCTYPE html>
 <html>
@@ -1195,9 +1194,10 @@ export default function ProposalsScreen() {
   <style>
     @media print { body { margin: 0; padding: 20px; } }
     body { font-family: 'Arial', 'Helvetica', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #000000; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1e3a5f; }
     .logo { max-width: 200px; max-height: 80px; object-fit: contain; }
-    .proposal-title { font-size: 36px; font-weight: bold; color: #000000; margin: 0 0 10px 0; }
+    .logo-text { font-size: 22px; font-weight: 600; color: #1e3a5f; letter-spacing: 0.5px; }
+    .proposal-title { font-size: 22px; font-weight: 600; color: #1e3a5f; letter-spacing: 1px; margin: 0 0 10px 0; text-transform: uppercase; }
     .proposal-number { font-size: 18px; color: #666; margin: 0; }
     .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
     .info-box { flex: 1; padding: 15px; background-color: #f9fafb; border-radius: 8px; margin-right: 15px; }
@@ -1223,10 +1223,10 @@ export default function ProposalsScreen() {
 <body>
   <div class="header">
     <div class="logo-container">
-      ${logoBase64 ? `<img src="${logoBase64}" class="logo" alt="Logo">` : ''}
+      ${logoBase64 ? `<img src="${logoBase64}" class="logo" alt="Logo">` : '<div class="logo-text">Blue Crew</div>'}
     </div>
     <div class="header-info">
-      <div class="proposal-title">PROPOSAL</div>
+      <div class="proposal-title">Proposal</div>
       <div class="proposal-number">${proposal.proposal_number}</div>
     </div>
   </div>
@@ -1254,21 +1254,27 @@ export default function ProposalsScreen() {
       </tr>
     </thead>
     <tbody>
-      ${proposal.work_titles.map(wt => `
+      ${proposal.work_titles.map(wt => {
+        const qty = typeof wt.quantity === 'number' ? wt.quantity : parseFloat(String(wt.quantity || '0')) || 0;
+        const up = typeof wt.unit_price === 'number' ? wt.unit_price : parseFloat(String(wt.unit_price || '0')) || 0;
+        const hasQtyPrice = qty > 0 && up > 0;
+        const qtyDisplay = hasQtyPrice ? `${qty} ${wt.unit || ''}`.trim() : '—';
+        const unitPriceDisplay = hasQtyPrice ? formatCurrency(up) : '—';
+        return `
         <tr>
           <td style="font-weight: 600; color: #1f2937; vertical-align: top; padding-top: 16px;">
             ${wt.name}
           </td>
           <td style="vertical-align: top; padding-top: 16px;">
             ${(wt.descriptions && wt.descriptions.length > 0) 
-              ? wt.descriptions.map(desc => `<div style="margin-bottom: 8px; line-height: 1.5;">${desc}</div>`).join('')
+              ? wt.descriptions.map((desc: string) => `<div style="margin-bottom: 8px; line-height: 1.5;">${desc}</div>`).join('')
               : (wt.description ? `<div style="line-height: 1.5;">${wt.description}</div>` : '')}
           </td>
-          <td class="text-right" style="vertical-align: top; padding-top: 16px;">${wt.quantity || 0} ${wt.unit || ''}</td>
-          <td class="text-right" style="vertical-align: top; padding-top: 16px;">${formatCurrency(wt.unit_price || 0)}</td>
+          <td class="text-right" style="vertical-align: top; padding-top: 16px;">${qtyDisplay}</td>
+          <td class="text-right" style="vertical-align: top; padding-top: 16px;">${unitPriceDisplay}</td>
           <td class="text-right" style="vertical-align: top; padding-top: 16px;">${formatCurrency(wt.price)}</td>
         </tr>
-      `).join('')}
+      `}).join('')}
       <tr>
         <td style="font-weight: 600; color: #1f2937;">General Conditions</td>
         <td></td>
@@ -1345,17 +1351,7 @@ export default function ProposalsScreen() {
   <div class="section-title">2. CONTRACT PRICE</div>
   <div style="margin-bottom: 20px; line-height: 1.6;">
     <p><strong>2.1</strong> The Owner agrees to pay the Contractor a total sum of <strong>$${proposal.total_cost.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> (the "Contract Price") for the completion of the Project.</p>
-    <p><strong>2.2</strong> Payment shall be made according to the payment schedule set forth below:</p>
-    <ul style="margin-left: 20px; margin-top: 10px; margin-bottom: 10px;">
-      <li>20% upon invoice approval</li>
-      <li>20% upon permit approval</li>
-      <li>20% upon wood delivery</li>
-      <li>20% upon all exterior work complete</li>
-      <li>10% upon completion of wall paint repair of structure complete</li>
-      <li>5% upon completion of all tile work</li>
-      <li>5% upon passing all inspections</li>
-    </ul>
-    <p><strong>2.3</strong> All payments shall be made in accordance with the terms specified and shall be subject to the Contractor's submission of appropriate invoices and lien waivers.</p>
+    ${paymentPlanHtml}
   </div>
 
   <div class="section-title">3. CHANGES IN WORK</div>
@@ -1584,11 +1580,7 @@ export default function ProposalsScreen() {
     router.push(`/(tabs)/invoices?fromProposal=${proposal.id}`);
   };
 
-  const workTitlesTotal = workTitles.reduce((sum, wt) => {
-    const quantity = parseFloat(wt.quantity) || 0;
-    const unitPrice = parseFloat(wt.unit_price) || 0;
-    return sum + (quantity * unitPrice);
-  }, 0);
+  const workTitlesTotal = workTitles.reduce((sum, wt) => sum + workTitlePrice(wt), 0) + workTitlePrice(newWorkTitle);
   const supervisionFee = parseFloat(newProposal.supervision_fee) || 0;
   const generalConditionsPercentageInput = newProposal.general_conditions_percentage.trim();
   const generalConditionsPercentage = generalConditionsPercentageInput === '' ? 18.5 : (isNaN(parseFloat(generalConditionsPercentageInput)) ? 18.5 : parseFloat(generalConditionsPercentageInput));
@@ -1930,8 +1922,10 @@ export default function ProposalsScreen() {
       setClientSearchQuery('');
                 setEditingProposal(null);
                 setWorkTitles([]);
-                setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+                setNewWorkTitle({ name: '', descriptions: [], price: '' });
       setNewDescription('');
+      setNewDescriptionQty('');
+      setNewDescriptionUnitPrice('');
                 setShowProposalDatePicker(false);
                 setShowClientDropdown(false);
                 setClientSearchQuery('');
@@ -2244,19 +2238,25 @@ export default function ProposalsScreen() {
                           {(workTitle.descriptions && workTitle.descriptions.length > 0) && (
                             <View style={styles.descriptionsList}>
                               {workTitle.descriptions.map((desc, descIndex) => (
-                                <View key={descIndex} style={styles.descriptionItem}>
-                                  <Text style={styles.descriptionText}>• {desc}</Text>
+                                <View key={descIndex} style={{ marginBottom: 4 }}>
+                                  <Text style={styles.descriptionText}>
+                                    • {typeof desc === 'string' ? desc : (desc as WorkDescriptionItem).text || '—'}
+                                  </Text>
+                                  {typeof desc !== 'string' && ((desc as WorkDescriptionItem).quantity || (desc as WorkDescriptionItem).unit_price) && (
+                                    <Text style={[styles.workTitleDetailText, { marginLeft: 12, fontSize: 12 }]}>
+                                      {(parseFloat((desc as WorkDescriptionItem).quantity || '0') * parseFloat((desc as WorkDescriptionItem).unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2 })} (Qty × Unit Price)
+                                    </Text>
+                                  )}
                                 </View>
                               ))}
                             </View>
                           )}
                           <View style={styles.workTitleDetails}>
-                            <Text style={styles.workTitleDetailText}>
-                              Qty: {workTitle.quantity}
-                            </Text>
-                            <Text style={styles.workTitleDetailText}>
-                              Unit Price: ${parseFloat(workTitle.unit_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </Text>
+                            {parseFloat(workTitle.quantity || '0') > 0 && parseFloat(workTitle.unit_price || '0') > 0 && (
+                              <Text style={styles.workTitleDetailText}>
+                                Qty: {workTitle.quantity} {workTitle.unit || ''} × ${parseFloat(workTitle.unit_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </Text>
+                            )}
                             <Text style={styles.workTitlePrice}>
                               Total: ${parseFloat(workTitle.price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </Text>
@@ -2291,190 +2291,106 @@ export default function ProposalsScreen() {
                   <View style={styles.inputGroup}>
                     <View style={styles.labelRow}>
                       <Text style={styles.label}>Work Descriptions</Text>
-                      <Text style={styles.descriptionCount}>
-                        {newWorkTitle.descriptions.length}/5
-                      </Text>
+                      <Text style={styles.descriptionCount}>{newWorkTitle.descriptions.length} added</Text>
                     </View>
-                    
                     {newWorkTitle.descriptions.length > 0 && (
                       <View style={styles.descriptionsList}>
                         {newWorkTitle.descriptions.map((desc, index) => (
                           <View key={index} style={styles.descriptionItem}>
-                            <Text style={styles.descriptionText}>• {desc}</Text>
-                            <TouchableOpacity
-                              style={styles.removeDescriptionButton}
-                              onPress={() => handleRemoveDescription(index)}
-                            >
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.descriptionText}>• {typeof desc === 'string' ? desc : desc.text || '—'}</Text>
+                              {typeof desc !== 'string' && ((desc.quantity && desc.quantity !== '0') || (desc.unit_price && desc.unit_price !== '0')) && (
+                                <Text style={[styles.workTitleDetailText, { fontSize: 12, marginTop: 2 }]}>
+                                  Qty: {desc.quantity || '0'} × ${(parseFloat(desc.unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2 })} = ${((parseFloat(desc.quantity || '0') || 0) * (parseFloat(desc.unit_price || '0') || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </Text>
+                              )}
+                            </View>
+                            <TouchableOpacity style={styles.removeDescriptionButton} onPress={() => handleRemoveDescription(index)}>
                               <X size={14} color="#ef4444" />
                             </TouchableOpacity>
                           </View>
                         ))}
                       </View>
                     )}
-                    
-                    {newWorkTitle.descriptions.length < 5 && (
-                      <View style={styles.addDescriptionContainer}>
-                        <TextInput
-                          style={[styles.input, styles.textArea]}
-                          placeholder="Enter work description"
-                          placeholderTextColor="#374151"
-                          value={newDescription}
-                          onChangeText={setNewDescription}
-                          multiline
-                          numberOfLines={2}
-                        />
-                        <TouchableOpacity
-                          style={styles.addDescriptionButton}
-                          onPress={handleAddDescription}
-                        >
-                          <Plus size={16} color="#000000" />
-                          <Text style={styles.addDescriptionButtonText}>Add Description</Text>
-                        </TouchableOpacity>
+                    <View style={styles.addDescriptionContainer}>
+                      <TextInput
+                        style={[styles.input, styles.textArea]}
+                        placeholder="Enter work description (optional Qty & Unit Price below)"
+                        placeholderTextColor="#374151"
+                        value={newDescription}
+                        onChangeText={setNewDescription}
+                        multiline
+                        numberOfLines={2}
+                      />
+                      <View style={[styles.quantityUnitRow, { marginBottom: 8 }]}>
+                        <View style={styles.quantityInputContainer}>
+                          <Text style={styles.label}>Qty (optional)</Text>
+                          {Platform.OS === 'web' ? (
+                            <input type="number" placeholder="0" value={newDescriptionQty} onChange={(e) => setNewDescriptionQty(e.target.value)} style={{ width: '100%', padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }} className="no-spinner" onWheel={(e) => e.currentTarget.blur()} />
+                          ) : (
+                            <TextInput style={styles.input} placeholder="0" placeholderTextColor="#374151" value={newDescriptionQty} onChangeText={setNewDescriptionQty} keyboardType="numeric" />
+                          )}
+                        </View>
+                        <View style={[styles.priceInputRow, { flex: 1 }]}>
+                          <Text style={styles.priceLabel}>$</Text>
+                          {Platform.OS === 'web' ? (
+                            <input type="number" step="0.01" placeholder="Unit Price (optional)" value={newDescriptionUnitPrice} onChange={(e) => setNewDescriptionUnitPrice(e.target.value)} style={{ flex: 1, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }} className="no-spinner" onWheel={(e) => e.currentTarget.blur()} />
+                          ) : (
+                            <TextInput style={[styles.input, styles.priceInput]} placeholder="Unit Price (optional)" placeholderTextColor="#374151" value={newDescriptionUnitPrice} onChangeText={setNewDescriptionUnitPrice} keyboardType="numeric" />
+                          )}
+                        </View>
                       </View>
-                    )}
-                    
-                  </View>
-                  <View style={styles.quantityUnitRow}>
-                    <View style={styles.quantityInputContainer}>
-                      <Text style={styles.label}>Qty/Unit *</Text>
-                      {Platform.OS === 'web' ? (
-                        <input
-                          type="number"
-                          placeholder="0"
-                          value={newWorkTitle.quantity}
-                          onChange={(e) => {
-                            const text = e.target.value;
-                            setNewWorkTitle(prev => {
-                              const quantity = parseFloat(text) || 0;
-                              const unitPrice = parseFloat(prev.unit_price) || 0;
-                              const calculatedPrice = (quantity * unitPrice).toString();
-                              return { ...prev, quantity: text, price: calculatedPrice };
-                            });
-                            // Clear error if exists
-                            if (fieldErrors.workTitle_quantity) {
-                              setFieldErrors(prev => {
-                                const newErrors = { ...prev };
-                                delete newErrors.workTitle_quantity;
-                                return newErrors;
-                              });
-                            }
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: 12,
-                            fontSize: 16,
-                            borderWidth: 1,
-                            borderColor: fieldErrors.workTitle_quantity ? '#ef4444' : '#d1d5db',
-                            borderRadius: 8,
-                            backgroundColor: '#ffffff',
-                          }}
-                          className="no-spinner"
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      ) : (
-                        <TextInput
-                          style={[styles.input, fieldErrors.workTitle_quantity && styles.inputError]}
-                          placeholder="0"
-                          placeholderTextColor="#374151"
-                          value={newWorkTitle.quantity}
-                          onChangeText={(text) => {
-                            setNewWorkTitle(prev => {
-                              const quantity = parseFloat(text) || 0;
-                              const unitPrice = parseFloat(prev.unit_price) || 0;
-                              const calculatedPrice = (quantity * unitPrice).toString();
-                              return { ...prev, quantity: text, price: calculatedPrice };
-                            });
-                            // Clear error if exists
-                            if (fieldErrors.workTitle_quantity) {
-                              setFieldErrors(prev => {
-                                const newErrors = { ...prev };
-                                delete newErrors.workTitle_quantity;
-                                return newErrors;
-                              });
-                            }
-                          }}
-                          keyboardType="numeric"
-                        />
-                      )}
-                      {fieldErrors.workTitle_quantity && (
-                        <Text style={styles.errorText}>{fieldErrors.workTitle_quantity}</Text>
-                      )}
+                      <TouchableOpacity style={styles.addDescriptionButton} onPress={handleAddDescription}>
+                        <Plus size={16} color="#000000" />
+                        <Text style={styles.addDescriptionButtonText}>Add Description</Text>
+                      </TouchableOpacity>
                     </View>
                   </View>
-                  <View style={styles.priceInputRow}>
-                    <Text style={styles.priceLabel}>$</Text>
-                    {Platform.OS === 'web' ? (
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Unit Price *"
-                        value={newWorkTitle.unit_price}
-                        onChange={(e) => {
-                          const text = e.target.value;
-                          setNewWorkTitle(prev => {
-                            const quantity = parseFloat(prev.quantity) || 0;
-                            const unitPrice = parseFloat(text) || 0;
-                            const calculatedPrice = (quantity * unitPrice).toString();
-                            return { ...prev, unit_price: text, price: calculatedPrice };
-                          });
-                          // Clear error if exists
-                          if (fieldErrors.workTitle_unit_price) {
-                            setFieldErrors(prev => {
-                              const newErrors = { ...prev };
-                              delete newErrors.workTitle_unit_price;
-                              return newErrors;
-                            });
-                          }
-                        }}
-                        style={{
-                          flex: 1,
-                          padding: 12,
-                          fontSize: 16,
-                          borderWidth: 1,
-                          borderColor: fieldErrors.workTitle_unit_price ? '#ef4444' : '#d1d5db',
-                          borderRadius: 8,
-                          backgroundColor: '#ffffff',
-                        }}
-                        className="no-spinner"
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                    ) : (
-                      <TextInput
-                        style={[styles.input, styles.priceInput, fieldErrors.workTitle_unit_price && styles.inputError]}
-                        placeholder="Unit Price *"
-                        placeholderTextColor="#374151"
-                        value={newWorkTitle.unit_price}
-                        onChangeText={(text) => {
-                          setNewWorkTitle(prev => {
-                            const quantity = parseFloat(prev.quantity) || 0;
-                            const unitPrice = parseFloat(text) || 0;
-                            const calculatedPrice = (quantity * unitPrice).toString();
-                            return { ...prev, unit_price: text, price: calculatedPrice };
-                          });
-                          // Clear error if exists
-                          if (fieldErrors.workTitle_unit_price) {
-                            setFieldErrors(prev => {
-                              const newErrors = { ...prev };
-                              delete newErrors.workTitle_unit_price;
-                              return newErrors;
-                            });
-                          }
-                        }}
-                        keyboardType="numeric"
-                      />
-                    )}
-                    {fieldErrors.workTitle_unit_price && (
-                        <Text style={styles.errorText}>{fieldErrors.workTitle_unit_price}</Text>
-                    )}
-                  </View>
-                  {newWorkTitle.quantity && newWorkTitle.unit_price && (
+                  {(newWorkTitle.descriptions.length > 0 && descTotal(newWorkTitle.descriptions) > 0) && !(parseFloat(newWorkTitle.quantity || '0') > 0 && parseFloat(newWorkTitle.unit_price || '0') > 0) && (
                     <View style={styles.calculatedPriceContainer}>
-                      <Text style={styles.calculatedPriceLabel}>Price (Qty × Unit Price):</Text>
+                      <Text style={styles.calculatedPriceLabel}>Total (all lines):</Text>
+                      <Text style={styles.calculatedPriceValue}>
+                        ${descTotal(newWorkTitle.descriptions).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Text>
+                    </View>
+                  )}
+                  {(parseFloat(newWorkTitle.quantity || '0') > 0 && parseFloat(newWorkTitle.unit_price || '0') > 0) && (
+                    <View style={styles.calculatedPriceContainer}>
+                      <Text style={styles.calculatedPriceLabel}>Total (Qty × Unit Price):</Text>
                       <Text style={styles.calculatedPriceValue}>
                         ${(parseFloat(newWorkTitle.quantity || '0') * parseFloat(newWorkTitle.unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Text>
                     </View>
                   )}
+
+                  <View style={styles.inputGroup}>
+                    <Text style={[styles.label, { marginBottom: 6 }]}>Qty / Unit / Unit Price (optional – for PDF)</Text>
+                    <View style={[styles.quantityUnitRow, { marginBottom: 0 }]}>
+                      <View style={styles.quantityInputContainer}>
+                        <Text style={[styles.label, { fontSize: 12, color: '#6b7280' }]}>Qty</Text>
+                        {Platform.OS === 'web' ? (
+                          <input type="number" placeholder="0" value={newWorkTitle.quantity ?? ''} onChange={(e) => setNewWorkTitle(prev => ({ ...prev, quantity: e.target.value }))} style={{ width: '100%', padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }} className="no-spinner" onWheel={(e) => e.currentTarget.blur()} />
+                        ) : (
+                          <TextInput style={styles.input} placeholder="0" placeholderTextColor="#9ca3af" value={newWorkTitle.quantity ?? ''} onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, quantity: text }))} keyboardType="numeric" />
+                        )}
+                      </View>
+                      <View style={[styles.quantityInputContainer, { flex: 0.8 }]}>
+                        <Text style={[styles.label, { fontSize: 12, color: '#6b7280' }]}>Unit</Text>
+                        <TextInput style={styles.input} placeholder="ea, sf…" placeholderTextColor="#9ca3af" value={newWorkTitle.unit ?? ''} onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, unit: text }))} />
+                      </View>
+                      <View style={[styles.priceInputRow, { flex: 1 }]}>
+                        <Text style={[styles.label, { fontSize: 12, color: '#6b7280' }]}>Unit Price</Text>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+                          <Text style={styles.priceLabel}>$</Text>
+                          {Platform.OS === 'web' ? (
+                            <input type="number" step="0.01" placeholder="0" value={newWorkTitle.unit_price ?? ''} onChange={(e) => setNewWorkTitle(prev => ({ ...prev, unit_price: e.target.value }))} style={{ flex: 1, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }} className="no-spinner" onWheel={(e) => e.currentTarget.blur()} />
+                          ) : (
+                            <TextInput style={[styles.input, styles.priceInput]} placeholder="0" placeholderTextColor="#9ca3af" value={newWorkTitle.unit_price ?? ''} onChangeText={(text) => setNewWorkTitle(prev => ({ ...prev, unit_price: text }))} keyboardType="numeric" />
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  </View>
 
                   <View style={styles.inputGroup}>
                     {editingWorkTitleIndex !== null ? (
@@ -2488,7 +2404,9 @@ export default function ProposalsScreen() {
                         <TouchableOpacity
                           style={styles.cancelEditButton}
                           onPress={() => {
-                            setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+                            setNewWorkTitle({ name: '', descriptions: [], price: '' });
+                            setNewDescriptionQty('');
+                            setNewDescriptionUnitPrice('');
                             setEditingWorkTitleIndex(null);
                             setSelectedWorkTitleFromList('');
                             setNewDescription('');
@@ -2545,15 +2463,9 @@ export default function ProposalsScreen() {
                   <Text style={styles.percentageLabel}>%</Text>
                 </View>
                 {(() => {
-                  const currentWorkTitleTotal = (() => {
-                    const quantity = parseFloat(newWorkTitle.quantity) || 0;
-                    const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-                    if (quantity > 0 && unitPrice > 0) {
-                      return quantity * unitPrice;
-                    }
-                    return 0;
-                  })();
-                  const totalWorkTitles = workTitlesTotal + currentWorkTitleTotal;
+                  const currentWorkTitleTotal = workTitlePrice(newWorkTitle);
+                  const workTitlesSum = workTitles.reduce((s, wt) => s + workTitlePrice(wt), 0);
+                  const totalWorkTitles = workTitlesSum + currentWorkTitleTotal;
                   const supervisionWeeks = parseFloat(newProposal.supervision_weeks) || 0;
                   const supervisionRate = newProposal.supervision_type === 'full-time' ? 1450 : newProposal.supervision_type === 'part-time' ? 725 : 0;
                   const calculatedSupervisionFee = (supervisionWeeks > 0 && newProposal.supervision_type !== 'none') ? supervisionRate * supervisionWeeks : 0;
@@ -2693,6 +2605,22 @@ export default function ProposalsScreen() {
                   onChangeText={(text) => setNewProposal(prev => ({ ...prev, description: text }))}
                   multiline
                   numberOfLines={4}
+                />
+              </View>
+
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Payment Plan (Section 2.2)</Text>
+                <Text style={[styles.label, { fontSize: 12, fontWeight: '400', color: '#6b7280', marginBottom: 6 }]}>
+                  Each line = one schedule item in the PDF.
+                </Text>
+                <TextInput
+                  style={[styles.input, styles.textArea]}
+                  placeholder={DEFAULT_PAYMENT_PLAN_TEXT}
+                  placeholderTextColor="#9ca3af"
+                  value={newProposal.payment_plan_text}
+                  onChangeText={(text) => setNewProposal(prev => ({ ...prev, payment_plan_text: text }))}
+                  multiline
+                  numberOfLines={10}
                 />
               </View>
 
@@ -2929,24 +2857,17 @@ export default function ProposalsScreen() {
                         </View>
                         {(workTitle.descriptions && workTitle.descriptions.length > 0) && (
                           <View style={styles.workTitleDetailDescriptions}>
-                            {workTitle.descriptions.map((desc, descIndex) => (
+                            {workTitle.descriptions.map((desc: any, descIndex: number) => (
                               <Text key={descIndex} style={styles.workTitleDetailDescription}>
-                                • {desc}
+                                • {typeof desc === 'string' ? desc : (desc?.text || '—')}
                               </Text>
                             ))}
                           </View>
                         )}
-                        {/* Legacy support - show single description if exists */}
                         {(!workTitle.descriptions || workTitle.descriptions.length === 0) && workTitle.description && (
                           <Text style={styles.workTitleDetailDescription}>{workTitle.description}</Text>
                         )}
                         <View style={styles.workTitleDetailInfo}>
-                          <Text style={styles.workTitleDetailInfoText}>
-                            Quantity: {workTitle.quantity || 0}
-                          </Text>
-                          <Text style={styles.workTitleDetailInfoText}>
-                            Unit Price: {formatCurrency(workTitle.unit_price || 0)}
-                          </Text>
                           <Text style={styles.workTitleDetailPrice}>
                             Total: {formatCurrency(workTitle.price)}
                           </Text>
@@ -3061,16 +2982,26 @@ export default function ProposalsScreen() {
                             supervision_weeks: '',
                             discount: selectedProposal.discount?.toString() || '',
                             description: selectedProposal.description || '',
+                            payment_plan_text: selectedProposal.payment_plan_text ?? DEFAULT_PAYMENT_PLAN_TEXT,
                             proposal_date: formattedProposalDate,
                           });
-                          // Load work titles
-                          const proposalWorkTitles = selectedProposal.work_titles.map(wt => ({
-                            name: wt.name,
-                            descriptions: wt.descriptions || (wt.description ? [wt.description] : []),
-                            quantity: wt.quantity.toString(),
-                            unit_price: wt.unit_price.toString(),
-                            price: wt.price.toString(),
-                          }));
+                          const proposalWorkTitles = selectedProposal.work_titles.map((wt: any) => {
+                            const descs = wt.descriptions && wt.descriptions.length > 0 ? wt.descriptions : (wt.description ? [wt.description] : []);
+                            let items = descs.map((d: any) => normalizeDesc(d));
+                            let total = descTotal(items);
+                            if (total === 0 && (wt.quantity || wt.unit_price)) {
+                              items = [{ text: '', quantity: (wt.quantity || 0).toString(), unit_price: (wt.unit_price || 0).toString() }];
+                              total = (wt.quantity || 0) * (wt.unit_price || 0);
+                            }
+                            return {
+                              name: wt.name,
+                              descriptions: items,
+                              price: total.toString(),
+                              quantity: wt.quantity != null ? String(wt.quantity) : '',
+                              unit: wt.unit || '',
+                              unit_price: wt.unit_price != null ? String(wt.unit_price) : '',
+                            };
+                          });
                           setWorkTitles(proposalWorkTitles);
                           // Close detail modal and open create/edit modal
                           setShowDetailModal(false);
@@ -3850,7 +3781,7 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   addButtonText: {
-    color: '#1f2937',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -4583,7 +4514,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   submitButtonText: {
-    color: '#1f2937',
+    color: '#ffffff',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -5069,11 +5000,14 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   sendCommentButton: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#000000',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 8,
     alignSelf: 'flex-end',
+    minHeight: 44,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   sendCommentButtonText: {
     color: '#ffffff',

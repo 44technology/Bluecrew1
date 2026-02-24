@@ -139,19 +139,25 @@ export default function SalesScreen() {
 
     try {
       let logoBase64 = '';
-      try {
-        const logoPath = '/assets/images/logo.png';
-        const response = await fetch(logoPath);
-        if (response.ok) {
-          const blob = await response.blob();
-          const reader = new FileReader();
-          logoBase64 = await new Promise((resolve) => {
-            reader.onloadend = () => resolve(reader.result as string);
-            reader.readAsDataURL(blob);
-          });
-        }
-      } catch (error) {
-        console.log('Logo not found, continuing without logo');
+      const logoPaths = [
+        '/assets/images/logo.png',
+        './assets/images/logo.png',
+        'assets/images/logo.png',
+        (typeof window !== 'undefined' && (window as any).location?.origin) ? (window as any).location.origin + '/assets/images/logo.png' : '',
+      ].filter(Boolean);
+      for (const logoPath of logoPaths) {
+        try {
+          const response = await fetch(logoPath as string);
+          if (response.ok) {
+            const blob = await response.blob();
+            const reader = new FileReader();
+            logoBase64 = await new Promise((resolve) => {
+              reader.onloadend = () => resolve(reader.result as string);
+              reader.readAsDataURL(blob);
+            });
+            if (logoBase64) break;
+          }
+        } catch (_) {}
       }
 
       const htmlContent = `<!DOCTYPE html>
@@ -162,9 +168,10 @@ export default function SalesScreen() {
   <style>
     @media print { body { margin: 0; padding: 20px; } }
     body { font-family: 'Arial', 'Helvetica', sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
-    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #000000; }
+    .header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 40px; padding-bottom: 20px; border-bottom: 3px solid #1e3a5f; }
     .logo { max-width: 200px; max-height: 80px; object-fit: contain; }
-    .proposal-title { font-size: 36px; font-weight: bold; color: #000000; margin: 0 0 10px 0; }
+    .logo-text { font-size: 22px; font-weight: 600; color: #1e3a5f; letter-spacing: 0.5px; }
+    .proposal-title { font-size: 22px; font-weight: 600; color: #1e3a5f; letter-spacing: 1px; margin: 0 0 10px 0; text-transform: uppercase; }
     .proposal-number { font-size: 18px; color: #666; margin: 0; }
     .info-section { display: flex; justify-content: space-between; margin-bottom: 30px; }
     .info-box { flex: 1; padding: 15px; background-color: #f9fafb; border-radius: 8px; margin-right: 15px; }
@@ -193,7 +200,7 @@ export default function SalesScreen() {
       <p class="proposal-number">No: ${proposal.proposal_number}</p>
       <p>Date: ${new Date(proposal.proposal_date || proposal.created_at || new Date().toISOString()).toLocaleDateString()}</p>
     </div>
-    ${logoBase64 ? `<img src="${logoBase64}" class="logo" />` : ''}
+    ${logoBase64 ? `<img src="${logoBase64}" class="logo" alt="Logo" />` : '<div class="logo-text">Blue Crew</div>'}
   </div>
 
   <div class="info-section">

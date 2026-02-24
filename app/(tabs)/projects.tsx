@@ -35,6 +35,18 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
+type WorkDescriptionItem = { text: string; quantity?: string; unit_price?: string };
+function descTotal(descriptions: WorkDescriptionItem[]): number {
+  return descriptions.reduce((sum, d) => {
+    const q = parseFloat(d.quantity || '0') || 0;
+    const u = parseFloat(d.unit_price || '0') || 0;
+    return sum + q * u;
+  }, 0);
+}
+function normalizeDesc(d: string | WorkDescriptionItem): WorkDescriptionItem {
+  return typeof d === 'string' ? { text: d } : { text: (d as any).text || '', quantity: (d as any).quantity, unit_price: (d as any).unit_price };
+}
+
 export default function ProjectsScreen() {
   const languageContext = useLanguage();
   const t = languageContext?.t || ((key: string) => key);
@@ -142,9 +154,11 @@ export default function ProjectsScreen() {
     project_description: '',
   });
   const [selectedClients, setSelectedClients] = useState<Array<{ id: string; name: string }>>([]);
-  const [workTitles, setWorkTitles] = useState<Array<{ name: string; descriptions: string[]; quantity: string; unit_price: string; price: string }>>([]);
-  const [newWorkTitle, setNewWorkTitle] = useState({ name: '', descriptions: [] as string[], quantity: '', unit_price: '', price: '' });
+  const [workTitles, setWorkTitles] = useState<Array<{ name: string; descriptions: WorkDescriptionItem[]; price: string }>>([]);
+  const [newWorkTitle, setNewWorkTitle] = useState<{ name: string; descriptions: WorkDescriptionItem[]; price: string }>({ name: '', descriptions: [], price: '' });
   const [newDescription, setNewDescription] = useState('');
+  const [newDescriptionQty, setNewDescriptionQty] = useState('');
+  const [newDescriptionUnitPrice, setNewDescriptionUnitPrice] = useState('');
   const [editingWorkTitleIndex, setEditingWorkTitleIndex] = useState<number | null>(null);
   const [invoiceLoaded, setInvoiceLoaded] = useState(false);
   const [showWorkTitleModal, setShowWorkTitleModal] = useState(false);
@@ -172,24 +186,10 @@ export default function ProjectsScreen() {
     'Trash Removal',
   ];
 
-  // Calculate total budget from work titles, general conditions, and supervision fee
+  // Calculate total budget from work titles (sum of all description line totals), general conditions, and supervision fee
   useEffect(() => {
-    // Calculate work titles total (including current form work title if valid)
-    let workTitlesTotal = workTitles.reduce((sum, workTitle) => {
-      const quantity = parseFloat(workTitle.quantity) || 0;
-      const unitPrice = parseFloat(workTitle.unit_price) || 0;
-      const price = quantity * unitPrice;
-      return sum + price;
-    }, 0);
-    
-    // Add current work title if it's valid
-    if (newWorkTitle.name && newWorkTitle.quantity && newWorkTitle.unit_price) {
-      const quantity = parseFloat(newWorkTitle.quantity) || 0;
-      const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-      if (quantity > 0 && unitPrice > 0) {
-        workTitlesTotal += quantity * unitPrice;
-      }
-    }
+    let workTitlesTotal = workTitles.reduce((sum, workTitle) => sum + descTotal(workTitle.descriptions), 0);
+    workTitlesTotal += descTotal(newWorkTitle.descriptions);
     
     // Calculate supervision fee based on type and weeks
     const supervisionWeeks = parseFloat(newProject.supervision_weeks) || 0;
@@ -201,7 +201,7 @@ export default function ProjectsScreen() {
     const discount = parseFloat(newProject.discount) || 0;
     const total = workTitlesTotal + generalConditions + supervisionFee - discount;
     setNewProject(prev => ({ ...prev, total_budget: total > 0 ? total.toString() : '', general_conditions: generalConditions.toString(), supervision_fee: supervisionFee.toString() }));
-  }, [workTitles, newWorkTitle.quantity, newWorkTitle.unit_price, newProject.general_conditions_percentage, newProject.supervision_fee, newProject.supervision_type, newProject.supervision_weeks, newProject.discount]);
+  }, [workTitles, newWorkTitle.descriptions, newProject.general_conditions_percentage, newProject.supervision_fee, newProject.supervision_type, newProject.supervision_weeks, newProject.discount]);
 
   useEffect(() => {
     loadProjects();
@@ -568,13 +568,16 @@ export default function ProjectsScreen() {
         }
 
         // Pre-fill work titles
-        const invoiceWorkTitles = invoice.work_titles.map(wt => ({
-          name: wt.name,
-          descriptions: (wt as any).descriptions?.length ? (wt as any).descriptions : (wt.description ? [wt.description] : []),
-          quantity: (wt.quantity || 0).toString(),
-          unit_price: (wt.unit_price || 0).toString(),
-          price: wt.price.toString(),
-        }));
+        const invoiceWorkTitles = invoice.work_titles.map(wt => {
+          const descs = (wt as any).descriptions?.length ? (wt as any).descriptions : (wt.description ? [wt.description] : []);
+          let items = descs.map((d: any) => normalizeDesc(d));
+          let total = descTotal(items);
+          if (total === 0 && (wt.quantity || wt.unit_price)) {
+            items = [{ text: '', quantity: (wt.quantity || 0).toString(), unit_price: (wt.unit_price || 0).toString() }];
+            total = parseFloat((wt.quantity || 0).toString()) * parseFloat((wt.unit_price || 0).toString());
+          }
+          return { name: wt.name, descriptions: items, price: total.toString() };
+        });
         setWorkTitles(invoiceWorkTitles);
 
         // Pre-fill general conditions and supervision fee
@@ -712,16 +715,19 @@ export default function ProjectsScreen() {
           }));
         }
 
-        // Pre-fill work titles from proposal
-        const proposalWorkTitles = proposal.work_titles.map(wt => ({
-          name: wt.name,
-          descriptions: (wt as any).descriptions && (wt as any).descriptions.length > 0
+        // Pre-fill work titles from proposal (normalize to description items with optional qty/unit price)
+        const proposalWorkTitles = proposal.work_titles.map(wt => {
+          const descs = (wt as any).descriptions && (wt as any).descriptions.length > 0
             ? (wt as any).descriptions
-            : ((wt as any).description ? [(wt as any).description] : []),
-          quantity: (wt.quantity || 0).toString(),
-          unit_price: (wt.unit_price || 0).toString(),
-          price: wt.price.toString(),
-        }));
+            : ((wt as any).description ? [(wt as any).description] : []);
+          let items = descs.map((d: any) => normalizeDesc(d));
+          let total = descTotal(items);
+          if (total === 0 && (wt.quantity || wt.unit_price)) {
+            items = [{ text: '', quantity: (wt.quantity || 0).toString(), unit_price: (wt.unit_price || 0).toString() }];
+            total = (wt.quantity || 0) * (wt.unit_price || 0);
+          }
+          return { name: wt.name, descriptions: items, price: total.toString() };
+        });
         setWorkTitles(proposalWorkTitles);
 
         // Calculate work titles total for percentage calculation
@@ -862,11 +868,18 @@ export default function ProjectsScreen() {
       Alert.alert('Error', 'Please enter a description');
       return;
     }
+    const item: WorkDescriptionItem = {
+      text: newDescription.trim(),
+      ...(newDescriptionQty.trim() ? { quantity: newDescriptionQty.trim() } : {}),
+      ...(newDescriptionUnitPrice.trim() ? { unit_price: newDescriptionUnitPrice.trim() } : {}),
+    };
     setNewWorkTitle(prev => ({
       ...prev,
-      descriptions: [...prev.descriptions, newDescription.trim()],
+      descriptions: [...prev.descriptions, item],
     }));
     setNewDescription('');
+    setNewDescriptionQty('');
+    setNewDescriptionUnitPrice('');
   };
 
   const handleRemoveDescription = (index: number) => {
@@ -877,24 +890,20 @@ export default function ProjectsScreen() {
   };
 
   const handleAddWorkTitle = () => {
-    if (!newWorkTitle.name || !newWorkTitle.quantity || !newWorkTitle.unit_price) {
-      Alert.alert('Error', 'Please fill in work title name, quantity, and unit price');
+    if (!newWorkTitle.name.trim()) {
+      Alert.alert('Error', 'Please enter work title name');
       return;
     }
-    
-    const quantity = parseFloat(newWorkTitle.quantity) || 0;
-    const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-    const calculatedPrice = (quantity * unitPrice).toString();
-    
-    setWorkTitles(prev => [...prev, { 
-      name: newWorkTitle.name, 
-      descriptions: newWorkTitle.descriptions?.length ? [...newWorkTitle.descriptions] : [],
-      quantity: newWorkTitle.quantity,
-      unit_price: newWorkTitle.unit_price,
-      price: calculatedPrice,
+    const total = descTotal(newWorkTitle.descriptions);
+    setWorkTitles(prev => [...prev, {
+      name: newWorkTitle.name.trim(),
+      descriptions: [...newWorkTitle.descriptions],
+      price: total.toString(),
     }]);
-    setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+    setNewWorkTitle({ name: '', descriptions: [], price: '' });
     setNewDescription('');
+    setNewDescriptionQty('');
+    setNewDescriptionUnitPrice('');
     setSelectedWorkTitleFromList('');
   };
 
@@ -1017,22 +1026,14 @@ export default function ProjectsScreen() {
   };
 
   const handleCreateProject = async () => {
-    // Check if there's a work title in the form that hasn't been added yet
     let finalWorkTitles = [...workTitles];
-    if (newWorkTitle.name && newWorkTitle.quantity && newWorkTitle.unit_price) {
-      // Auto-add the current work title if it's valid
-      const quantity = parseFloat(newWorkTitle.quantity) || 0;
-      const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-      if (quantity > 0 && unitPrice > 0) {
-        const calculatedPrice = (quantity * unitPrice).toString();
-        finalWorkTitles.push({
-          name: newWorkTitle.name,
-          descriptions: newWorkTitle.descriptions?.length ? [...newWorkTitle.descriptions] : [],
-          quantity: newWorkTitle.quantity,
-          unit_price: newWorkTitle.unit_price,
-          price: calculatedPrice,
-        });
-      }
+    if (newWorkTitle.name.trim()) {
+      const total = descTotal(newWorkTitle.descriptions);
+      finalWorkTitles.push({
+        name: newWorkTitle.name.trim(),
+        descriptions: [...newWorkTitle.descriptions],
+        price: total.toString(),
+      });
     }
     
     if (finalWorkTitles.length === 0) {
@@ -1152,12 +1153,7 @@ export default function ProjectsScreen() {
       // Build full address string for backward compatibility
       const fullAddress = `${newProject.project_street}, ${newProject.project_city}, ${newProject.project_state} ${newProject.project_zip}`;
       
-      // Calculate internal budget from work titles
-      const workTitlesTotal = finalWorkTitles.reduce((sum, wt) => {
-        const quantity = parseFloat(wt.quantity) || 0;
-        const unitPrice = parseFloat(wt.unit_price) || 0;
-        return sum + (quantity * unitPrice);
-      }, 0);
+      const workTitlesTotal = finalWorkTitles.reduce((sum, wt) => sum + parseFloat(wt.price || '0'), 0);
       
       const supervisionWeeks = parseFloat(newProject.supervision_weeks) || 0;
       const supervisionRate = newProject.supervision_type === 'full-time' ? 1450 : newProject.supervision_type === 'part-time' ? 725 : 0;
@@ -1216,15 +1212,12 @@ export default function ProjectsScreen() {
 
       const projectId = await ProjectService.createProject(projectData);
       
-      // Add work titles as steps with descriptions as child steps
       if (finalWorkTitles.length > 0 && projectId) {
         for (let i = 0; i < finalWorkTitles.length; i++) {
           const workTitle = finalWorkTitles[i];
-          const quantity = parseFloat(workTitle.quantity) || 0;
-          const unitPrice = parseFloat(workTitle.unit_price) || 0;
-          const calculatedPrice = quantity * unitPrice;
+          const calculatedPrice = parseFloat(workTitle.price || '0') || 0;
           const descriptionStr = (workTitle.descriptions && workTitle.descriptions.length > 0)
-            ? workTitle.descriptions.join(', ')
+            ? workTitle.descriptions.map(d => d.text).filter(Boolean).join(', ')
             : '';
           const parentStepId = await ProjectService.addStep(projectId, {
             name: workTitle.name,
@@ -1366,12 +1359,12 @@ export default function ProjectsScreen() {
   return (
     <>
       <HamburgerMenu />
-      <View style={[styles.container, { backgroundColor: theme.background }]}>
-        <View style={[styles.header, { backgroundColor: theme.primaryDark, borderBottomColor: theme.accentLight }]}>
+      <View style={styles.container}>
+        <View style={styles.header}>
         <View style={styles.headerTop}>
           <View>
-            <Text style={[styles.title, { color: theme.text }]}>Projects</Text>
-            <Text style={[styles.subtitle, { color: theme.textMuted }]}>Manage all your projects</Text>
+            <Text style={styles.title}>Projects</Text>
+            <Text style={styles.subtitle}>Manage all your projects</Text>
           </View>
           {!isMobile && canCreateProject && (
             <TouchableOpacity
@@ -1381,7 +1374,7 @@ export default function ProjectsScreen() {
             </TouchableOpacity>
           )}
         </View>
-        <View style={[styles.segmented, { backgroundColor: theme.background }]}>
+        <View style={styles.segmented}>
           <TouchableOpacity
             style={[
               styles.segmentItem,
@@ -1841,17 +1834,20 @@ export default function ProjectsScreen() {
                         {(workTitle.descriptions && workTitle.descriptions.length > 0) && (
                           <View style={styles.descriptionsList}>
                             {workTitle.descriptions.map((desc, di) => (
-                              <Text key={di} style={styles.workTitleDescription}>• {desc}</Text>
+                              <View key={di} style={{ marginBottom: 4 }}>
+                                <Text style={styles.workTitleDescription}>
+                                  • {desc.text || (desc.quantity && desc.unit_price ? `Qty ${desc.quantity} × $${parseFloat(desc.unit_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2 })}` : '—')}
+                                </Text>
+                                {((desc.quantity && desc.quantity !== '0') || (desc.unit_price && desc.unit_price !== '0')) && (
+                                  <Text style={[styles.workTitleDetailText, { marginLeft: 12, fontSize: 12 }]}>
+                                    {(parseFloat(desc.quantity || '0') * parseFloat(desc.unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2 })} (Qty × Unit Price)
+                                  </Text>
+                                )}
+                              </View>
                             ))}
                           </View>
                         )}
                         <View style={styles.workTitleDetails}>
-                          <Text style={styles.workTitleDetailText}>
-                            Qty: {workTitle.quantity}
-                          </Text>
-                          <Text style={styles.workTitleDetailText}>
-                            Unit Price: ${parseFloat(workTitle.unit_price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </Text>
                           <Text style={styles.workTitlePrice}>
                             Total: ${parseFloat(workTitle.price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </Text>
@@ -1900,7 +1896,14 @@ export default function ProjectsScreen() {
                       <View style={styles.descriptionsList}>
                         {newWorkTitle.descriptions.map((desc, index) => (
                           <View key={index} style={styles.descriptionItem}>
-                            <Text style={styles.descriptionText}>• {desc}</Text>
+                            <View style={{ flex: 1 }}>
+                              <Text style={styles.descriptionText}>• {desc.text || '—'}</Text>
+                              {((desc.quantity && desc.quantity !== '0') || (desc.unit_price && desc.unit_price !== '0')) && (
+                                <Text style={[styles.workTitleDetailText, { fontSize: 12, marginTop: 2 }]}>
+                                  Qty: {desc.quantity || '0'} × ${(parseFloat(desc.unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2 })} = ${((parseFloat(desc.quantity || '0') || 0) * (parseFloat(desc.unit_price || '0') || 0)).toLocaleString(undefined, { minimumFractionDigits: 2 })}
+                                </Text>
+                              )}
+                            </View>
                             <TouchableOpacity
                               style={styles.removeDescriptionButton}
                               onPress={() => handleRemoveDescription(index)}
@@ -1914,121 +1917,60 @@ export default function ProjectsScreen() {
                     <View style={styles.addDescriptionContainer}>
                       <TextInput
                         style={[styles.input, styles.textArea]}
-                        placeholder="Enter work description"
+                        placeholder="Enter work description (optional Qty & Unit Price below)"
                         placeholderTextColor="#374151"
                         value={newDescription}
                         onChangeText={setNewDescription}
                         multiline
                         numberOfLines={2}
                       />
-                      <TouchableOpacity
-                        style={styles.addDescriptionButton}
-                        onPress={handleAddDescription}
-                      >
+                      <View style={[styles.quantityUnitRow, { marginBottom: 8 }]}>
+                        <View style={styles.quantityInputContainer}>
+                          <Text style={styles.label}>Qty (optional)</Text>
+                          {Platform.OS === 'web' ? (
+                            <input
+                              type="number"
+                              placeholder="0"
+                              value={newDescriptionQty}
+                              onChange={(e) => setNewDescriptionQty(e.target.value)}
+                              style={{ width: '100%', padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }}
+                              className="no-spinner"
+                              onWheel={(e) => e.currentTarget.blur()}
+                            />
+                          ) : (
+                            <TextInput style={styles.input} placeholder="0" placeholderTextColor="#374151" value={newDescriptionQty} onChangeText={setNewDescriptionQty} keyboardType="numeric" />
+                          )}
+                        </View>
+                        <View style={[styles.priceInputRow, { flex: 1 }]}>
+                          <Text style={styles.priceLabel}>$</Text>
+                          {Platform.OS === 'web' ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Unit Price (optional)"
+                              value={newDescriptionUnitPrice}
+                              onChange={(e) => setNewDescriptionUnitPrice(e.target.value)}
+                              style={{ flex: 1, padding: 12, fontSize: 16, borderWidth: 1, borderColor: '#d1d5db', borderRadius: 8, backgroundColor: '#ffffff' }}
+                              className="no-spinner"
+                              onWheel={(e) => e.currentTarget.blur()}
+                            />
+                          ) : (
+                            <TextInput style={[styles.input, styles.priceInput]} placeholder="Unit Price (optional)" placeholderTextColor="#374151" value={newDescriptionUnitPrice} onChangeText={setNewDescriptionUnitPrice} keyboardType="numeric" />
+                          )}
+                        </View>
+                      </View>
+                      <TouchableOpacity style={styles.addDescriptionButton} onPress={handleAddDescription}>
                         <Plus size={16} color="#000000" />
                         <Text style={styles.addDescriptionButtonText}>Add Description</Text>
                       </TouchableOpacity>
                     </View>
                   </View>
-                  <View style={styles.quantityUnitRow}>
-                    <View style={styles.quantityInputContainer}>
-                      <Text style={styles.label}>Qty/Unit *</Text>
-                      {Platform.OS === 'web' ? (
-                        <input
-                          type="number"
-                          placeholder="0"
-                          value={newWorkTitle.quantity}
-                          onChange={(e) => {
-                            const text = e.target.value;
-                            setNewWorkTitle(prev => {
-                              const quantity = parseFloat(text) || 0;
-                              const unitPrice = parseFloat(prev.unit_price) || 0;
-                              const calculatedPrice = (quantity * unitPrice).toString();
-                              return { ...prev, quantity: text, price: calculatedPrice };
-                            });
-                          }}
-                          style={{
-                            width: '100%',
-                            padding: 12,
-                            fontSize: 16,
-                            borderWidth: 1,
-                            borderColor: '#d1d5db',
-                            borderRadius: 8,
-                            backgroundColor: '#ffffff',
-                          }}
-                          className="no-spinner"
-                          onWheel={(e) => e.currentTarget.blur()}
-                        />
-                      ) : (
-                        <TextInput
-                          style={styles.input}
-                          placeholder="0"
-                          value={newWorkTitle.quantity}
-                          onChangeText={(text) => {
-                            setNewWorkTitle(prev => {
-                              const quantity = parseFloat(text) || 0;
-                              const unitPrice = parseFloat(prev.unit_price) || 0;
-                              const calculatedPrice = (quantity * unitPrice).toString();
-                              return { ...prev, quantity: text, price: calculatedPrice };
-                            });
-                          }}
-                          keyboardType="numeric"
-                        />
-                      )}
-                    </View>
-                  </View>
-                  <View style={styles.priceInputRow}>
-                    <Text style={styles.priceLabel}>$</Text>
-                    {Platform.OS === 'web' ? (
-                      <input
-                        type="number"
-                        step="0.01"
-                        placeholder="Unit Price *"
-                        value={newWorkTitle.unit_price}
-                        onChange={(e) => {
-                          const text = e.target.value;
-                          setNewWorkTitle(prev => {
-                            const quantity = parseFloat(prev.quantity) || 0;
-                            const unitPrice = parseFloat(text) || 0;
-                            const calculatedPrice = (quantity * unitPrice).toString();
-                            return { ...prev, unit_price: text, price: calculatedPrice };
-                          });
-                        }}
-                        style={{
-                          flex: 1,
-                          padding: 12,
-                          fontSize: 16,
-                          borderWidth: 1,
-                          borderColor: '#d1d5db',
-                          borderRadius: 8,
-                          backgroundColor: '#ffffff',
-                        }}
-                        className="no-spinner"
-                        onWheel={(e) => e.currentTarget.blur()}
-                      />
-                    ) : (
-                    <TextInput
-                      style={[styles.input, styles.priceInput]}
-                        placeholder="Unit Price *"
-                        value={newWorkTitle.unit_price}
-                        onChangeText={(text) => {
-                          setNewWorkTitle(prev => {
-                            const quantity = parseFloat(prev.quantity) || 0;
-                            const unitPrice = parseFloat(text) || 0;
-                            const calculatedPrice = (quantity * unitPrice).toString();
-                            return { ...prev, unit_price: text, price: calculatedPrice };
-                          });
-                        }}
-                      keyboardType="numeric"
-                    />
-                    )}
-                  </View>
 
-                  {newWorkTitle.quantity && newWorkTitle.unit_price && (
+                  {(newWorkTitle.descriptions.length > 0 && descTotal(newWorkTitle.descriptions) > 0) && (
                     <View style={styles.calculatedPriceContainer}>
-                      <Text style={styles.calculatedPriceLabel}>Price (Qty × Unit Price):</Text>
+                      <Text style={styles.calculatedPriceLabel}>Total (all lines):</Text>
                       <Text style={styles.calculatedPriceValue}>
-                        ${(parseFloat(newWorkTitle.quantity || '0') * parseFloat(newWorkTitle.unit_price || '0')).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        ${descTotal(newWorkTitle.descriptions).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Text>
                     </View>
                   )}
@@ -2080,19 +2022,8 @@ export default function ProjectsScreen() {
                 <Text style={styles.percentageLabel}>%</Text>
               </View>
               {(() => {
-                const currentWorkTitleTotal = (() => {
-                  const quantity = parseFloat(newWorkTitle.quantity) || 0;
-                  const unitPrice = parseFloat(newWorkTitle.unit_price) || 0;
-                  if (quantity > 0 && unitPrice > 0) {
-                    return quantity * unitPrice;
-                  }
-                  return 0;
-                })();
-                const workTitlesTotal = workTitles.reduce((sum, workTitle) => {
-                  const quantity = parseFloat(workTitle.quantity) || 0;
-                  const unitPrice = parseFloat(workTitle.unit_price) || 0;
-                  return sum + (quantity * unitPrice);
-                }, 0);
+                const currentWorkTitleTotal = descTotal(newWorkTitle.descriptions);
+                const workTitlesTotal = workTitles.reduce((sum, workTitle) => sum + parseFloat(workTitle.price || '0'), 0);
                 const totalWorkTitles = workTitlesTotal + currentWorkTitleTotal;
                 const supervisionWeeks = parseFloat(newProject.supervision_weeks) || 0;
                 const supervisionRate = newProject.supervision_type === 'full-time' ? 1450 : newProject.supervision_type === 'part-time' ? 725 : 0;
@@ -2865,31 +2796,38 @@ export default function ProjectsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#ffffff',
+    backgroundColor: '#f8fafc',
   },
   header: {
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#ffffff',
     paddingTop: 50,
     paddingHorizontal: 20,
     paddingBottom: 20,
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e5e5',
+    borderBottomColor: 'rgba(0,0,0,0.06)',
+    ...(Platform.OS === 'web' ? {
+      shadowColor: '#000',
+      shadowOffset: { width: 0, height: 1 },
+      shadowOpacity: 0.04,
+      shadowRadius: 3,
+    } : { elevation: 1 }),
   },
   headerTop: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    marginBottom: 12,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 22,
+    fontSize: 24,
     fontWeight: '700',
-    color: '#000000',
+    color: '#0f172a',
     marginBottom: 4,
+    letterSpacing: -0.5,
   },
   subtitle: {
     fontSize: 14,
-    color: '#000000',
+    color: '#64748b',
   },
   contentActions: {
     paddingHorizontal: 20,
@@ -2925,32 +2863,39 @@ const styles = StyleSheet.create({
   },
   scrollContent: {
     padding: 20,
-    paddingBottom: 120, // Extra padding for tab bar + safe area
+    paddingBottom: 120,
+    paddingTop: 24,
   },
   segmented: {
     flexDirection: 'row',
-    backgroundColor: '#ffffff',
-    borderRadius: 8,
-    padding: 4,
-    marginTop: 12,
+    backgroundColor: '#f1f5f9',
+    borderRadius: 12,
+    padding: 5,
+    marginTop: 4,
     gap: 4,
     alignSelf: 'flex-start',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 1px 2px rgba(0,0,0,0.04)',
+    } : { elevation: 0 }),
   },
   segmentItem: {
-    paddingVertical: 8,
-    paddingHorizontal: 12,
-    borderRadius: 6,
-    backgroundColor: '#ffffff',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 10,
+    backgroundColor: 'transparent',
   },
   segmentActive: {
-    backgroundColor: '#000000',
-    borderWidth: 1,
-    borderColor: '#000000',
+    backgroundColor: '#0f172a',
+    borderWidth: 0,
+    borderColor: 'transparent',
+    ...(Platform.OS === 'web' ? {
+      boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+    } : { elevation: 2 }),
   },
   segmentText: {
-    fontSize: 12,
+    fontSize: 13,
     fontWeight: '600',
-    color: '#000000',
+    color: '#64748b',
   },
   segmentTextActive: {
     color: '#ffffff',
@@ -2975,20 +2920,21 @@ const styles = StyleSheet.create({
     color: '#1f2937',
   },
   projectsList: {
-    gap: 16,
+    gap: 18,
   },
   projectCard: {
     backgroundColor: '#ffffff',
-    borderRadius: 12,
+    borderRadius: 16,
     padding: Platform.OS === 'web' ? 20 : 16,
-    ...CARD_BORDER,
+    borderWidth: 1,
+    borderColor: '#e2e8f0',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    elevation: 2,
     borderLeftWidth: 4,
-    borderLeftColor: '#b0b0b0',
+    borderLeftColor: '#94a3b8',
     minHeight: Platform.OS !== 'web' ? 100 : undefined,
   },
   projectHeader: {

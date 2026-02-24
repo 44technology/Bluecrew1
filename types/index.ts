@@ -409,6 +409,8 @@ export interface Proposal {
   supervision_fee: number;
   discount?: number; // Discount amount
   description?: string; // Proposal description/notes
+  /** Editable payment schedule text for section 2.2 (PDF). Newline-separated: first line = intro, rest = schedule items. */
+  payment_plan_text?: string;
   total_cost: number;
   management_approval: 'pending' | 'approved' | 'rejected' | 'update_review';
   client_approval: null | 'pending' | 'approved' | 'rejected' | 'request_changes'; // null = not sent to client yet
