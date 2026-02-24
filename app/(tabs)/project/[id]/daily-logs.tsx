@@ -1049,13 +1049,13 @@ const styles = StyleSheet.create({
   emptyTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff', // White text on blue background
+    color: '#1f2937',
     marginTop: 16,
     marginBottom: 8,
   },
   emptyText: {
     fontSize: 16,
-    color: '#f5f5f5', // Light yellow like teams
+    color: '#1f2937',
     marginBottom: 24,
   },
   addFirstLogButton: {
@@ -1245,7 +1245,7 @@ const styles = StyleSheet.create({
   modalTitle: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#ffffff', // Yellow text like teams
+    color: '#1f2937',
   },
   closeButton: {
     fontSize: 24,

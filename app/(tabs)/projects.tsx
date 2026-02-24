@@ -2964,7 +2964,7 @@ const styles = StyleSheet.create({
   loadingText: {
     marginTop: 12,
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#1f2937',
   },
   emptyState: {
     alignItems: 'center',
@@ -2972,7 +2972,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#1f2937',
   },
   projectsList: {
     gap: 16,
@@ -3108,7 +3108,7 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: '600',
-    color: '#ffffff', // Yellow text like teams
+    color: '#1f2937',
     marginBottom: 8,
   },
   helperText: {

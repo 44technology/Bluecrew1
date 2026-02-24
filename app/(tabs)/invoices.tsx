@@ -3072,7 +3072,7 @@ const styles = StyleSheet.create({
     color: '#000000',
   },
   filterToggleTextActive: {
-    color: '#ffffff',
+    color: '#1f2937',
   },
   // Kanban Board Styles
   kanbanBoard: {

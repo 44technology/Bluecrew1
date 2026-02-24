@@ -2464,33 +2464,7 @@ export default function ProposalsScreen() {
                       />
                     )}
                     {fieldErrors.workTitle_unit_price && (
-                      <Text style={styles.errorText}>{fieldErrors.workTitle_unit_price}</Text>
-                    )}
-                    <TouchableOpacity
-                      style={styles.addWorkTitleButton}
-                      onPress={editingWorkTitleIndex !== null ? handleUpdateWorkTitle : handleAddWorkTitle}
-                    >
-                      {editingWorkTitleIndex !== null ? (
-                        <Text style={styles.addWorkTitleButtonText}>Update</Text>
-                      ) : (
-                        <>
-                          <Plus size={18} color="#ffffff" />
-                          <Text style={styles.addWorkTitleButtonText}>Add Work Title</Text>
-                        </>
-                      )}
-                    </TouchableOpacity>
-                    {editingWorkTitleIndex !== null && (
-                      <TouchableOpacity
-                        style={styles.cancelEditButton}
-                        onPress={() => {
-                          setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
-                          setEditingWorkTitleIndex(null);
-                          setSelectedWorkTitleFromList('');
-                          setNewDescription('');
-                        }}
-                      >
-                        <Text style={styles.cancelEditButtonText}>Cancel</Text>
-                      </TouchableOpacity>
+                        <Text style={styles.errorText}>{fieldErrors.workTitle_unit_price}</Text>
                     )}
                   </View>
                   {newWorkTitle.quantity && newWorkTitle.unit_price && (
@@ -2501,6 +2475,38 @@ export default function ProposalsScreen() {
                       </Text>
                     </View>
                   )}
+
+                  <View style={styles.inputGroup}>
+                    {editingWorkTitleIndex !== null ? (
+                      <View style={{ flexDirection: 'row', gap: 12 }}>
+                        <TouchableOpacity
+                          style={[styles.addWorkTitleButton, { flex: 1 }]}
+                          onPress={handleUpdateWorkTitle}
+                        >
+                          <Text style={styles.addWorkTitleButtonText}>Update</Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity
+                          style={styles.cancelEditButton}
+                          onPress={() => {
+                            setNewWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
+                            setEditingWorkTitleIndex(null);
+                            setSelectedWorkTitleFromList('');
+                            setNewDescription('');
+                          }}
+                        >
+                          <Text style={styles.cancelEditButtonText}>Cancel</Text>
+                        </TouchableOpacity>
+                      </View>
+                    ) : (
+                      <TouchableOpacity
+                        style={styles.addWorkTitleButton}
+                        onPress={handleAddWorkTitle}
+                      >
+                        <Plus size={18} color="#ffffff" />
+                        <Text style={styles.addWorkTitleButtonText}>Add Work Title</Text>
+                      </TouchableOpacity>
+                    )}
+                  </View>
                 </View>
               </View>
 
@@ -4558,8 +4564,8 @@ const styles = StyleSheet.create({
     backgroundColor: '#000000',
     borderRadius: 8,
     padding: 12,
-    minWidth: 44,
     minHeight: 44,
+    alignSelf: 'stretch',
   },
   totalBudgetInput: {
     backgroundColor: '#f3f4f6',

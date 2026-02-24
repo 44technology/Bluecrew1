@@ -4634,7 +4634,7 @@ const styles = StyleSheet.create({
   },
   category: {
     fontSize: 12,
-    color: '#ffffff', // Yellow like teams
+    color: '#1f2937',
     fontWeight: '600',
     textTransform: 'uppercase',
     marginBottom: 8,
@@ -4832,7 +4832,7 @@ const styles = StyleSheet.create({
     borderColor: '#000000',
   },
   activeStatusButtonText: {
-    color: '#ffffff',
+    color: '#1f2937',
   },
   statusButtonText: {
     fontSize: 12,
@@ -5655,7 +5655,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   selectedIndicatorText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -6150,7 +6150,7 @@ const styles = StyleSheet.create({
   settingsSectionTitle: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#ffffff', // Yellow text on blue background
+    color: '#1f2937',
     marginBottom: 16,
   },
   settingsItem: {
@@ -6411,7 +6411,7 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   workTitleModalNumberText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 16,
     fontWeight: '700',
   },
@@ -6442,7 +6442,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
   },
   workTitleModalStatusText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 12,
     fontWeight: '600',
   },

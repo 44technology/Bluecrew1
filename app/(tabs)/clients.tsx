@@ -1288,7 +1288,7 @@ const styles = StyleSheet.create({
   },
   clientCompany: {
     fontSize: 14,
-    color: '#ffffff', // Yellow like teams
+    color: '#1f2937',
     fontWeight: '600',
   },
   clientActions: {
@@ -1391,7 +1391,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   detailAvatarText: {
-    color: '#ffffff',
+    color: '#1f2937',
     fontSize: 24,
     fontWeight: '600',
   },

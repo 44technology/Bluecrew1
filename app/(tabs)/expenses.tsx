@@ -2351,7 +2351,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 16,
-    color: '#ffffff', // White text on blue background
+    color: '#1f2937',
     marginTop: 16,
   },
   expenseCard: {

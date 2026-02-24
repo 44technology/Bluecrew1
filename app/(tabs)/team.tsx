@@ -1846,7 +1846,7 @@ const styles = StyleSheet.create({
   },
   employeePosition: {
     fontSize: 14,
-    color: '#ffffff',
+    color: '#1f2937',
     fontWeight: '600',
   },
   employeeDetails: {
@@ -2064,7 +2064,7 @@ const styles = StyleSheet.create({
   },
   emptyText: {
     fontSize: 14,
-    color: '#ffffff', // White text on blue background
+    color: '#1f2937',
     textAlign: 'center',
     lineHeight: 20,
   },
