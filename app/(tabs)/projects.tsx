@@ -983,39 +983,16 @@ export default function ProjectsScreen() {
     }
 
     const currentUserEmail = auth.currentUser?.email;
-    let adminPassword: string | null = null;
-    try {
-      const savedEmail = await AsyncStorage.getItem('saved_email');
-      const savedPassword = await AsyncStorage.getItem('saved_password');
-      const rememberMe = await AsyncStorage.getItem('remember_me');
-      if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
-        adminPassword = savedPassword;
-      }
-    } catch (e) {
-      console.log('Could not retrieve admin password from storage:', e);
-    }
-
-    if (adminPassword && currentUserEmail) {
-      try {
-        setIsAddingClient(true);
-        await doCreateClientAndRestore(newClient, adminPassword);
-      } catch (error: any) {
-        console.error('Error creating client:', error);
-        Alert.alert('Error', error.message || 'Failed to create client');
-      } finally {
-        setIsAddingClient(false);
-      }
+    if (!currentUserEmail) {
+      Alert.alert('Error', 'You must be logged in to add a client');
       return;
     }
 
-    if (currentUserEmail) {
-      pendingNewClientRef.current = { ...newClient };
-      setShowNewClientModal(false);
-      setShowAdminPasswordModal(true);
-      return;
-    }
-
-    Alert.alert('Error', 'Could not restore your session. Please try again.');
+    // Always ask for your password so we use your current password and you stay logged in.
+    // (Saved password may be outdated e.g. after changing password or browser security warning.)
+    pendingNewClientRef.current = { ...newClient };
+    setShowNewClientModal(false);
+    setShowAdminPasswordModal(true);
   };
 
   const handleAdminPasswordSubmit = async () => {

@@ -468,37 +468,9 @@ export default function ClientsScreen() {
       return;
     }
 
-    let adminPassword: string | null = null;
-    try {
-      const savedEmail = await AsyncStorage.getItem('saved_email');
-      const savedPassword = await AsyncStorage.getItem('saved_password');
-      const rememberMe = await AsyncStorage.getItem('remember_me');
-      if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
-        adminPassword = savedPassword;
-      }
-    } catch (error) {
-      console.log('Could not retrieve admin password from storage:', error);
-    }
-
-    if (adminPassword) {
-      try {
-        const { AuthService } = await import('@/services/authService');
-        await AuthService.createUserAsAdmin(
-          currentUserEmail,
-          adminPassword,
-          newClient.email,
-          newClient.temporaryPassword,
-          { name: newClient.name, role: 'client', phone: newClient.phone || undefined }
-        );
-        await finishAddClientSuccess(newClient);
-      } catch (error: any) {
-        console.error('Error adding client:', error);
-        Alert.alert('Error', error.message || 'Failed to add client');
-      }
-      return;
-    }
-
+    // Always ask for your password so we use your current password and you stay logged in.
     pendingNewClientRef.current = { ...newClient };
+    setShowAddModal(false);
     setShowAdminPasswordModal(true);
   };
 
