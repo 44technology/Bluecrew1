@@ -80,6 +80,7 @@ export default function ProjectsScreen() {
   const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', temporaryPassword: '' });
   const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
   const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const [isAddingClient, setIsAddingClient] = useState(false);
   const pendingNewClientRef = useRef<typeof newClient | null>(null);
   const [canCreateProject, setCanCreateProject] = useState(false);
   const [clientBudget, setClientBudget] = useState<string>(''); // Client-facing budget from proposal
@@ -936,11 +937,15 @@ export default function ProjectsScreen() {
     const allUsers = await UserService.getAllUsers();
     const newClientUser = allUsers.find(u => u.email === clientData.email && u.role === 'client');
     if (newClientUser) {
+      setSelectedClients([{ id: newClientUser.id, name: newClientUser.name }]);
       setNewProject(prev => ({
         ...prev,
         client_id: newClientUser.id,
         client_name: newClientUser.name
       }));
+      if (fieldErrors.clients) {
+        setFieldErrors(prev => ({ ...prev, clients: '' }));
+      }
     }
 
     setShowNewClientModal(false);
@@ -992,16 +997,20 @@ export default function ProjectsScreen() {
 
     if (adminPassword && currentUserEmail) {
       try {
+        setIsAddingClient(true);
         await doCreateClientAndRestore(newClient, adminPassword);
       } catch (error: any) {
         console.error('Error creating client:', error);
         Alert.alert('Error', error.message || 'Failed to create client');
+      } finally {
+        setIsAddingClient(false);
       }
       return;
     }
 
     if (currentUserEmail) {
       pendingNewClientRef.current = { ...newClient };
+      setShowNewClientModal(false);
       setShowAdminPasswordModal(true);
       return;
     }
@@ -1017,10 +1026,13 @@ export default function ProjectsScreen() {
     const pending = pendingNewClientRef.current;
     if (!pending) return;
     try {
+      setIsAddingClient(true);
       await doCreateClientAndRestore(pending, adminPasswordInput.trim());
     } catch (error: any) {
       console.error('Error creating client:', error);
       Alert.alert('Error', error.message || 'Failed to create client');
+    } finally {
+      setIsAddingClient(false);
     }
   };
 
@@ -2673,8 +2685,8 @@ export default function ProjectsScreen() {
               >
                 <Text style={styles.submitButtonText}>Cancel</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.submitButton, { flex: 1, marginLeft: 6 }]} onPress={handleAddNewClient}>
-                <Text style={styles.submitButtonText}>Add Client</Text>
+              <TouchableOpacity style={[styles.submitButton, { flex: 1, marginLeft: 6 }]} onPress={handleAddNewClient} disabled={isAddingClient}>
+                <Text style={styles.submitButtonText}>{isAddingClient ? 'Creating...' : 'Add Client'}</Text>
               </TouchableOpacity>
             </View>
           </ScrollView>
@@ -2713,8 +2725,9 @@ export default function ProjectsScreen() {
               <TouchableOpacity
                 style={[styles.confirmModalButton, styles.confirmModalButtonConfirm]}
                 onPress={handleAdminPasswordSubmit}
+                disabled={isAddingClient}
               >
-                <Text style={styles.confirmModalButtonConfirmText}>Continue</Text>
+                <Text style={styles.confirmModalButtonConfirmText}>{isAddingClient ? 'Creating...' : 'Continue'}</Text>
               </TouchableOpacity>
             </View>
           </View>
