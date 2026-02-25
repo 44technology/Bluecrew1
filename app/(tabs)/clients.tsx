@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -12,7 +12,9 @@ import {
   RefreshControl,
 } from 'react-native';
 import DateTimePicker from '@react-native-community/datetimepicker';
-import { Plus, Mail, Phone, Building, MapPin, X, Search, Download, Trash2, Calendar, MessageSquare, Eye, EyeOff, ArrowLeft, User, UserCheck, FileText, Receipt, BarChart3 } from 'lucide-react-native';
+import { Plus, Mail, Phone, Building, MapPin, X, Search, Download, Upload, Trash2, Calendar, MessageSquare, Eye, EyeOff, ArrowLeft, User, UserCheck, FileText, Receipt, BarChart3 } from 'lucide-react-native';
+import * as DocumentPicker from 'expo-document-picker';
+import * as FileSystem from 'expo-file-system';
 import { useLanguage } from '@/contexts/LanguageContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { router } from 'expo-router';
@@ -24,7 +26,6 @@ import { InvoiceService } from '@/services/invoiceService';
 import { ClientService } from '@/services/clientService';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 // Real clients from Firebase
@@ -67,12 +68,16 @@ export default function ClientsScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
+  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const pendingNewClientRef = useRef<{ name: string; email: string; phone: string; temporaryPassword: string } | null>(null);
   
   // Web-specific features
   const [searchQuery, setSearchQuery] = useState('');
   const [viewMode, setViewMode] = useState<'card' | 'table'>('card');
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
+  const [importingClients, setImportingClients] = useState(false);
 
   // Load clients from Firebase
   const loadClients = async () => {
@@ -244,6 +249,186 @@ export default function ClientsScreen() {
     document.body.removeChild(link);
   };
 
+  // Parse one CSV line (handles quoted commas)
+  const parseCSVLine = (line: string): string[] => {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    for (let i = 0; i < line.length; i++) {
+      const c = line[i];
+      if (c === '"') {
+        inQuotes = !inQuotes;
+      } else if (inQuotes) {
+        current += c;
+      } else if (c === ',') {
+        result.push(current.trim());
+        current = '';
+      } else {
+        current += c;
+      }
+    }
+    result.push(current.trim());
+    return result;
+  };
+
+  const processImportedRows = async (rows: { name: string; email: string; phone: string; temporaryPassword: string }[]) => {
+    const currentUserEmail = auth.currentUser?.email;
+    let adminPassword: string | null = null;
+    try {
+      const savedPassword = await AsyncStorage.getItem('saved_password');
+      const rememberMe = await AsyncStorage.getItem('remember_me');
+      const savedEmail = await AsyncStorage.getItem('saved_email');
+      if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
+        adminPassword = savedPassword;
+      }
+    } catch (_) {}
+    if (!currentUserEmail || !adminPassword) {
+      Alert.alert('Import requires login', 'To import clients without being logged out, please log in with "Remember me" checked, then try again.');
+      return;
+    }
+    const { AuthService } = await import('@/services/authService');
+    let created = 0;
+    const errors: string[] = [];
+    for (const row of rows) {
+      if (!row.name?.trim() || !row.email?.trim()) {
+        errors.push(`Skip: missing name/email (${row.email || row.name || '?'})`);
+        continue;
+      }
+      if (row.temporaryPassword && row.temporaryPassword.length < 6) {
+        errors.push(`Skip: password too short for ${row.email}`);
+        continue;
+      }
+      const existing = clients.find(c => c.email === row.email.trim());
+      if (existing) {
+        errors.push(`Skip: email already exists (${row.email})`);
+        continue;
+      }
+      const password = row.temporaryPassword?.trim() && row.temporaryPassword.length >= 6
+        ? row.temporaryPassword
+        : generateTempPassword();
+      try {
+        await AuthService.createUserAsAdmin(
+          currentUserEmail,
+          adminPassword,
+          row.email.trim(),
+          password,
+          { name: row.name.trim(), role: 'client', phone: row.phone?.trim() || undefined }
+        );
+        created++;
+      } catch (err: any) {
+        errors.push(`${row.email}: ${err?.message || 'Failed'}`);
+      }
+    }
+    const firebaseClients = await UserService.getUsersByRole('client');
+    const clientList: Client[] = firebaseClients.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      company: '',
+      address: '',
+      created_at: user.created_at,
+    }));
+    setClients(clientList);
+    if (errors.length > 0) {
+      Alert.alert('Import complete', `Created ${created} client(s).\n\nIssues:\n${errors.slice(0, 10).join('\n')}${errors.length > 10 ? `\n... and ${errors.length - 10} more` : ''}`);
+    } else {
+      Alert.alert('Success', `Imported ${created} client(s) successfully.`);
+    }
+  };
+
+  const handleImportCSV = async () => {
+    if (importingClients) return;
+    if (Platform.OS === 'web') {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.csv,text/csv';
+      input.onchange = async (e: Event) => {
+        const target = e.target as HTMLInputElement;
+        const file = target.files?.[0];
+        if (!file) return;
+        setImportingClients(true);
+        try {
+          const text = await file.text();
+          const lines = text.split(/\r?\n/).filter(l => l.trim());
+          if (lines.length < 2) {
+            Alert.alert('Error', 'CSV must have a header row and at least one data row.');
+            return;
+          }
+          const header = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+          const nameIdx = header.findIndex(h => h === 'name');
+          const emailIdx = header.findIndex(h => h === 'email');
+          const phoneIdx = header.findIndex(h => h === 'phone');
+          const pwIdx = header.findIndex(h => h === 'temporary password' || h === 'password');
+          if (nameIdx === -1 || emailIdx === -1) {
+            Alert.alert('Error', 'CSV must have "Name" and "Email" columns.');
+            return;
+          }
+          const rows: { name: string; email: string; phone: string; temporaryPassword: string }[] = [];
+          for (let i = 1; i < lines.length; i++) {
+            const cells = parseCSVLine(lines[i]);
+            rows.push({
+              name: cells[nameIdx] ?? '',
+              email: cells[emailIdx] ?? '',
+              phone: (phoneIdx >= 0 ? cells[phoneIdx] : '') ?? '',
+              temporaryPassword: (pwIdx >= 0 ? cells[pwIdx] : '') ?? '',
+            });
+          }
+          await processImportedRows(rows);
+        } catch (err: any) {
+          Alert.alert('Error', err?.message || 'Failed to import CSV');
+        } finally {
+          setImportingClients(false);
+          target.value = '';
+        }
+      };
+      input.click();
+      return;
+    }
+    setImportingClients(true);
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: 'text/csv',
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) {
+        setImportingClients(false);
+        return;
+      }
+      const uri = result.assets[0].uri;
+      const text = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.UTF8 });
+      const lines = text.split(/\r?\n/).filter(l => l.trim());
+      if (lines.length < 2) {
+        Alert.alert('Error', 'CSV must have a header row and at least one data row.');
+        return;
+      }
+      const header = parseCSVLine(lines[0]).map(h => h.toLowerCase());
+      const nameIdx = header.findIndex(h => h === 'name');
+      const emailIdx = header.findIndex(h => h === 'email');
+      const phoneIdx = header.findIndex(h => h === 'phone');
+      const pwIdx = header.findIndex(h => h === 'temporary password' || h === 'password');
+      if (nameIdx === -1 || emailIdx === -1) {
+        Alert.alert('Error', 'CSV must have "Name" and "Email" columns.');
+        return;
+      }
+      const rows: { name: string; email: string; phone: string; temporaryPassword: string }[] = [];
+      for (let i = 1; i < lines.length; i++) {
+        const cells = parseCSVLine(lines[i]);
+        rows.push({
+          name: cells[nameIdx] ?? '',
+          email: cells[emailIdx] ?? '',
+          phone: (phoneIdx >= 0 ? cells[phoneIdx] : '') ?? '',
+          temporaryPassword: (pwIdx >= 0 ? cells[pwIdx] : '') ?? '',
+        });
+      }
+      await processImportedRows(rows);
+    } catch (err: any) {
+      Alert.alert('Error', err?.message || 'Failed to import CSV');
+    } finally {
+      setImportingClients(false);
+    }
+  };
+
   const handleAddClient = async () => {
     // Collect all missing required fields and set field-level errors
     const missingFields: string[] = [];
@@ -277,98 +462,98 @@ export default function ClientsScreen() {
       return;
     }
 
+    const currentUserEmail = auth.currentUser?.email;
+    if (!currentUserEmail) {
+      Alert.alert('Error', 'You must be logged in to add a client');
+      return;
+    }
+
+    let adminPassword: string | null = null;
     try {
-      // Save current admin user email and password before creating new user
-      const currentUser = auth.currentUser;
-      const currentUserEmail = currentUser?.email;
-      
-      // Try to get admin password from AsyncStorage (if remember me was used)
-      let adminPassword: string | null = null;
+      const savedEmail = await AsyncStorage.getItem('saved_email');
+      const savedPassword = await AsyncStorage.getItem('saved_password');
+      const rememberMe = await AsyncStorage.getItem('remember_me');
+      if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
+        adminPassword = savedPassword;
+      }
+    } catch (error) {
+      console.log('Could not retrieve admin password from storage:', error);
+    }
+
+    if (adminPassword) {
       try {
-        const savedEmail = await AsyncStorage.getItem('saved_email');
-        const savedPassword = await AsyncStorage.getItem('saved_password');
-        const rememberMe = await AsyncStorage.getItem('remember_me');
-        
-        // If remember me is active and email matches, use saved password
-        if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
-          adminPassword = savedPassword;
-        }
-      } catch (error) {
-        console.log('Could not retrieve admin password from storage:', error);
+        const { AuthService } = await import('@/services/authService');
+        await AuthService.createUserAsAdmin(
+          currentUserEmail,
+          adminPassword,
+          newClient.email,
+          newClient.temporaryPassword,
+          { name: newClient.name, role: 'client', phone: newClient.phone || undefined }
+        );
+        await finishAddClientSuccess(newClient);
+      } catch (error: any) {
+        console.error('Error adding client:', error);
+        Alert.alert('Error', error.message || 'Failed to add client');
       }
-      
-      // Create client in Firebase Auth with temporary password
+      return;
+    }
+
+    pendingNewClientRef.current = { ...newClient };
+    setShowAdminPasswordModal(true);
+  };
+
+  const finishAddClientSuccess = async (clientData: { name: string; email: string; phone: string; temporaryPassword: string }) => {
+    const firebaseClients = await UserService.getUsersByRole('client');
+    const clientList: Client[] = firebaseClients.map(user => ({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+      phone: user.phone || '',
+      company: '',
+      address: '',
+      created_at: user.created_at,
+    }));
+    setClients(clientList);
+    setShowAddModal(false);
+    setShowAdminPasswordModal(false);
+    setAdminPasswordInput('');
+    pendingNewClientRef.current = null;
+    setFieldErrors({});
+    setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
+    const appUrl = Platform.OS === 'web' ? window.location.origin : 'https://bluecrew-app.netlify.app';
+    const loginUrl = `${appUrl}/auth/login`;
+    const tempPassword = clientData.temporaryPassword;
+    Alert.alert(
+      'Success',
+      `Client added successfully!\n\nEmail: ${clientData.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
+      [
+        { text: 'Copy Password', onPress: () => { if (Platform.OS === 'web' && navigator.clipboard) { navigator.clipboard.writeText(tempPassword); Alert.alert('Copied', 'Password copied to clipboard'); } } },
+        { text: 'OK' }
+      ]
+    );
+  };
+
+  const handleAdminPasswordSubmit = async () => {
+    if (!adminPasswordInput.trim()) {
+      Alert.alert('Error', 'Please enter your password');
+      return;
+    }
+    const pending = pendingNewClientRef.current;
+    const currentUserEmail = auth.currentUser?.email;
+    if (!pending || !currentUserEmail) return;
+    try {
       const { AuthService } = await import('@/services/authService');
-      await AuthService.signUp(newClient.email, newClient.temporaryPassword, {
-        name: newClient.name,
-        role: 'client',
-        phone: newClient.phone || undefined,
-      });
-      
-      // Restore admin session if password is available
-      if (adminPassword && currentUserEmail) {
-        try {
-          // Sign out the new user
-          await signOut(auth);
-          
-          // Sign in the admin again to restore admin session
-          await signInWithEmailAndPassword(auth, currentUserEmail, adminPassword);
-          console.log('Admin session restored successfully');
-        } catch (restoreError: any) {
-          console.error('Error restoring admin session:', restoreError);
-        }
-      }
-      
-      // Reload clients
-      const firebaseClients = await UserService.getUsersByRole('client');
-      const clientList: Client[] = firebaseClients.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        phone: user.phone || '',
-        company: '',
-        address: '',
-        created_at: user.created_at,
-      }));
-      setClients(clientList);
-      
-      setShowAddModal(false);
-      const tempPassword = newClient.temporaryPassword; // Save before clearing
-      
-      setFieldErrors({});
-      setNewClient({
-        name: '',
-        email: '',
-        phone: '',
-        temporaryPassword: '',
-      });
-      setFieldErrors({});
-      
-      // Generate login URL (assuming the app URL)
-      const appUrl = Platform.OS === 'web' 
-        ? window.location.origin 
-        : 'https://bluecrew-app.netlify.app';
-      const loginUrl = `${appUrl}/auth/login`;
-      
-      Alert.alert(
-        'Success', 
-        `Client added successfully!\n\nEmail: ${newClient.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
-        [
-          {
-            text: 'Copy Password',
-            onPress: () => {
-              if (Platform.OS === 'web' && navigator.clipboard) {
-                navigator.clipboard.writeText(tempPassword);
-                Alert.alert('Copied', 'Password copied to clipboard');
-              }
-            }
-          },
-          { text: 'OK' }
-        ]
+      await AuthService.createUserAsAdmin(
+        currentUserEmail,
+        adminPasswordInput.trim(),
+        pending.email,
+        pending.temporaryPassword,
+        { name: pending.name, role: 'client', phone: pending.phone || undefined }
       );
+      await finishAddClientSuccess(pending);
     } catch (error: any) {
       console.error('Error adding client:', error);
-      Alert.alert('Error', error.message || 'Failed to add client');
+      Alert.alert('Error', error.message || 'Failed to add client. Check your password.');
     }
   };
 
@@ -641,6 +826,14 @@ export default function ClientsScreen() {
           </View>
         {Platform.OS === 'web' && !isMobile && (canEditClients || userRole === 'admin') && (
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.exportButton, styles.importButton]}
+              onPress={handleImportCSV}
+              disabled={importingClients}
+            >
+              <Upload size={18} color="#ffffff" />
+              <Text style={styles.exportButtonText}>{importingClients ? 'Importing...' : 'Import CSV'}</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={styles.exportButton}
               onPress={exportToCSV}
@@ -1087,6 +1280,45 @@ export default function ClientsScreen() {
               <Text style={styles.submitButtonText}>Add Client</Text>
             </TouchableOpacity>
           </ScrollView>
+        </View>
+      </Modal>
+
+      {/* Admin password modal: stay logged in after creating client */}
+      <Modal visible={showAdminPasswordModal} transparent animationType="fade">
+        <View style={styles.modalOverlay}>
+          <View style={styles.deleteModal}>
+            <Text style={styles.deleteTitle}>Your password</Text>
+            <Text style={styles.deleteMessage}>
+              Enter your password so you stay logged in after creating the client.
+            </Text>
+            <TextInput
+              style={[styles.input, { marginBottom: 16 }]}
+              placeholder="Your password"
+              placeholderTextColor="#6b7280"
+              value={adminPasswordInput}
+              onChangeText={setAdminPasswordInput}
+              secureTextEntry
+              autoCapitalize="none"
+            />
+            <View style={styles.deleteButtons}>
+              <TouchableOpacity
+                style={[styles.cancelDeleteButton, { flex: 1 }]}
+                onPress={() => {
+                  setShowAdminPasswordModal(false);
+                  setAdminPasswordInput('');
+                  pendingNewClientRef.current = null;
+                }}
+              >
+                <Text style={styles.cancelDeleteText}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.cancelDeleteButton, { flex: 1, backgroundColor: '#22c55e' }]}
+                onPress={handleAdminPasswordSubmit}
+              >
+                <Text style={[styles.confirmDeleteText, { color: '#ffffff' }]}>Continue</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
       </Modal>
 
@@ -1683,6 +1915,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
+  },
+  importButton: {
+    backgroundColor: '#3b82f6',
   },
   exportButton: {
     flexDirection: 'row',

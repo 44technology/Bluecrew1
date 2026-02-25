@@ -398,10 +398,11 @@ export interface Proposal {
   category: string; // Required - Residential or Commercial
   work_titles: Array<{ 
     name: string; 
-    descriptions?: string[]; // Array of descriptions (up to 5 per work title)
-    description?: string; // Legacy support - single description for backward compatibility
+    descriptions?: string[]; // Array of description texts (legacy)
+    description_items?: { text: string; quantity?: number; unit_price?: number }[]; // For PDF: each line with qty/unit price
+    description?: string; // Legacy support - single description
     quantity: number;
-    unit?: string; // Optional - removed from form
+    unit?: string;
     unit_price: number;
     price: number;
   }>;

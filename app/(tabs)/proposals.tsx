@@ -31,7 +31,6 @@ import HamburgerMenu from '@/components/HamburgerMenu';
 import { db, auth } from '@/lib/firebase';
 import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 
 type WorkDescriptionItem = { text: string; quantity?: string; unit_price?: string };
 function descTotal(descriptions: WorkDescriptionItem[]): number {
@@ -79,6 +78,9 @@ export default function ProposalsScreen() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showRejectModal, setShowRejectModal] = useState(false);
   const [showNewClientModal, setShowNewClientModal] = useState(false);
+  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
+  const pendingNewClientRef = useRef<{ name: string; email: string; phone: string; temporaryPassword: string } | null>(null);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showSupervisionTypeModal, setShowSupervisionTypeModal] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -390,104 +392,101 @@ export default function ProposalsScreen() {
     }
   };
 
+  const finishAddNewClientSuccess = async (clientData: { name: string; email: string; phone: string; temporaryPassword: string }) => {
+    await loadClients();
+    const allUsers = await UserService.getAllUsers();
+    const clientUsers = allUsers.filter(u => u.role === 'client');
+    const newClientUser = clientUsers.find(u => u.email === clientData.email);
+    if (newClientUser) {
+      setNewProposal(prev => ({
+        ...prev,
+        client_id: newClientUser.id,
+        client_name: newClientUser.name,
+        client_email: newClientUser.email || '',
+      }));
+    }
+    setShowNewClientModal(false);
+    setShowAdminPasswordModal(false);
+    setAdminPasswordInput('');
+    pendingNewClientRef.current = null;
+    setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
+    const appUrl = Platform.OS === 'web' ? window.location.origin : 'https://bluecrew-app.netlify.app';
+    const loginUrl = `${appUrl}/auth/login`;
+    const tempPassword = clientData.temporaryPassword;
+    Alert.alert(
+      'Success',
+      `Client added successfully!\n\nEmail: ${clientData.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
+      Platform.OS === 'web' ? [
+        { text: 'Copy Password', onPress: () => { if (navigator.clipboard) { navigator.clipboard.writeText(tempPassword); Alert.alert('Copied', 'Password copied to clipboard'); } } },
+        { text: 'OK' }
+      ] : [{ text: 'OK' }]
+    );
+  };
+
   const handleAddNewClient = async () => {
     if (!newClient.name || !newClient.email) {
       Alert.alert('Error', 'Please fill in name and email fields');
       return;
     }
-
     if (!newClient.temporaryPassword || newClient.temporaryPassword.length < 6) {
       Alert.alert('Error', 'Please provide a temporary password (minimum 6 characters)');
       return;
     }
-
+    const existingClient = clients.find((c: any) => c.email === newClient.email);
+    if (existingClient) {
+      Alert.alert('Error', 'A client with this email already exists');
+      return;
+    }
+    const currentUserEmail = auth.currentUser?.email;
+    if (!currentUserEmail) {
+      Alert.alert('Error', 'You must be logged in to add a client');
+      return;
+    }
+    let adminPassword: string | null = null;
     try {
-      // Save current admin user email and password before creating new user
-      const currentUser = auth.currentUser;
-      const currentUserEmail = currentUser?.email;
-      
-      // Try to get admin password from AsyncStorage (if remember me was used)
-      let adminPassword: string | null = null;
+      const savedEmail = await AsyncStorage.getItem('saved_email');
+      const savedPassword = await AsyncStorage.getItem('saved_password');
+      const rememberMe = await AsyncStorage.getItem('remember_me');
+      if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) adminPassword = savedPassword;
+    } catch (_) {}
+    if (adminPassword) {
       try {
-        const savedEmail = await AsyncStorage.getItem('saved_email');
-        const savedPassword = await AsyncStorage.getItem('saved_password');
-        const rememberMe = await AsyncStorage.getItem('remember_me');
-        
-        // If remember me is active and email matches, use saved password
-        if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
-          adminPassword = savedPassword;
-        }
-      } catch (error) {
-        console.log('Could not retrieve admin password from storage:', error);
+        const { AuthService } = await import('@/services/authService');
+        await AuthService.createUserAsAdmin(currentUserEmail, adminPassword, newClient.email, newClient.temporaryPassword, {
+          name: newClient.name,
+          role: 'client',
+          phone: newClient.phone || undefined,
+        });
+        await finishAddNewClientSuccess(newClient);
+      } catch (error: any) {
+        console.error('Error adding client:', error);
+        Alert.alert('Error', error.message || 'Failed to add client');
       }
-      
-      // Create client in Firebase Auth with temporary password
-      const { AuthService } = await import('@/services/authService');
-      await AuthService.signUp(newClient.email, newClient.temporaryPassword, {
-        name: newClient.name,
-        role: 'client',
-        phone: newClient.phone || undefined,
-      });
-      
-      // Restore admin session if password is available
-      if (adminPassword && currentUserEmail) {
-        try {
-          // Sign out the new user
-          await signOut(auth);
-          
-          // Sign in the admin again to restore admin session
-          await signInWithEmailAndPassword(auth, currentUserEmail, adminPassword);
-          console.log('Admin session restored successfully');
-        } catch (restoreError: any) {
-          console.error('Error restoring admin session:', restoreError);
-        }
-      }
-      
-      await loadClients();
-      
-      const allUsers = await UserService.getAllUsers();
-      const clientUsers = allUsers.filter(u => u.role === 'client');
-      const newClientUser = clientUsers.find(u => u.email === newClient.email);
-      
-      if (newClientUser) {
-        setNewProposal(prev => ({
-          ...prev,
-          client_id: newClientUser.id,
-          client_name: newClientUser.name,
-          client_email: newClientUser.email || '',
-        }));
-      }
+      return;
+    }
+    pendingNewClientRef.current = { ...newClient };
+    setShowAdminPasswordModal(true);
+  };
 
-      const tempPassword = newClient.temporaryPassword; // Save before clearing
-      
-      setShowNewClientModal(false);
-      setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-      
-      // Generate login URL
-      const appUrl = Platform.OS === 'web' 
-        ? window.location.origin 
-        : 'https://bluecrew-app.netlify.app';
-      const loginUrl = `${appUrl}/auth/login`;
-      
-      Alert.alert(
-        'Success',
-        `Client added successfully!\n\nEmail: ${newClient.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
-        Platform.OS === 'web' ? [
-          {
-            text: 'Copy Password',
-            onPress: () => {
-              if (navigator.clipboard) {
-                navigator.clipboard.writeText(tempPassword);
-                Alert.alert('Copied', 'Password copied to clipboard');
-              }
-            }
-          },
-          { text: 'OK' }
-        ] : [{ text: 'OK' }]
-      );
+  const handleAdminPasswordSubmitProposal = async () => {
+    if (!adminPasswordInput.trim()) {
+      Alert.alert('Error', 'Please enter your password');
+      return;
+    }
+    const pending = pendingNewClientRef.current;
+    const currentUserEmail = auth.currentUser?.email;
+    if (!pending || !currentUserEmail) return;
+    try {
+      const { AuthService } = await import('@/services/authService');
+      await AuthService.createUserAsAdmin(currentUserEmail, adminPasswordInput.trim(), pending.email, pending.temporaryPassword, {
+        name: pending.name,
+        role: 'client',
+        phone: pending.phone || undefined,
+      });
+      await finishAddNewClientSuccess(pending);
     } catch (error: any) {
       console.error('Error adding client:', error);
-      Alert.alert('Error', error.message || 'Failed to add client');
+      Alert.alert('Error', error.message || 'Failed to add client. Check your password.');
     }
   };
 
@@ -715,16 +714,20 @@ export default function ProposalsScreen() {
         category: newProposal.category,
         work_titles: finalWorkTitles.map(wt => {
           const calculatedPrice = workTitlePrice(wt);
-          const hasAnyDescQtyPrice = wt.descriptions?.some(d => (parseFloat(d.quantity || '0') || 0) > 0 && (parseFloat(d.unit_price || '0') || 0) > 0) ?? false;
           const workTitle: any = {
             name: wt.name,
-            quantity: hasAnyDescQtyPrice ? 0 : 1,
+            quantity: 1,
             unit: '',
-            unit_price: hasAnyDescQtyPrice ? 0 : calculatedPrice,
+            unit_price: calculatedPrice,
             price: calculatedPrice,
           };
           if (wt.descriptions && wt.descriptions.length > 0) {
             workTitle.descriptions = wt.descriptions.map(d => (typeof d === 'string' ? d : d.text) || '');
+            workTitle.description_items = wt.descriptions.map(d => ({
+              text: (typeof d === 'string' ? d : d.text) || '',
+              quantity: parseFloat(typeof d === 'string' ? '0' : (d.quantity || '0')) || 0,
+              unit_price: parseFloat(typeof d === 'string' ? '0' : (d.unit_price || '0')) || 0,
+            }));
           }
           return workTitle;
         }),
@@ -1248,21 +1251,30 @@ export default function ProposalsScreen() {
     </thead>
     <tbody>
       ${proposal.work_titles.map(wt => {
-        const qty = typeof wt.quantity === 'number' ? wt.quantity : parseFloat(String(wt.quantity || '0')) || 0;
-        const up = typeof wt.unit_price === 'number' ? wt.unit_price : parseFloat(String(wt.unit_price || '0')) || 0;
-        const hasQtyPrice = qty > 0 && up > 0;
-        const qtyDisplay = hasQtyPrice ? `${qty} ${wt.unit || ''}`.trim() : '—';
-        const unitPriceDisplay = hasQtyPrice ? formatCurrency(up) : '—';
+        const qtyDisplay = '1';
+        const unitPriceDisplay = formatCurrency(wt.price);
+        const descHtml = (() => {
+          const items = (wt as any).description_items;
+          if (items && items.length > 0) {
+            return items.map((item: { text: string; quantity?: number; unit_price?: number }) => {
+              const q = item.quantity ?? 0;
+              const u = item.unit_price ?? 0;
+              const lineTotal = q * u;
+              const suffix = (q > 0 && u > 0) ? ` (Qty: ${q} × $${u.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} = $${lineTotal.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })})` : '';
+              return `<div style="margin-bottom: 8px; line-height: 1.5;">${(item.text || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}${suffix}</div>`;
+            }).join('');
+          }
+          if (wt.descriptions && wt.descriptions.length > 0) {
+            return wt.descriptions.map((desc: string) => `<div style="margin-bottom: 8px; line-height: 1.5;">${(desc || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>`).join('');
+          }
+          return wt.description ? `<div style="line-height: 1.5;">${(wt.description || '').replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>` : '';
+        })();
         return `
         <tr>
           <td style="font-weight: 600; color: #1f2937; vertical-align: top; padding-top: 16px;">
             ${wt.name}
           </td>
-          <td style="vertical-align: top; padding-top: 16px;">
-            ${(wt.descriptions && wt.descriptions.length > 0) 
-              ? wt.descriptions.map((desc: string) => `<div style="margin-bottom: 8px; line-height: 1.5;">${desc}</div>`).join('')
-              : (wt.description ? `<div style="line-height: 1.5;">${wt.description}</div>` : '')}
-          </td>
+          <td style="vertical-align: top; padding-top: 16px;">${descHtml}</td>
           <td class="text-right" style="vertical-align: top; padding-top: 16px;">${qtyDisplay}</td>
           <td class="text-right" style="vertical-align: top; padding-top: 16px;">${unitPriceDisplay}</td>
           <td class="text-right" style="vertical-align: top; padding-top: 16px;">${formatCurrency(wt.price)}</td>
@@ -2937,8 +2949,14 @@ export default function ProposalsScreen() {
                             proposal_date: formattedProposalDate,
                           });
                           const proposalWorkTitles = selectedProposal.work_titles.map((wt: any) => {
-                            const descs = wt.descriptions && wt.descriptions.length > 0 ? wt.descriptions : (wt.description ? [wt.description] : []);
-                            let items = descs.map((d: any) => normalizeDesc(d));
+                            const di = wt.description_items;
+                            let items: WorkDescriptionItem[];
+                            if (di && Array.isArray(di) && di.length > 0) {
+                              items = di.map((d: any) => ({ text: d.text || '', quantity: (d.quantity != null ? d.quantity : '').toString(), unit_price: (d.unit_price != null ? d.unit_price : '').toString() }));
+                            } else {
+                              const descs = wt.descriptions && wt.descriptions.length > 0 ? wt.descriptions : (wt.description ? [wt.description] : []);
+                              items = descs.map((d: any) => normalizeDesc(d));
+                            }
                             let total = descTotal(items);
                             if (total === 0 && (wt.quantity || wt.unit_price)) {
                               items = [{ text: '', quantity: (wt.quantity || 0).toString(), unit_price: (wt.unit_price || 0).toString() }];
@@ -3599,6 +3617,45 @@ export default function ProposalsScreen() {
                 <Text style={styles.submitButtonText}>Add Client</Text>
               </TouchableOpacity>
             </ScrollView>
+          </View>
+        </Modal>
+
+        {/* Admin password modal: stay logged in after creating client */}
+        <Modal visible={showAdminPasswordModal} transparent animationType="fade">
+          <View style={styles.modalOverlay}>
+            <View style={styles.rejectModal}>
+              <Text style={styles.rejectModalTitle}>Your password</Text>
+              <Text style={styles.rejectModalMessage}>
+                Enter your password so you stay logged in after creating the client.
+              </Text>
+              <TextInput
+                style={[styles.input, { marginBottom: 16 }]}
+                placeholder="Your password"
+                placeholderTextColor="#374151"
+                value={adminPasswordInput}
+                onChangeText={setAdminPasswordInput}
+                secureTextEntry
+                autoCapitalize="none"
+              />
+              <View style={styles.rejectModalActions}>
+                <TouchableOpacity
+                  style={[styles.cancelRejectButton, { flex: 1 }]}
+                  onPress={() => {
+                    setShowAdminPasswordModal(false);
+                    setAdminPasswordInput('');
+                    pendingNewClientRef.current = null;
+                  }}
+                >
+                  <Text style={styles.cancelRejectText}>Cancel</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.confirmRejectButton, { flex: 1, backgroundColor: '#22c55e' }]}
+                  onPress={handleAdminPasswordSubmitProposal}
+                >
+                  <Text style={styles.confirmRejectText}>Continue</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
           </View>
         </Modal>
 

@@ -32,7 +32,6 @@ import HamburgerMenu from '@/components/HamburgerMenu';
 import SecondaryButton from '@/components/SecondaryButton';
 import { CARD_BORDER } from '@/constants/design';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 type WorkDescriptionItem = { text: string; quantity?: string; unit_price?: string };
@@ -920,18 +919,18 @@ export default function ProjectsScreen() {
     if (!currentUserEmail) return;
 
     const { AuthService } = await import('@/services/authService');
-    await AuthService.signUp(clientData.email, clientData.temporaryPassword, {
-      name: clientData.name,
-      role: 'client',
-      phone: clientData.phone || undefined,
-    });
-
-    try {
-      await signOut(auth);
-      await signInWithEmailAndPassword(auth, currentUserEmail, adminPassword);
-    } catch (restoreError: any) {
-      console.error('Error restoring admin session:', restoreError);
-    }
+    // createUserAsAdmin creates the client and restores admin session so we stay logged in
+    await AuthService.createUserAsAdmin(
+      currentUserEmail,
+      adminPassword,
+      clientData.email,
+      clientData.temporaryPassword,
+      {
+        name: clientData.name,
+        role: 'client',
+        phone: clientData.phone || undefined,
+      }
+    );
 
     await loadClients();
     const allUsers = await UserService.getAllUsers();
