@@ -46,20 +46,7 @@ export default function ClientsScreen() {
     name: '',
     email: '',
     phone: '',
-    temporaryPassword: '',
   });
-  const [showPassword, setShowPassword] = useState(false);
-  
-  // Generate random temporary password
-  const generateTempPassword = () => {
-    const length = 12;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return password;
-  };
   const [newNote, setNewNote] = useState({
     note: '',
     contact_date: '',
@@ -269,7 +256,7 @@ export default function ClientsScreen() {
     return result;
   };
 
-  const processImportedRows = async (rows: { name: string; email: string; phone: string; temporaryPassword: string }[]) => {
+  const processImportedRows = async (rows: { name: string; email: string; phone: string }[]) => {
     const currentUserEmail = auth.currentUser?.email;
     let adminPassword: string | null = null;
     try {
@@ -284,6 +271,15 @@ export default function ClientsScreen() {
       Alert.alert('Import requires login', 'To import clients without being logged out, please log in with "Remember me" checked, then try again.');
       return;
     }
+    const generateTempPassword = () => {
+      const length = 12;
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+      let password = '';
+      for (let i = 0; i < length; i++) {
+        password += charset.charAt(Math.floor(Math.random() * charset.length));
+      }
+      return password;
+    };
     const { AuthService } = await import('@/services/authService');
     let created = 0;
     const errors: string[] = [];
@@ -292,18 +288,12 @@ export default function ClientsScreen() {
         errors.push(`Skip: missing name/email (${row.email || row.name || '?'})`);
         continue;
       }
-      if (row.temporaryPassword && row.temporaryPassword.length < 6) {
-        errors.push(`Skip: password too short for ${row.email}`);
-        continue;
-      }
       const existing = clients.find(c => c.email === row.email.trim());
       if (existing) {
         errors.push(`Skip: email already exists (${row.email})`);
         continue;
       }
-      const password = row.temporaryPassword?.trim() && row.temporaryPassword.length >= 6
-        ? row.temporaryPassword
-        : generateTempPassword();
+      const password = generateTempPassword();
       try {
         await AuthService.createUserAsAdmin(
           currentUserEmail,
@@ -357,19 +347,17 @@ export default function ClientsScreen() {
           const nameIdx = header.findIndex(h => h === 'name');
           const emailIdx = header.findIndex(h => h === 'email');
           const phoneIdx = header.findIndex(h => h === 'phone');
-          const pwIdx = header.findIndex(h => h === 'temporary password' || h === 'password');
           if (nameIdx === -1 || emailIdx === -1) {
             Alert.alert('Error', 'CSV must have "Name" and "Email" columns.');
             return;
           }
-          const rows: { name: string; email: string; phone: string; temporaryPassword: string }[] = [];
+          const rows: { name: string; email: string; phone: string }[] = [];
           for (let i = 1; i < lines.length; i++) {
             const cells = parseCSVLine(lines[i]);
             rows.push({
               name: cells[nameIdx] ?? '',
               email: cells[emailIdx] ?? '',
               phone: (phoneIdx >= 0 ? cells[phoneIdx] : '') ?? '',
-              temporaryPassword: (pwIdx >= 0 ? cells[pwIdx] : '') ?? '',
             });
           }
           await processImportedRows(rows);
@@ -404,19 +392,17 @@ export default function ClientsScreen() {
       const nameIdx = header.findIndex(h => h === 'name');
       const emailIdx = header.findIndex(h => h === 'email');
       const phoneIdx = header.findIndex(h => h === 'phone');
-      const pwIdx = header.findIndex(h => h === 'temporary password' || h === 'password');
       if (nameIdx === -1 || emailIdx === -1) {
         Alert.alert('Error', 'CSV must have "Name" and "Email" columns.');
         return;
       }
-      const rows: { name: string; email: string; phone: string; temporaryPassword: string }[] = [];
+      const rows: { name: string; email: string; phone: string }[] = [];
       for (let i = 1; i < lines.length; i++) {
         const cells = parseCSVLine(lines[i]);
         rows.push({
           name: cells[nameIdx] ?? '',
           email: cells[emailIdx] ?? '',
           phone: (phoneIdx >= 0 ? cells[phoneIdx] : '') ?? '',
-          temporaryPassword: (pwIdx >= 0 ? cells[pwIdx] : '') ?? '',
         });
       }
       await processImportedRows(rows);
@@ -432,10 +418,6 @@ export default function ClientsScreen() {
     const errors: { [key: string]: string } = {};
     if (!newClient.name || !newClient.name.trim()) { missingFields.push('Name'); errors.name = 'Name is required'; }
     if (!newClient.email || !newClient.email.trim()) { missingFields.push('Email'); errors.email = 'Email is required'; }
-    if (!newClient.temporaryPassword || newClient.temporaryPassword.length < 6) {
-      missingFields.push('Temporary Password (minimum 6 characters)');
-      errors.temporaryPassword = 'Temporary Password is required (minimum 6 characters)';
-    }
     setFieldErrors(errors);
     if (missingFields.length > 0) return;
     const existingClient = clients.find(c => c.email === newClient.email);
@@ -445,22 +427,28 @@ export default function ClientsScreen() {
     }
     try {
       const { AuthService } = await import('@/services/authService');
-      const email = newClient.email;
-      const tempPassword = newClient.temporaryPassword;
-      await AuthService.signUp(email, tempPassword, {
-        name: newClient.name,
+      const email = newClient.email.trim();
+      const randomPassword = (() => {
+        const length = 12;
+        const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+        let password = '';
+        for (let i = 0; i < length; i++) {
+          password += charset.charAt(Math.floor(Math.random() * charset.length));
+        }
+        return password;
+      })();
+      await AuthService.signUp(email, randomPassword, {
+        name: newClient.name.trim(),
         role: 'client',
-        phone: newClient.phone || undefined,
+        phone: newClient.phone?.trim() || undefined,
       });
       setShowAddModal(false);
       setFieldErrors({});
-      setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-      const appUrl = Platform.OS === 'web' ? window.location.origin : 'https://bluecrew-app.netlify.app';
-      const loginUrl = `${appUrl}/auth/login`;
+      setNewClient({ name: '', email: '', phone: '' });
       await signOut(auth);
       Alert.alert(
         'Client created',
-        `Client added successfully.\n\nEmail: ${email}\nTemporary Password: ${tempPassword}\n\nShare these with the client. You have been logged out — please log in again.`,
+        'Client added successfully. They can use "Forgot password" with their email to set a password and log in.\n\nYou have been logged out — please log in again.',
         [{ text: 'OK', onPress: () => router.replace('/login') }]
       );
       router.replace('/login');
@@ -1156,44 +1144,6 @@ export default function ClientsScreen() {
                 placeholder="Enter phone number"
                 keyboardType="phone-pad"
               />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Temporary Password *</Text>
-              <View style={styles.passwordRow}>
-                <TextInput
-                  style={[styles.input, styles.passwordInput, fieldErrors.temporaryPassword && styles.inputError]}
-                  value={newClient.temporaryPassword}
-                  onChangeText={(text) => {
-                    setNewClient(prev => ({ ...prev, temporaryPassword: text }));
-                    if (fieldErrors.temporaryPassword) {
-                      setFieldErrors(prev => ({ ...prev, temporaryPassword: '' }));
-                    }
-                  }}
-                  placeholder="Enter temporary password (min 6 characters)"
-                  secureTextEntry={!showPassword}
-                  autoCapitalize="none"
-                />
-                <TouchableOpacity
-                  style={styles.eyeButton}
-                  onPress={() => setShowPassword(!showPassword)}
-                >
-                  {showPassword ? <Eye size={20} color="#000000" /> : <EyeOff size={20} color="#000000" />}
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={styles.generatePasswordButton}
-                  onPress={() => {
-                    const generatedPassword = generateTempPassword();
-                    setNewClient(prev => ({ ...prev, temporaryPassword: generatedPassword }));
-                  }}
-                >
-                  <Text style={styles.generatePasswordButtonText}>Generate</Text>
-                </TouchableOpacity>
-              </View>
-              {fieldErrors.temporaryPassword && (
-                <Text style={styles.errorText}>{fieldErrors.temporaryPassword}</Text>
-              )}
-              <Text style={{ fontSize: 12, color: '#000000', marginTop: 4 }}>Client will use this password to login</Text>
             </View>
 
             <TouchableOpacity style={styles.submitButton} onPress={handleAddClient}>
