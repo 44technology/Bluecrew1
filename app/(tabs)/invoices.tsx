@@ -29,7 +29,6 @@ import { CommentService } from '@/services/commentService';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import SecondaryButton from '@/components/SecondaryButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from '@/lib/firebase';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
 
@@ -48,10 +47,6 @@ export default function InvoicesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showNewClientModal, setShowNewClientModal] = useState(false);
-  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const pendingNewClientRef = useRef<{ name: string; email: string; phone: string; temporaryPassword: string } | null>(null);
   const [showPartialPaidModal, setShowPartialPaidModal] = useState(false);
   const [partialPaidAmount, setPartialPaidAmount] = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
@@ -79,12 +74,6 @@ export default function InvoicesScreen() {
   });
   const [showDueDatePicker, setShowDueDatePicker] = useState(false);
   
-  const [newClient, setNewClient] = useState({
-    name: '',
-    email: '',
-    phone: '',
-    temporaryPassword: '',
-  });
   const [workTitles, setWorkTitles] = useState<Array<{ name: string; description: string; quantity: string; unit: string; unit_price: string; price: string }>>([]);
   const [newWorkTitle, setNewWorkTitle] = useState({ name: '', description: '', quantity: '', unit: '', unit_price: '', price: '' });
   const [showWorkTitleModal, setShowWorkTitleModal] = useState(false);
@@ -632,75 +621,6 @@ export default function InvoicesScreen() {
       } else {
         Alert.alert('Error', 'Failed to record payment');
       }
-    }
-  };
-
-  const finishAddNewClientSuccess = async (clientData: { name: string; email: string; phone: string; temporaryPassword: string }) => {
-    await loadClients();
-    const allUsers = await UserService.getAllUsers();
-    const clientUsers = allUsers.filter(u => u.role === 'client');
-    const newClientUser = clientUsers.find(u => u.email === clientData.email);
-    if (newClientUser) {
-      setNewInvoice(prev => ({
-        ...prev,
-        client_id: newClientUser.id,
-        client_name: newClientUser.name,
-        client_email: newClientUser.email || '',
-      }));
-    }
-    setShowNewClientModal(false);
-    setShowAdminPasswordModal(false);
-    setAdminPasswordInput('');
-    pendingNewClientRef.current = null;
-    setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-    const tempPassword = clientData.temporaryPassword;
-    Alert.alert('Success', `Client added successfully!\n\nTemporary password: ${tempPassword}\n\nPlease share this password with the client.`);
-  };
-
-  const handleAddNewClient = async () => {
-    if (!newClient.name || !newClient.email) {
-      Alert.alert('Error', 'Please fill in name and email fields');
-      return;
-    }
-    if (!newClient.temporaryPassword || newClient.temporaryPassword.length < 6) {
-      Alert.alert('Error', 'Please provide a temporary password (minimum 6 characters)');
-      return;
-    }
-    const existingClient = clients.find((c: any) => c.email === newClient.email);
-    if (existingClient) {
-      Alert.alert('Error', 'A client with this email already exists');
-      return;
-    }
-    const currentUserEmail = auth.currentUser?.email;
-    if (!currentUserEmail) {
-      Alert.alert('Error', 'You must be logged in to add a client');
-      return;
-    }
-    // Always ask for your password so we use your current password and you stay logged in.
-    pendingNewClientRef.current = { ...newClient };
-    setShowNewClientModal(false);
-    setShowAdminPasswordModal(true);
-  };
-
-  const handleAdminPasswordSubmitInvoice = async () => {
-    if (!adminPasswordInput.trim()) {
-      Alert.alert('Error', 'Please enter your password');
-      return;
-    }
-    const pending = pendingNewClientRef.current;
-    const currentUserEmail = auth.currentUser?.email;
-    if (!pending || !currentUserEmail) return;
-    try {
-      const { AuthService } = await import('@/services/authService');
-      await AuthService.createUserAsAdmin(currentUserEmail, adminPasswordInput.trim(), pending.email, pending.temporaryPassword, {
-        name: pending.name,
-        role: 'client',
-        phone: pending.phone || undefined,
-      });
-      await finishAddNewClientSuccess(pending);
-    } catch (error: any) {
-      console.error('Error adding client:', error);
-      Alert.alert('Error', error.message || 'Failed to add client. Check your password.');
     }
   };
 
@@ -1739,10 +1659,10 @@ export default function InvoicesScreen() {
                   <Text style={styles.label}>Client *</Text>
                   <TouchableOpacity
                     style={styles.addClientButton}
-                    onPress={() => setShowNewClientModal(true)}
+                    onPress={() => router.push('/(tabs)/clients')}
                   >
                     <Plus size={16} color="#000000" />
-                    <Text style={styles.addClientButtonText}>Add New Client</Text>
+                    <Text style={styles.addClientButtonText}>Create new client (Clients page)</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.clientList}>
@@ -2746,121 +2666,6 @@ export default function InvoicesScreen() {
                   </TouchableOpacity>
                 ))}
               </ScrollView>
-            </View>
-          </View>
-        </Modal>
-
-        {/* Add New Client Modal */}
-        <Modal
-          visible={showNewClientModal}
-          animationType="slide"
-          presentationStyle="pageSheet">
-          <View style={styles.modalContainer}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add New Client</Text>
-              <TouchableOpacity onPress={() => {
-                setShowNewClientModal(false);
-                setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-              }}>
-                <X size={24} color="#000000" />
-              </TouchableOpacity>
-            </View>
-
-            <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Name *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newClient.name}
-                  onChangeText={(text) => setNewClient(prev => ({ ...prev, name: text }))}
-                  placeholder="Enter client name"
-                  placeholderTextColor="#374151"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Email *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newClient.email}
-                  onChangeText={(text) => setNewClient(prev => ({ ...prev, email: text }))}
-                  placeholder="Enter email address"
-                  placeholderTextColor="#374151"
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Phone</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newClient.phone}
-                  onChangeText={(text) => setNewClient(prev => ({ ...prev, phone: text }))}
-                  placeholder="Enter phone number"
-                  placeholderTextColor="#374151"
-                  keyboardType="phone-pad"
-                />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <Text style={styles.label}>Temporary Password *</Text>
-                <TextInput
-                  style={styles.input}
-                  value={newClient.temporaryPassword}
-                  onChangeText={(text) => setNewClient(prev => ({ ...prev, temporaryPassword: text }))}
-                  placeholder="Enter temporary password (min 6 characters)"
-                  placeholderTextColor="#374151"
-                  secureTextEntry
-                  autoCapitalize="none"
-                />
-                <Text style={{ fontSize: 12, color: '#000000', marginTop: 4 }}>
-                  Client will use this password to login
-                </Text>
-              </View>
-
-              <TouchableOpacity style={styles.submitButton} onPress={handleAddNewClient}>
-                <Text style={styles.submitButtonText}>Add Client</Text>
-              </TouchableOpacity>
-            </ScrollView>
-          </View>
-        </Modal>
-
-        {/* Admin password modal: stay logged in after creating client */}
-        <Modal visible={showAdminPasswordModal} transparent animationType="fade">
-          <View style={styles.modalOverlay}>
-            <View style={styles.rejectModal}>
-              <Text style={styles.rejectModalTitle}>Your password</Text>
-              <Text style={styles.rejectModalMessage}>
-                Enter your password so you stay logged in after creating the client.
-              </Text>
-              <TextInput
-                style={[styles.input, { marginBottom: 16 }]}
-                placeholder="Your password"
-                placeholderTextColor="#374151"
-                value={adminPasswordInput}
-                onChangeText={setAdminPasswordInput}
-                secureTextEntry
-                autoCapitalize="none"
-              />
-              <View style={styles.rejectModalActions}>
-                <TouchableOpacity
-                  style={styles.cancelRejectButton}
-                  onPress={() => {
-                    setShowAdminPasswordModal(false);
-                    setAdminPasswordInput('');
-                    pendingNewClientRef.current = null;
-                  }}
-                >
-                  <Text style={styles.cancelRejectText}>Cancel</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                  style={[styles.cancelRejectButton, { backgroundColor: '#22c55e' }]}
-                  onPress={handleAdminPasswordSubmitInvoice}
-                >
-                  <Text style={[styles.cancelRejectText, { color: '#ffffff' }]}>Continue</Text>
-                </TouchableOpacity>
-              </View>
             </View>
           </View>
         </Modal>

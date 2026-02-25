@@ -31,8 +31,6 @@ import { Project, SubContractor } from '@/types';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import SecondaryButton from '@/components/SecondaryButton';
 import { CARD_BORDER } from '@/constants/design';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { auth } from '@/lib/firebase';
 
 type WorkDescriptionItem = { text: string; quantity?: string; unit_price?: string };
 function descTotal(descriptions: WorkDescriptionItem[]): number {
@@ -73,15 +71,9 @@ export default function ProjectsScreen() {
   const [showStartDatePicker, setShowStartDatePicker] = useState(false);
   const [showDeadlinePicker, setShowDeadlinePicker] = useState(false);
   const [clients, setClients] = useState<any[]>([]);
-  const [showNewClientModal, setShowNewClientModal] = useState(false);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showClientSelectModal, setShowClientSelectModal] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState('');
-  const [newClient, setNewClient] = useState({ name: '', email: '', phone: '', temporaryPassword: '' });
-  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const [isAddingClient, setIsAddingClient] = useState(false);
-  const pendingNewClientRef = useRef<typeof newClient | null>(null);
   const [canCreateProject, setCanCreateProject] = useState(false);
   const [clientBudget, setClientBudget] = useState<string>(''); // Client-facing budget from proposal
   // Admin budget settings
@@ -111,17 +103,6 @@ export default function ProjectsScreen() {
     
     checkCreatePermission();
   }, [userRole]);
-  
-  // Generate random temporary password
-  const generateTempPassword = () => {
-    const length = 12;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return password;
-  };
   
   // Category options
   const categories = ['Residential', 'Commercial'];
@@ -910,107 +891,6 @@ export default function ProjectsScreen() {
 
   const handleRemoveWorkTitle = (index: number) => {
     setWorkTitles(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const doCreateClientAndRestore = async (
-    clientData: { name: string; email: string; phone: string; temporaryPassword: string },
-    adminPassword: string
-  ) => {
-    const currentUserEmail = auth.currentUser?.email;
-    if (!currentUserEmail) return;
-
-    const { AuthService } = await import('@/services/authService');
-    // createUserAsAdmin creates the client and restores admin session so we stay logged in
-    await AuthService.createUserAsAdmin(
-      currentUserEmail,
-      adminPassword,
-      clientData.email,
-      clientData.temporaryPassword,
-      {
-        name: clientData.name,
-        role: 'client',
-        phone: clientData.phone || undefined,
-      }
-    );
-
-    await loadClients();
-    const allUsers = await UserService.getAllUsers();
-    const newClientUser = allUsers.find(u => u.email === clientData.email && u.role === 'client');
-    if (newClientUser) {
-      setSelectedClients([{ id: newClientUser.id, name: newClientUser.name }]);
-      setNewProject(prev => ({
-        ...prev,
-        client_id: newClientUser.id,
-        client_name: newClientUser.name
-      }));
-      if (fieldErrors.clients) {
-        setFieldErrors(prev => ({ ...prev, clients: '' }));
-      }
-    }
-
-    setShowNewClientModal(false);
-    setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-    setShowAdminPasswordModal(false);
-    setAdminPasswordInput('');
-    pendingNewClientRef.current = null;
-
-    const appUrl = Platform.OS === 'web' ? window.location.origin : 'https://bluecrew-app.netlify.app';
-    const loginUrl = `${appUrl}/auth/login`;
-    const tempPassword = clientData.temporaryPassword;
-    Alert.alert(
-      'Success',
-      `Client created successfully!\n\nEmail: ${clientData.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
-      Platform.OS === 'web' ? [
-        { text: 'Copy Password', onPress: () => { navigator.clipboard?.writeText(tempPassword); Alert.alert('Copied', 'Password copied to clipboard'); } },
-        { text: 'OK' }
-      ] : [{ text: 'OK' }]
-    );
-  };
-
-  const handleAddNewClient = async () => {
-    if (!newClient.name || !newClient.email) {
-      Alert.alert('Error', 'Please fill in name and email fields');
-      return;
-    }
-    if (!newClient.temporaryPassword || newClient.temporaryPassword.length < 6) {
-      Alert.alert('Error', 'Please provide a temporary password (minimum 6 characters)');
-      return;
-    }
-    const existingClient = clients.find(c => c.email === newClient.email);
-    if (existingClient) {
-      Alert.alert('Error', 'A client with this email already exists');
-      return;
-    }
-
-    const currentUserEmail = auth.currentUser?.email;
-    if (!currentUserEmail) {
-      Alert.alert('Error', 'You must be logged in to add a client');
-      return;
-    }
-
-    // Always ask for your password so we use your current password and you stay logged in.
-    // (Saved password may be outdated e.g. after changing password or browser security warning.)
-    pendingNewClientRef.current = { ...newClient };
-    setShowNewClientModal(false);
-    setShowAdminPasswordModal(true);
-  };
-
-  const handleAdminPasswordSubmit = async () => {
-    if (!adminPasswordInput.trim()) {
-      Alert.alert('Error', 'Please enter your password');
-      return;
-    }
-    const pending = pendingNewClientRef.current;
-    if (!pending) return;
-    try {
-      setIsAddingClient(true);
-      await doCreateClientAndRestore(pending, adminPasswordInput.trim());
-    } catch (error: any) {
-      console.error('Error creating client:', error);
-      Alert.alert('Error', error.message || 'Failed to create client');
-    } finally {
-      setIsAddingClient(false);
-    }
   };
 
   const handleCreateProject = async () => {
@@ -2415,13 +2295,13 @@ export default function ProjectsScreen() {
                     style={[styles.categoryOption, styles.addClientButton]}
                     onPress={() => {
                       setShowClientSelectModal(false);
-                      setShowNewClientModal(true);
                       setClientSearchQuery('');
+                      router.push('/(tabs)/clients');
                     }}
                   >
                     <View style={styles.clientOptionContent}>
                       <Plus size={20} color="#000000" />
-                      <Text style={[styles.addClientText, { marginLeft: 8 }]}>New Client</Text>
+                      <Text style={[styles.addClientText, { marginLeft: 8 }]}>Create new client (Clients page)</Text>
                     </View>
                   </TouchableOpacity>
                   {clients
@@ -2551,160 +2431,6 @@ export default function ProjectsScreen() {
                 onPress={closeModalAndReset}
               >
                 <Text style={styles.confirmModalButtonConfirmText}>Yes, Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </View>
-      </Modal>
-
-      {/* New Client Modal */}
-      <Modal
-        visible={showNewClientModal}
-        animationType="slide"
-        presentationStyle="pageSheet">
-        <View style={styles.modalContainer}>
-          <View style={styles.modalHeader}>
-            <Text style={styles.modalTitle}>Add New Client</Text>
-            <TouchableOpacity
-              hitSlop={{ top: 16, right: 16, bottom: 16, left: 16 }}
-              onPress={() => {
-                setShowNewClientModal(false);
-                setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-                pendingNewClientRef.current = null;
-              }}
-              style={{ padding: 8 }}
-            >
-              <X size={28} color="#ffffff" />
-            </TouchableOpacity>
-          </View>
-
-          <ScrollView style={styles.modalContent} showsVerticalScrollIndicator={false}>
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Name *</Text>
-              <TextInput
-                style={styles.input}
-                value={newClient.name}
-                onChangeText={(text) => setNewClient(prev => ({ ...prev, name: text }))}
-                placeholder="Enter client name"
-                placeholderTextColor="#374151"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Email *</Text>
-              <TextInput
-                style={styles.input}
-                value={newClient.email}
-                onChangeText={(text) => setNewClient(prev => ({ ...prev, email: text }))}
-                placeholder="Enter email address"
-                placeholderTextColor="#374151"
-                keyboardType="email-address"
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <Text style={styles.label}>Phone</Text>
-              <TextInput
-                style={styles.input}
-                value={newClient.phone}
-                onChangeText={(text) => setNewClient(prev => ({ ...prev, phone: text }))}
-                placeholder="Enter phone number"
-                placeholderTextColor="#374151"
-                keyboardType="phone-pad"
-              />
-            </View>
-
-            <View style={styles.inputGroup}>
-              <View style={styles.labelRow}>
-                <Text style={styles.label}>Temporary Password *</Text>
-                <View style={styles.passwordActions}>
-                  <TouchableOpacity
-                    style={styles.generateButton}
-                    onPress={() => setNewClient(prev => ({ ...prev, temporaryPassword: generateTempPassword() }))}
-                  >
-                    <Text style={styles.generateButtonText}>Generate</Text>
-                  </TouchableOpacity>
-                  {Platform.OS === 'web' && newClient.temporaryPassword && (
-                    <TouchableOpacity
-                      style={styles.copyButton}
-                      onPress={() => {
-                        if (navigator.clipboard) {
-                          navigator.clipboard.writeText(newClient.temporaryPassword);
-                          Alert.alert('Copied', 'Password copied to clipboard');
-                        }
-                      }}
-                    >
-                      <Text style={styles.copyButtonText}>Copy</Text>
-                    </TouchableOpacity>
-                  )}
-                </View>
-              </View>
-              <TextInput
-                style={styles.input}
-                value={newClient.temporaryPassword}
-                onChangeText={(text) => setNewClient(prev => ({ ...prev, temporaryPassword: text }))}
-                placeholder="Enter temporary password (min 6 characters)"
-              placeholderTextColor="#374151"
-                secureTextEntry
-                autoCapitalize="none"
-              />
-            </View>
-
-            <View style={{ flexDirection: 'row', marginTop: 8, marginHorizontal: 0 }}>
-              <TouchableOpacity
-                style={[styles.submitButton, { flex: 1, backgroundColor: '#6b7280', marginRight: 6 }]}
-                onPress={() => {
-                  setShowNewClientModal(false);
-                  setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-                  pendingNewClientRef.current = null;
-                }}
-              >
-                <Text style={styles.submitButtonText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.submitButton, { flex: 1, marginLeft: 6 }]} onPress={handleAddNewClient} disabled={isAddingClient}>
-                <Text style={styles.submitButtonText}>{isAddingClient ? 'Creating...' : 'Add Client'}</Text>
-              </TouchableOpacity>
-            </View>
-          </ScrollView>
-        </View>
-      </Modal>
-
-      {/* Admin password modal: stay logged in after creating client */}
-      <Modal visible={showAdminPasswordModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.confirmModal}>
-            <Text style={styles.confirmModalTitle}>Your password</Text>
-            <Text style={styles.confirmModalMessage}>
-              Enter your password so you stay logged in after creating the client.
-            </Text>
-            <TextInput
-              style={[styles.input, { marginBottom: 16 }]}
-              placeholder="Your password"
-              placeholderTextColor="#374151"
-              value={adminPasswordInput}
-              onChangeText={setAdminPasswordInput}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-            <View style={styles.confirmModalButtons}>
-              <SecondaryButton
-                style={[styles.confirmModalButton, styles.confirmModalButtonCancel]}
-                onPress={() => {
-                  setShowAdminPasswordModal(false);
-                  setAdminPasswordInput('');
-                  pendingNewClientRef.current = null;
-                }}
-                textStyle={styles.confirmModalButtonCancelText}
-              >
-                Cancel
-              </SecondaryButton>
-              <TouchableOpacity
-                style={[styles.confirmModalButton, styles.confirmModalButtonConfirm]}
-                onPress={handleAdminPasswordSubmit}
-                disabled={isAddingClient}
-              >
-                <Text style={styles.confirmModalButtonConfirmText}>{isAddingClient ? 'Creating...' : 'Continue'}</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -26,6 +26,7 @@ import { InvoiceService } from '@/services/invoiceService';
 import { ClientService } from '@/services/clientService';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { signOut } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
 
 // Real clients from Firebase
@@ -68,9 +69,6 @@ export default function ClientsScreen() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [clientToDelete, setClientToDelete] = useState<Client | null>(null);
   const [fieldErrors, setFieldErrors] = useState<{ [key: string]: string }>({});
-  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
-  const pendingNewClientRef = useRef<{ name: string; email: string; phone: string; temporaryPassword: string } | null>(null);
   
   // Web-specific features
   const [searchQuery, setSearchQuery] = useState('');
@@ -430,102 +428,45 @@ export default function ClientsScreen() {
   };
 
   const handleAddClient = async () => {
-    // Collect all missing required fields and set field-level errors
     const missingFields: string[] = [];
     const errors: { [key: string]: string } = {};
-    
-    if (!newClient.name || !newClient.name.trim()) {
-      missingFields.push('Name');
-      errors.name = 'Name is required';
-    }
-    if (!newClient.email || !newClient.email.trim()) {
-      missingFields.push('Email');
-      errors.email = 'Email is required';
-    }
+    if (!newClient.name || !newClient.name.trim()) { missingFields.push('Name'); errors.name = 'Name is required'; }
+    if (!newClient.email || !newClient.email.trim()) { missingFields.push('Email'); errors.email = 'Email is required'; }
     if (!newClient.temporaryPassword || newClient.temporaryPassword.length < 6) {
       missingFields.push('Temporary Password (minimum 6 characters)');
       errors.temporaryPassword = 'Temporary Password is required (minimum 6 characters)';
     }
-
-    // Set field errors
     setFieldErrors(errors);
-
-    // Show detailed error message if any fields are missing
-    if (missingFields.length > 0) {
-      return;
-    }
-
-    // Check if email already exists
+    if (missingFields.length > 0) return;
     const existingClient = clients.find(c => c.email === newClient.email);
     if (existingClient) {
       Alert.alert('Error', 'A client with this email already exists');
       return;
     }
-
-    const currentUserEmail = auth.currentUser?.email;
-    if (!currentUserEmail) {
-      Alert.alert('Error', 'You must be logged in to add a client');
-      return;
-    }
-
-    // Always ask for your password so we use your current password and you stay logged in.
-    pendingNewClientRef.current = { ...newClient };
-    setShowAddModal(false);
-    setShowAdminPasswordModal(true);
-  };
-
-  const finishAddClientSuccess = async (clientData: { name: string; email: string; phone: string; temporaryPassword: string }) => {
-    const firebaseClients = await UserService.getUsersByRole('client');
-    const clientList: Client[] = firebaseClients.map(user => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone || '',
-      company: '',
-      address: '',
-      created_at: user.created_at,
-    }));
-    setClients(clientList);
-    setShowAddModal(false);
-    setShowAdminPasswordModal(false);
-    setAdminPasswordInput('');
-    pendingNewClientRef.current = null;
-    setFieldErrors({});
-    setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
-    const appUrl = Platform.OS === 'web' ? window.location.origin : 'https://bluecrew-app.netlify.app';
-    const loginUrl = `${appUrl}/auth/login`;
-    const tempPassword = clientData.temporaryPassword;
-    Alert.alert(
-      'Success',
-      `Client added successfully!\n\nEmail: ${clientData.email}\nTemporary Password: ${tempPassword}\n\nLogin URL: ${loginUrl}\n\nPlease share these credentials with the client.`,
-      [
-        { text: 'Copy Password', onPress: () => { if (Platform.OS === 'web' && navigator.clipboard) { navigator.clipboard.writeText(tempPassword); Alert.alert('Copied', 'Password copied to clipboard'); } } },
-        { text: 'OK' }
-      ]
-    );
-  };
-
-  const handleAdminPasswordSubmit = async () => {
-    if (!adminPasswordInput.trim()) {
-      Alert.alert('Error', 'Please enter your password');
-      return;
-    }
-    const pending = pendingNewClientRef.current;
-    const currentUserEmail = auth.currentUser?.email;
-    if (!pending || !currentUserEmail) return;
     try {
       const { AuthService } = await import('@/services/authService');
-      await AuthService.createUserAsAdmin(
-        currentUserEmail,
-        adminPasswordInput.trim(),
-        pending.email,
-        pending.temporaryPassword,
-        { name: pending.name, role: 'client', phone: pending.phone || undefined }
+      const email = newClient.email;
+      const tempPassword = newClient.temporaryPassword;
+      await AuthService.signUp(email, tempPassword, {
+        name: newClient.name,
+        role: 'client',
+        phone: newClient.phone || undefined,
+      });
+      setShowAddModal(false);
+      setFieldErrors({});
+      setNewClient({ name: '', email: '', phone: '', temporaryPassword: '' });
+      const appUrl = Platform.OS === 'web' ? window.location.origin : 'https://bluecrew-app.netlify.app';
+      const loginUrl = `${appUrl}/auth/login`;
+      await signOut(auth);
+      Alert.alert(
+        'Client created',
+        `Client added successfully.\n\nEmail: ${email}\nTemporary Password: ${tempPassword}\n\nShare these with the client. You have been logged out — please log in again.`,
+        [{ text: 'OK', onPress: () => router.replace('/login') }]
       );
-      await finishAddClientSuccess(pending);
+      router.replace('/login');
     } catch (error: any) {
       console.error('Error adding client:', error);
-      Alert.alert('Error', error.message || 'Failed to add client. Check your password.');
+      Alert.alert('Error', error.message || 'Failed to add client');
     }
   };
 
@@ -798,6 +739,13 @@ export default function ClientsScreen() {
           </View>
         {Platform.OS === 'web' && !isMobile && (canEditClients || userRole === 'admin') && (
           <View style={styles.headerActions}>
+            <TouchableOpacity
+              style={[styles.exportButton, styles.createClientButton]}
+              onPress={() => { setFieldErrors({}); setShowAddModal(true); }}
+            >
+              <Plus size={18} color="#ffffff" />
+              <Text style={styles.exportButtonText}>Create New Client</Text>
+            </TouchableOpacity>
             <TouchableOpacity
               style={[styles.exportButton, styles.importButton]}
               onPress={handleImportCSV}
@@ -1252,45 +1200,6 @@ export default function ClientsScreen() {
               <Text style={styles.submitButtonText}>Add Client</Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
-      </Modal>
-
-      {/* Admin password modal: stay logged in after creating client */}
-      <Modal visible={showAdminPasswordModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={styles.deleteModal}>
-            <Text style={styles.deleteTitle}>Your password</Text>
-            <Text style={styles.deleteMessage}>
-              Enter your password so you stay logged in after creating the client.
-            </Text>
-            <TextInput
-              style={[styles.input, { marginBottom: 16 }]}
-              placeholder="Your password"
-              placeholderTextColor="#6b7280"
-              value={adminPasswordInput}
-              onChangeText={setAdminPasswordInput}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-            <View style={styles.deleteButtons}>
-              <TouchableOpacity
-                style={[styles.cancelDeleteButton, { flex: 1 }]}
-                onPress={() => {
-                  setShowAdminPasswordModal(false);
-                  setAdminPasswordInput('');
-                  pendingNewClientRef.current = null;
-                }}
-              >
-                <Text style={styles.cancelDeleteText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.cancelDeleteButton, { flex: 1, backgroundColor: '#22c55e' }]}
-                onPress={handleAdminPasswordSubmit}
-              >
-                <Text style={[styles.confirmDeleteText, { color: '#ffffff' }]}>Continue</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
       </Modal>
 
@@ -1887,6 +1796,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     gap: 12,
     alignItems: 'center',
+  },
+  createClientButton: {
+    backgroundColor: '#059669',
   },
   importButton: {
     backgroundColor: '#3b82f6',
