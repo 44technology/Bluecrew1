@@ -30,6 +30,7 @@ import { PermissionService } from '@/services/permissionService';
 import { Project, SubContractor } from '@/types';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import SecondaryButton from '@/components/SecondaryButton';
+import CreateClientModal from '@/components/CreateClientModal';
 import { CARD_BORDER } from '@/constants/design';
 
 type WorkDescriptionItem = { text: string; quantity?: string; unit_price?: string };
@@ -73,6 +74,7 @@ export default function ProjectsScreen() {
   const [clients, setClients] = useState<any[]>([]);
   const [showCategoryModal, setShowCategoryModal] = useState(false);
   const [showClientSelectModal, setShowClientSelectModal] = useState(false);
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [canCreateProject, setCanCreateProject] = useState(false);
   const [clientBudget, setClientBudget] = useState<string>(''); // Client-facing budget from proposal
@@ -2293,15 +2295,11 @@ export default function ProjectsScreen() {
                 >
                   <TouchableOpacity
                     style={[styles.categoryOption, styles.addClientButton]}
-                    onPress={() => {
-                      setShowClientSelectModal(false);
-                      setClientSearchQuery('');
-                      router.push('/(tabs)/clients');
-                    }}
+                    onPress={() => setShowCreateClientModal(true)}
                   >
                     <View style={styles.clientOptionContent}>
                       <Plus size={20} color="#000000" />
-                      <Text style={[styles.addClientText, { marginLeft: 8 }]}>Create new client (Clients page)</Text>
+                      <Text style={[styles.addClientText, { marginLeft: 8 }]}>Create new client</Text>
                     </View>
                   </TouchableOpacity>
                   {clients
@@ -2363,6 +2361,19 @@ export default function ProjectsScreen() {
               </View>
             </View>
           )}
+
+          <CreateClientModal
+            visible={showCreateClientModal}
+            onClose={() => setShowCreateClientModal(false)}
+            onCreated={(client) => {
+              setClients(prev => [...prev, { ...client, role: 'client' }]);
+              setSelectedClients([{ id: client.id, name: client.name }]);
+              setNewProject(prev => ({ ...prev, client_id: client.id, client_name: client.name }));
+              setShowCreateClientModal(false);
+              setShowClientSelectModal(false);
+              setClientSearchQuery('');
+            }}
+          />
 
           {showWorkTitleModal && (
             <View style={styles.pickerOverlay} pointerEvents="box-none">

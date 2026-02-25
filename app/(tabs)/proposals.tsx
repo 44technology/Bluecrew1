@@ -28,6 +28,7 @@ import { PermissionService } from '@/services/permissionService';
 import { usePagePermission } from '@/hooks/usePagePermission';
 import { CommentService } from '@/services/commentService';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import CreateClientModal from '@/components/CreateClientModal';
 import { db } from '@/lib/firebase';
 import { doc, updateDoc, deleteField } from 'firebase/firestore';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -69,6 +70,7 @@ export default function ProposalsScreen() {
   const [clients, setClients] = useState<any[]>([]);
   const [clientSearchQuery, setClientSearchQuery] = useState('');
   const [showClientDropdown, setShowClientDropdown] = useState(false);
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [loading, setLoading] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [comments, setComments] = useState<Comment[]>([]);
@@ -1828,10 +1830,10 @@ export default function ProposalsScreen() {
                   <Text style={styles.label}>Client *</Text>
                   <TouchableOpacity
                     style={styles.addClientButton}
-                    onPress={() => router.push('/(tabs)/clients')}
+                    onPress={() => setShowCreateClientModal(true)}
                   >
                     <Plus size={16} color="#000000" />
-                    <Text style={styles.addClientButtonText}>Create new client (Clients page)</Text>
+                    <Text style={styles.addClientButtonText}>Create new client</Text>
                   </TouchableOpacity>
                 </View>
                 <TouchableOpacity
@@ -2611,6 +2613,23 @@ export default function ProposalsScreen() {
             )}
           </View>
         </Modal>
+
+        <CreateClientModal
+          visible={showCreateClientModal}
+          onClose={() => setShowCreateClientModal(false)}
+          onCreated={(client) => {
+            setClients(prev => [...prev, { ...client, role: 'client' }]);
+            setNewProposal(prev => ({
+              ...prev,
+              client_id: client.id,
+              client_name: client.name,
+              client_email: client.email || '',
+            }));
+            setShowCreateClientModal(false);
+            setShowClientDropdown(false);
+            setClientSearchQuery('');
+          }}
+        />
 
         {/* Proposal Detail Modal */}
         <Modal

@@ -28,6 +28,7 @@ import { usePagePermission } from '@/hooks/usePagePermission';
 import { CommentService } from '@/services/commentService';
 import HamburgerMenu from '@/components/HamburgerMenu';
 import SecondaryButton from '@/components/SecondaryButton';
+import CreateClientModal from '@/components/CreateClientModal';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as DocumentPicker from 'expo-document-picker';
 import * as ImagePicker from 'expo-image-picker';
@@ -47,6 +48,7 @@ export default function InvoicesScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showCreateClientModal, setShowCreateClientModal] = useState(false);
   const [showPartialPaidModal, setShowPartialPaidModal] = useState(false);
   const [partialPaidAmount, setPartialPaidAmount] = useState('');
   const [showPayModal, setShowPayModal] = useState(false);
@@ -1659,10 +1661,10 @@ export default function InvoicesScreen() {
                   <Text style={styles.label}>Client *</Text>
                   <TouchableOpacity
                     style={styles.addClientButton}
-                    onPress={() => router.push('/(tabs)/clients')}
+                    onPress={() => setShowCreateClientModal(true)}
                   >
                     <Plus size={16} color="#000000" />
-                    <Text style={styles.addClientButtonText}>Create new client (Clients page)</Text>
+                    <Text style={styles.addClientButtonText}>Create new client</Text>
                   </TouchableOpacity>
                 </View>
                 <View style={styles.clientList}>
@@ -1959,6 +1961,21 @@ export default function InvoicesScreen() {
             </ScrollView>
           </View>
         </Modal>
+
+        <CreateClientModal
+          visible={showCreateClientModal}
+          onClose={() => setShowCreateClientModal(false)}
+          onCreated={(client) => {
+            setClients(prev => [...prev, { ...client, role: 'client' }]);
+            setNewInvoice(prev => ({
+              ...prev,
+              client_id: client.id,
+              client_name: client.name,
+              client_email: client.email || '',
+            }));
+            setShowCreateClientModal(false);
+          }}
+        />
 
         {/* Invoice Detail Modal */}
         <Modal
