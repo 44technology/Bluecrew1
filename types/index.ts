@@ -289,6 +289,14 @@ export interface Project {
   project_zip?: string; // ZIP code
   discount?: number; // Discount amount
   project_description?: string; // Additional project description/notes
+  /** General conditions percentage (e.g. 18.5). Used for edit project and budget calc. */
+  general_conditions_percentage?: string;
+  /** Supervision: full-time ($1450/wk), part-time ($725/wk), none, or custom. */
+  supervision_type?: 'full-time' | 'part-time' | 'none' | 'custom';
+  /** Number of weeks for supervision fee. */
+  supervision_weeks?: string;
+  /** When supervision_type is 'custom', $ per week. */
+  supervision_fee_custom?: number;
   created_at: string;
   // Approval fields
   created_by: string; // Sales or Admin who created

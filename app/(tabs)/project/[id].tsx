@@ -93,8 +93,9 @@ export default function ProjectDetailScreen() {
     discount: '',
     project_description: '',
     general_conditions_percentage: '18.5',
-    supervision_type: 'part-time' as 'full-time' | 'part-time' | 'none',
+    supervision_type: 'part-time' as 'full-time' | 'part-time' | 'none' | 'custom',
     supervision_weeks: '',
+    supervision_fee_custom: '', // $ per week when type is custom
   });
   const [showEditStartDatePicker, setShowEditStartDatePicker] = useState(false);
   const [showEditDeadlinePicker, setShowEditDeadlinePicker] = useState(false);
@@ -1407,9 +1408,11 @@ export default function ProjectDetailScreen() {
         return sum + (quantity * unitPrice);
       }, 0);
       
-      // Calculate supervision fee
+      // Calculate supervision fee (1450, 725, custom $/week, or 0)
       const supervisionWeeks = parseFloat(editProjectForm.supervision_weeks) || 0;
-      const supervisionRate = editProjectForm.supervision_type === 'full-time' ? 1450 : editProjectForm.supervision_type === 'part-time' ? 725 : 0;
+      const supervisionRate = editProjectForm.supervision_type === 'full-time' ? 1450
+        : editProjectForm.supervision_type === 'part-time' ? 725
+        : editProjectForm.supervision_type === 'custom' ? (parseFloat(String(editProjectForm.supervision_fee_custom)) || 0) : 0;
       const supervisionFee = (supervisionWeeks > 0 && editProjectForm.supervision_type !== 'none') ? supervisionRate * supervisionWeeks : 0;
       
       // Calculate general conditions
@@ -1438,8 +1441,13 @@ export default function ProjectDetailScreen() {
         project_zip: editProjectForm.project_zip,
         total_budget: totalBudget,
         project_description: editProjectForm.project_description || '',
+        general_conditions_percentage: editProjectForm.general_conditions_percentage.trim() || '18.5',
+        supervision_type: editProjectForm.supervision_type,
+        supervision_weeks: editProjectForm.supervision_weeks,
       };
-
+      if (editProjectForm.supervision_type === 'custom' && (parseFloat(String(editProjectForm.supervision_fee_custom)) || 0) > 0) {
+        updateData.supervision_fee_custom = parseFloat(String(editProjectForm.supervision_fee_custom));
+      }
       if (discount > 0) {
         updateData.discount = discount;
       }
@@ -1473,6 +1481,7 @@ export default function ProjectDetailScreen() {
         general_conditions_percentage: '18.5',
         supervision_type: 'part-time',
         supervision_weeks: '',
+        supervision_fee_custom: '',
       });
       setEditWorkTitles([]);
       setSelectedEditClients([]);
@@ -1840,22 +1849,13 @@ export default function ProjectDetailScreen() {
               if (!project) return;
               // Load project data into edit form
               setEditingProject(project);
-              // Calculate general conditions percentage from project data if available
-              // If not available, calculate from total_budget and work titles
-              let generalConditionsPercentage = '18.5';
-              if (project.steps && project.steps.length > 0) {
-                const workTitlesTotal = project.steps
-                  .filter(step => step.step_type === 'parent' && step.price)
-                  .reduce((sum, step) => sum + (step.price || 0), 0);
-                if (workTitlesTotal > 0 && project.total_budget) {
-                  // Try to reverse calculate the percentage
-                  // This is approximate, but better than nothing
-                  const estimatedGC = (project.total_budget - workTitlesTotal) / workTitlesTotal * 100;
-                  if (estimatedGC > 0 && estimatedGC < 100) {
-                    generalConditionsPercentage = estimatedGC.toFixed(1);
-                  }
-                }
-              }
+              // Use stored general conditions % or default 18.5 (no reverse calculation)
+              const generalConditionsPercentage = (project.general_conditions_percentage != null && project.general_conditions_percentage !== '')
+                ? String(project.general_conditions_percentage) : '18.5';
+              // Use stored supervision type/weeks/custom or defaults
+              const supervisionType = project.supervision_type ?? 'part-time';
+              const supervisionWeeks = project.supervision_weeks != null ? String(project.supervision_weeks) : '';
+              const supervisionFeeCustom = project.supervision_fee_custom != null ? String(project.supervision_fee_custom) : '';
 
               // Load clients from project
               const projectClients: Array<{ id: string; name: string }> = [];
@@ -1891,8 +1891,9 @@ export default function ProjectDetailScreen() {
                 discount: project.discount?.toString() || '',
                 project_description: project.project_description || '',
                 general_conditions_percentage: generalConditionsPercentage,
-                supervision_type: 'part-time' as 'full-time' | 'part-time' | 'none',
-                supervision_weeks: '',
+                supervision_type: supervisionType,
+                supervision_weeks: supervisionWeeks,
+                supervision_fee_custom: supervisionFeeCustom,
               });
               // Load work titles from steps (description -> descriptions array)
               if (project.steps && project.steps.length > 0) {
@@ -3317,6 +3318,7 @@ export default function ProjectDetailScreen() {
                 general_conditions_percentage: '18.5',
                 supervision_type: 'part-time',
                 supervision_weeks: '',
+                supervision_fee_custom: '',
               });
               setEditWorkTitles([]);
               setNewEditWorkTitle({ name: '', descriptions: [], quantity: '', unit_price: '', price: '' });
@@ -3813,7 +3815,7 @@ export default function ProjectDetailScreen() {
                 }, 0);
                 const totalWorkTitles = workTitlesTotal + currentWorkTitleTotal;
                 const supervisionWeeks = parseFloat(editProjectForm.supervision_weeks) || 0;
-                const supervisionRate = editProjectForm.supervision_type === 'full-time' ? 1450 : editProjectForm.supervision_type === 'part-time' ? 725 : 0;
+                const supervisionRate = editProjectForm.supervision_type === 'full-time' ? 1450 : editProjectForm.supervision_type === 'part-time' ? 725 : editProjectForm.supervision_type === 'custom' ? (parseFloat(String(editProjectForm.supervision_fee_custom)) || 0) : 0;
                 const supervisionFee = (supervisionWeeks > 0 && editProjectForm.supervision_type !== 'none') ? supervisionRate * supervisionWeeks : 0;
                 const generalConditionsPercentageInput = editProjectForm.general_conditions_percentage.trim();
                 const generalConditionsPercentage = generalConditionsPercentageInput === '' ? 18.5 : (isNaN(parseFloat(generalConditionsPercentageInput)) ? 18.5 : parseFloat(generalConditionsPercentageInput));
@@ -3893,8 +3895,59 @@ export default function ProjectDetailScreen() {
                     <View style={styles.selectedIndicator} />
                   )}
                 </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.categoryOption,
+                    editProjectForm.supervision_type === 'custom' && styles.selectedCategory
+                  ]}
+                  onPress={() => setEditProjectForm(prev => ({ ...prev, supervision_type: 'custom' }))}
+                >
+                  <Text style={[
+                    styles.categoryText,
+                    editProjectForm.supervision_type === 'custom' && styles.selectedCategoryText
+                  ]}>
+                    Custom ($/week)
+                  </Text>
+                  {editProjectForm.supervision_type === 'custom' && (
+                    <View style={styles.selectedIndicator} />
+                  )}
+                </TouchableOpacity>
               </View>
             </View>
+
+            {editProjectForm.supervision_type === 'custom' && (
+              <View style={styles.inputGroup}>
+                <Text style={styles.label}>Custom rate per week ($)</Text>
+                {Platform.OS === 'web' ? (
+                  <input
+                    type="number"
+                    step="1"
+                    placeholder="e.g. 1000"
+                    value={editProjectForm.supervision_fee_custom}
+                    onChange={(e) => setEditProjectForm(prev => ({ ...prev, supervision_fee_custom: e.target.value }))}
+                    style={{
+                      width: '100%',
+                      padding: 12,
+                      fontSize: 16,
+                      borderWidth: 1,
+                      borderColor: '#d1d5db',
+                      borderRadius: 8,
+                      backgroundColor: '#ffffff',
+                    }}
+                    className="no-spinner"
+                    onWheel={(e) => e.currentTarget.blur()}
+                  />
+                ) : (
+                  <TextInput
+                    style={styles.input}
+                    placeholder="e.g. 1000"
+                    value={editProjectForm.supervision_fee_custom}
+                    onChangeText={(text) => setEditProjectForm(prev => ({ ...prev, supervision_fee_custom: text }))}
+                    keyboardType="numeric"
+                  />
+                )}
+              </View>
+            )}
 
             {editProjectForm.supervision_type !== 'none' && (
               <View style={styles.inputGroup}>
@@ -3930,7 +3983,7 @@ export default function ProjectDetailScreen() {
                   <View style={styles.calculatedAmount}>
                     <Text style={styles.calculatedAmountLabel}>Supervision Fee:</Text>
                     <Text style={styles.calculatedAmountValue}>
-                      ${((editProjectForm.supervision_type === 'full-time' ? 1450 : editProjectForm.supervision_type === 'part-time' ? 725 : 0) * parseFloat(editProjectForm.supervision_weeks)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      ${((editProjectForm.supervision_type === 'full-time' ? 1450 : editProjectForm.supervision_type === 'part-time' ? 725 : editProjectForm.supervision_type === 'custom' ? (parseFloat(String(editProjectForm.supervision_fee_custom)) || 0) : 0) * parseFloat(editProjectForm.supervision_weeks)).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                     </Text>
                   </View>
                 )}
