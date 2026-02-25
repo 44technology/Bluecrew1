@@ -396,8 +396,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="project"
         options={{
-          href: null, // Hide from tab bar (nested routes)
-          // Disable web navigation display
+          href: null, // Hide from tab bar (nested project/[id] routes)
           title: '',
         }}
       />
