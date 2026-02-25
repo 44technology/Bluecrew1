@@ -25,11 +25,8 @@ import { ProposalService } from '@/services/proposalService';
 import { InvoiceService } from '@/services/invoiceService';
 import { ClientService } from '@/services/clientService';
 import HamburgerMenu from '@/components/HamburgerMenu';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { signOut } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
 
-// Real clients from Firebase
+// Clients from Firestore (users with role 'client'); no Firebase Auth required to add
 
 export default function ClientsScreen() {
   const { t } = useLanguage();
@@ -63,8 +60,6 @@ export default function ClientsScreen() {
   const [selectedClients, setSelectedClients] = useState<Set<string>>(new Set());
   const [isMobile, setIsMobile] = useState(false);
   const [importingClients, setImportingClients] = useState(false);
-  const [showAdminPasswordModal, setShowAdminPasswordModal] = useState(false);
-  const [adminPasswordInput, setAdminPasswordInput] = useState('');
 
   // Load clients from Firebase
   const loadClients = async () => {
@@ -259,30 +254,6 @@ export default function ClientsScreen() {
   };
 
   const processImportedRows = async (rows: { name: string; email: string; phone: string }[]) => {
-    const currentUserEmail = auth.currentUser?.email;
-    let adminPassword: string | null = null;
-    try {
-      const savedPassword = await AsyncStorage.getItem('saved_password');
-      const rememberMe = await AsyncStorage.getItem('remember_me');
-      const savedEmail = await AsyncStorage.getItem('saved_email');
-      if (rememberMe === 'true' && savedEmail === currentUserEmail && savedPassword) {
-        adminPassword = savedPassword;
-      }
-    } catch (_) {}
-    if (!currentUserEmail || !adminPassword) {
-      Alert.alert('Import requires login', 'To import clients without being logged out, please log in with "Remember me" checked, then try again.');
-      return;
-    }
-    const generateTempPassword = () => {
-      const length = 12;
-      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-      let password = '';
-      for (let i = 0; i < length; i++) {
-        password += charset.charAt(Math.floor(Math.random() * charset.length));
-      }
-      return password;
-    };
-    const { AuthService } = await import('@/services/authService');
     let created = 0;
     const errors: string[] = [];
     for (const row of rows) {
@@ -295,31 +266,19 @@ export default function ClientsScreen() {
         errors.push(`Skip: email already exists (${row.email})`);
         continue;
       }
-      const password = generateTempPassword();
       try {
-        await AuthService.createUserAsAdmin(
-          currentUserEmail,
-          adminPassword,
-          row.email.trim(),
-          password,
-          { name: row.name.trim(), role: 'client', phone: row.phone?.trim() || undefined }
-        );
+        await UserService.createUser({
+          name: row.name.trim(),
+          email: row.email.trim(),
+          phone: row.phone?.trim() || '',
+          role: 'client',
+        });
         created++;
       } catch (err: any) {
         errors.push(`${row.email}: ${err?.message || 'Failed'}`);
       }
     }
-    const firebaseClients = await UserService.getUsersByRole('client');
-    const clientList: Client[] = firebaseClients.map(user => ({
-      id: user.id,
-      name: user.name,
-      email: user.email,
-      phone: user.phone || '',
-      company: '',
-      address: '',
-      created_at: user.created_at,
-    }));
-    setClients(clientList);
+    await loadClients();
     if (errors.length > 0) {
       Alert.alert('Import complete', `Created ${created} client(s).\n\nIssues:\n${errors.slice(0, 10).join('\n')}${errors.length > 10 ? `\n... and ${errors.length - 10} more` : ''}`);
     } else {
@@ -415,57 +374,6 @@ export default function ClientsScreen() {
     }
   };
 
-  const generateRandomPassword = () => {
-    const length = 12;
-    const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
-    let password = '';
-    for (let i = 0; i < length; i++) {
-      password += charset.charAt(Math.floor(Math.random() * charset.length));
-    }
-    return password;
-  };
-
-  const doAddClientWithAdminAuth = async (adminEmail: string, adminPassword: string) => {
-    const { AuthService } = await import('@/services/authService');
-    const email = newClient.email.trim();
-    await AuthService.createUserAsAdmin(
-      adminEmail,
-      adminPassword,
-      email,
-      generateRandomPassword(),
-      { name: newClient.name.trim(), role: 'client', phone: newClient.phone?.trim() || undefined }
-    );
-    setShowAddModal(false);
-    setShowAdminPasswordModal(false);
-    setAdminPasswordInput('');
-    setFieldErrors({});
-    setNewClient({ name: '', email: '', phone: '' });
-    await loadClients();
-    Alert.alert('Success', 'Client added successfully. They can use "Forgot password" with their email to set a password and log in.');
-  };
-
-  const doAddClientAndLogout = async () => {
-    const { AuthService } = await import('@/services/authService');
-    const email = newClient.email.trim();
-    await AuthService.signUp(email, generateRandomPassword(), {
-      name: newClient.name.trim(),
-      role: 'client',
-      phone: newClient.phone?.trim() || undefined,
-    });
-    setShowAddModal(false);
-    setShowAdminPasswordModal(false);
-    setAdminPasswordInput('');
-    setFieldErrors({});
-    setNewClient({ name: '', email: '', phone: '' });
-    await signOut(auth);
-    Alert.alert(
-      'Client created',
-      'Client added successfully. They can use "Forgot password" with their email to set a password and log in.\n\nYou have been logged out — please log in again.',
-      [{ text: 'OK', onPress: () => router.replace('/login') }]
-    );
-    router.replace('/login');
-  };
-
   const handleAddClient = async () => {
     const missingFields: string[] = [];
     const errors: { [key: string]: string } = {};
@@ -478,45 +386,18 @@ export default function ClientsScreen() {
       Alert.alert('Error', 'A client with this email already exists');
       return;
     }
-    const currentUserEmail = auth.currentUser?.email ?? null;
-    let storedPassword: string | null = null;
     try {
-      const rememberMe = await AsyncStorage.getItem('remember_me');
-      const savedEmail = await AsyncStorage.getItem('saved_email');
-      if (rememberMe === 'true' && savedEmail === currentUserEmail) {
-        storedPassword = await AsyncStorage.getItem('saved_password');
-      }
-    } catch (_) {}
-    if (currentUserEmail && storedPassword) {
-      try {
-        await doAddClientWithAdminAuth(currentUserEmail, storedPassword);
-      } catch (error: any) {
-        console.error('Error adding client:', error);
-        Alert.alert('Error', error.message || 'Failed to add client');
-      }
-      return;
-    }
-    setShowAdminPasswordModal(true);
-  };
-
-  const confirmAddClientWithPassword = async () => {
-    const currentUserEmail = auth.currentUser?.email;
-    if (!currentUserEmail) {
-      Alert.alert('Error', 'You are not logged in.');
-      return;
-    }
-    const password = adminPasswordInput.trim();
-    if (password) {
-      try {
-        await doAddClientWithAdminAuth(currentUserEmail, password);
-      } catch (error: any) {
-        console.error('Error adding client:', error);
-        Alert.alert('Error', error.message || 'Failed to add client. Check your password.');
-      }
-      return;
-    }
-    try {
-      await doAddClientAndLogout();
+      await UserService.createUser({
+        name: newClient.name.trim(),
+        email: newClient.email.trim(),
+        phone: newClient.phone?.trim() || '',
+        role: 'client',
+      });
+      setShowAddModal(false);
+      setFieldErrors({});
+      setNewClient({ name: '', email: '', phone: '' });
+      await loadClients();
+      Alert.alert('Success', 'Client added successfully. No login is created — you stay logged in.');
     } catch (error: any) {
       console.error('Error adding client:', error);
       Alert.alert('Error', error.message || 'Failed to add client');
@@ -1215,37 +1096,6 @@ export default function ClientsScreen() {
               <Text style={styles.submitButtonText}>Add Client</Text>
             </TouchableOpacity>
           </ScrollView>
-        </View>
-      </Modal>
-
-      {/* Admin password modal: stay logged in when adding client */}
-      <Modal visible={showAdminPasswordModal} transparent animationType="fade">
-        <View style={styles.modalOverlay}>
-          <View style={[styles.deleteModal, { maxWidth: 400 }]}>
-            <TouchableOpacity style={styles.closeButton} onPress={() => { setShowAdminPasswordModal(false); setAdminPasswordInput(''); }}>
-              <Text style={styles.closeButtonText}>×</Text>
-            </TouchableOpacity>
-            <Text style={styles.deleteTitle}>Stay logged in</Text>
-            <Text style={[styles.deleteMessage, { marginBottom: 12 }]}>
-              Enter your account password to add this client without being logged out. Leave empty and tap "Add anyway" if you prefer to log in again after.
-            </Text>
-            <TextInput
-              style={[styles.input, { marginBottom: 16 }]}
-              placeholder="Your password (optional)"
-              value={adminPasswordInput}
-              onChangeText={setAdminPasswordInput}
-              secureTextEntry
-              autoCapitalize="none"
-            />
-            <View style={styles.deleteButtons}>
-              <TouchableOpacity style={styles.cancelDeleteButton} onPress={() => { setShowAdminPasswordModal(false); setAdminPasswordInput(''); }}>
-                <Text style={styles.cancelDeleteText}>Cancel</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.confirmDeleteButton, { flex: 1 }]} onPress={confirmAddClientWithPassword}>
-                <Text style={styles.confirmDeleteText}>{adminPasswordInput.trim() ? 'Add & stay logged in' : 'Add anyway'}</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
         </View>
       </Modal>
 
