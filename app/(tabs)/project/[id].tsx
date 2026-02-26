@@ -2812,7 +2812,7 @@ export default function ProjectDetailScreen() {
                   />
                   {(() => {
                     const priceNum = parseFloat(editStep.price) || 0;
-                    const rate = editStep.profit_rate.trim() === '' ? (project?.gross_profit_rate ?? 29) : (parseFloat(editStep.profit_rate) || project?.gross_profit_rate ?? 29);
+                    const rate = editStep.profit_rate.trim() === '' ? (project?.gross_profit_rate ?? 29) : (parseFloat(editStep.profit_rate) || (project?.gross_profit_rate ?? 29));
                     const budgetFee = (priceNum * (100 - rate)) / 100;
                     return priceNum > 0 ? (
                       <Text style={[styles.stepPrice, { fontSize: 13, color: '#6b7280', marginTop: 8 }]}>
