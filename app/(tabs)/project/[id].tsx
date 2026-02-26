@@ -587,37 +587,44 @@ export default function ProjectDetailScreen() {
   };
 
   const confirmDelete = () => {
-    if (stepToDelete) {
-      const { stepId, isChildStep, parentStepId } = stepToDelete;
-      if (isChildStep && parentStepId) {
-        // Delete child step
-        setProject(prev => {
-          const newProject = {
+    if (!stepToDelete || userRole !== 'admin') return;
+    const { stepId, isChildStep, parentStepId } = stepToDelete;
+
+    const doDelete = async () => {
+      try {
+        if (isChildStep && parentStepId) {
+          await ProjectService.deleteStep(stepId);
+          setProject(prev => {
+            if (!prev?.steps) return prev;
+            return {
+              ...prev,
+              steps: prev.steps.map(step =>
+                step.id === parentStepId
+                  ? { ...step, child_steps: step.child_steps?.filter(c => c.id !== stepId) || [] }
+                  : step
+              ),
+            };
+          });
+        } else {
+          const parentStep = project?.steps?.find(s => s.id === stepId);
+          const childIds = (parentStep?.child_steps ?? []).map(c => c.id);
+          for (const id of childIds) {
+            await ProjectService.deleteStep(id);
+          }
+          await ProjectService.deleteStep(stepId);
+          setProject(prev => ({
             ...prev,
-            steps: prev.steps?.map(step => 
-              step.id === parentStepId 
-                ? {
-                    ...step,
-                    child_steps: step.child_steps?.filter(childStep => childStep.id !== stepId) || []
-                  }
-                : step
-            ) || [],
-          };
-          return newProject;
-        });
-      } else {
-        // Delete parent step
-        setProject(prev => {
-          const newProject = {
-            ...prev,
-            steps: prev.steps?.filter(step => step.id !== stepId) || [],
-          };
-          return newProject;
-        });
+            steps: prev?.steps?.filter(step => step.id !== stepId) || [],
+          }));
+        }
+        setShowDeleteModal(false);
+        setStepToDelete(null);
+      } catch (err) {
+        console.error('Error deleting step:', err);
+        Alert.alert('Error', 'Failed to delete. Please try again.');
       }
-      setShowDeleteModal(false);
-      setStepToDelete(null);
-    }
+    };
+    void doDelete();
   };
 
   const cancelDelete = () => {
@@ -1658,8 +1665,8 @@ export default function ProjectDetailScreen() {
             <View style={styles.stepTitleAndBudget}>
               <Text style={[styles.stepName, isChild && styles.childStepName]}>{step.name}</Text>
               <View style={styles.stepBudgetInfo}>
-                {/* Show price to PMs, Admins, and Clients */}
-                {!isChild && (userRole === 'pm' || userRole === 'admin' || userRole === 'client') && step.price !== undefined && step.price > 0 && (
+                {/* Show price to Admins and Clients; PM sees only budget (internal cost), not client price */}
+                {!isChild && (userRole === 'admin' || userRole === 'client') && step.price !== undefined && step.price > 0 && (
                   <>
                     <Text style={styles.stepPrice}>${step.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
                     {userRole === 'admin' && (() => {
@@ -1673,6 +1680,15 @@ export default function ProjectDetailScreen() {
                     })()}
                   </>
                 )}
+                {!isChild && userRole === 'pm' && step.price !== undefined && step.price > 0 && (() => {
+                  const rate = step.profit_rate ?? project?.gross_profit_rate ?? 29;
+                  const budgetFee = (step.price * (100 - rate)) / 100;
+                  return (
+                    <Text style={[styles.stepPrice, { fontSize: 12, color: '#6b7280' }]}>
+                      Budget ({rate}%): ${budgetFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                  );
+                })()}
               </View>
             </View>
             {!isChild && hasChildSteps && (
@@ -1797,8 +1813,7 @@ export default function ProjectDetailScreen() {
               >
                 <Text style={styles.editButtonText}>Edit</Text>
               </TouchableOpacity>
-              {/* PM can only delete work descriptions, not parent steps */}
-              {((userRole === 'admin' || userRole === 'pm') && isChild) && (
+              {userRole === 'admin' && (
                 <TouchableOpacity
                   style={styles.deleteButton}
                   onPress={() => handleDeleteStep(step.id, isChild, parentStepId)}
