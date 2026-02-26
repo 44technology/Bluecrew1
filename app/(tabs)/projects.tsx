@@ -81,8 +81,8 @@ export default function ProjectsScreen() {
   // Admin budget settings
   const [selectedPMs, setSelectedPMs] = useState<string[]>([]);
   const [availablePMs, setAvailablePMs] = useState<Array<{ id: string; name: string; email: string }>>([]);
-  const [grossProfitRate, setGrossProfitRate] = useState(28.5);
-  const [grossProfitRateText, setGrossProfitRateText] = useState('28.5');
+  const [grossProfitRate, setGrossProfitRate] = useState(29);
+  const [grossProfitRateText, setGrossProfitRateText] = useState('29');
   const [pmBudget, setPmBudget] = useState(0);
   
   // Check permissions for creating projects
@@ -1721,6 +1721,15 @@ export default function ProjectsScreen() {
                           <Text style={styles.workTitlePrice}>
                             Total: ${parseFloat(workTitle.price || '0').toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </Text>
+                          {userRole === 'admin' && (() => {
+                            const lineTotal = parseFloat(workTitle.price || '0') || 0;
+                            const budgetPrice = (lineTotal * (100 - grossProfitRate)) / 100;
+                            return lineTotal > 0 ? (
+                              <Text style={[styles.workTitlePrice, { fontSize: 12, color: '#6b7280', marginTop: 2 }]}>
+                                Budget ({grossProfitRate}%): ${budgetPrice.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </Text>
+                            ) : null;
+                          })()}
                         </View>
                       </View>
                       <TouchableOpacity
@@ -1842,6 +1851,11 @@ export default function ProjectsScreen() {
                       <Text style={styles.calculatedPriceValue}>
                         ${descTotal(newWorkTitle.descriptions).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </Text>
+                      {userRole === 'admin' && (
+                        <Text style={[styles.calculatedPriceLabel, { fontSize: 12, color: '#6b7280', marginTop: 4 }]}>
+                          Budget ({grossProfitRate}%): ${((descTotal(newWorkTitle.descriptions) * (100 - grossProfitRate)) / 100).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </Text>
+                      )}
                     </View>
                   )}
 
@@ -2081,7 +2095,7 @@ export default function ProjectsScreen() {
                     <input
                       type="number"
                       step="0.1"
-                      placeholder="28.5"
+                      placeholder="29"
                       value={grossProfitRateText}
                       onChange={(e) => {
                         const text = e.target.value;
@@ -2149,7 +2163,7 @@ export default function ProjectsScreen() {
                         }
                       }}
                       keyboardType="decimal-pad"
-                      placeholder="28.5"
+                      placeholder="29"
                     />
                   )}
                 </View>
@@ -2161,6 +2175,14 @@ export default function ProjectsScreen() {
                       {newProject.total_budget ? `$${parseFloat(newProject.total_budget).toLocaleString()}` : '$0'}
                     </Text>
                   </View>
+                  {newProject.general_conditions && parseFloat(newProject.general_conditions) > 0 && (
+                    <View style={[styles.budgetRow, { backgroundColor: '#f0fdf4', paddingVertical: 6, paddingHorizontal: 8, borderRadius: 6 }]}>
+                      <Text style={[styles.budgetLabel, { fontSize: 12 }]}>General Conditions ({newProject.general_conditions_percentage || '18.5'}% — included in profit):</Text>
+                      <Text style={[styles.budgetValue, { fontSize: 12 }]}>
+                        ${parseFloat(newProject.general_conditions).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Text>
+                    </View>
+                  )}
                   <View style={styles.budgetRow}>
                     <Text style={styles.budgetLabel}>Company Profit ({grossProfitRate}%):</Text>
                     <Text style={styles.budgetValue}>

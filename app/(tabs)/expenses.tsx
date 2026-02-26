@@ -26,6 +26,7 @@ import { SubContractorService } from '@/services/subContractorService';
 import { VendorService } from '@/services/vendorService';
 import { MaterialRequestService } from '@/services/materialRequestService';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import { APP_URL } from '@/constants/app';
 
 export default function ExpensesScreen() {
   const { t } = useLanguage();
@@ -494,7 +495,7 @@ export default function ExpensesScreen() {
         errorMessage = 'Upload canceled';
       } else if (error?.message?.includes('CORS') || error?.code === 'storage/unknown' || error?.message?.includes('blocked by CORS')) {
         errorMessage = 'CORS Error: Firebase Storage CORS settings need to be configured';
-        errorDetails = 'Please configure CORS in Firebase Console:\n1. Go to Storage → Settings → CORS\n2. Add origin: https://bluecrew-app.netlify.app\n3. Allow methods: GET, POST, PUT, DELETE, HEAD, OPTIONS';
+        errorDetails = `Please configure CORS in Firebase Console:\n1. Go to Storage → Settings → CORS\n2. Add origin: ${APP_URL}\n3. Allow methods: GET, POST, PUT, DELETE, HEAD, OPTIONS`;
       } else if (error?.code === 'storage/quota-exceeded') {
         errorMessage = 'Storage quota exceeded';
       } else if (error?.code === 'storage/unauthenticated') {

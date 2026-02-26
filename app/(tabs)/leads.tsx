@@ -22,6 +22,7 @@ import { UserService } from '@/services/userService';
 import { usePagePermission } from '@/hooks/usePagePermission';
 import { router } from 'expo-router';
 import HamburgerMenu from '@/components/HamburgerMenu';
+import { APP_URL } from '@/constants/app';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { signOut, signInWithEmailAndPassword } from 'firebase/auth';
 import { auth } from '@/lib/firebase';
@@ -281,7 +282,7 @@ export default function LeadsScreen() {
       // Generate login URL
       const appUrl = Platform.OS === 'web' 
         ? window.location.origin 
-        : 'https://bluecrew-app.netlify.app';
+        : APP_URL;
       const loginUrl = `${appUrl}/auth/login`;
       
       Alert.alert(

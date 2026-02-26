@@ -71,8 +71,8 @@ export default function ProjectApprovalScreen() {
   const [loadingProjectComments, setLoadingProjectComments] = useState(false);
   const [availablePMs, setAvailablePMs] = useState<any[]>([]);
   const [selectedPMs, setSelectedPMs] = useState<string[]>([]);
-  const [grossProfitRate, setGrossProfitRate] = useState(28.5);
-  const [grossProfitRateText, setGrossProfitRateText] = useState('28.5');
+  const [grossProfitRate, setGrossProfitRate] = useState(29);
+  const [grossProfitRateText, setGrossProfitRateText] = useState('29');
   const [pmBudget, setPmBudget] = useState(0);
   const [stepBudgetRates, setStepBudgetRates] = useState<Record<string, number>>({});
   const [stepBudgetRateTexts, setStepBudgetRateTexts] = useState<Record<string, string>>({});
@@ -1683,7 +1683,7 @@ export default function ProjectApprovalScreen() {
                         }
                       }}
                       keyboardType="decimal-pad"
-                      placeholder="28.5"
+                      placeholder="29"
                     />
                   </View>
 
@@ -1712,7 +1712,7 @@ export default function ProjectApprovalScreen() {
                       </>
                     )}
                     <View style={styles.budgetRow}>
-                      <Text style={styles.budgetLabel}>Company Profit ({grossProfitRate}%):</Text>
+                      <Text style={styles.budgetLabel}>Company Profit ({grossProfitRate}%, incl. General Conditions {selectedProject.general_conditions_percentage ?? '18.5'}%):</Text>
                       <Text style={styles.budgetValue}>
                         {formatCurrency(((selectedProject.total_budget || 0) * grossProfitRate) / 100)}
                       </Text>

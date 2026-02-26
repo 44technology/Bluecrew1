@@ -25,6 +25,9 @@ import {
   User,
   Building,
   DollarSign,
+  Globe,
+  CheckCircle,
+  Tag,
 } from 'lucide-react-native';
 import BackButton from '@/components/BackButton';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -79,12 +82,12 @@ export default function ClientDetailScreen() {
         await loadInvoices(clientData);
       } else {
         Alert.alert('Error', 'Client not found');
-        router.back();
+        router.replace('/(tabs)/clients');
       }
     } catch (error) {
       console.error('Error loading client:', error);
       Alert.alert('Error', 'Failed to load client data');
-      router.back();
+      router.replace('/(tabs)/clients');
     } finally {
       setLoading(false);
     }
@@ -390,7 +393,7 @@ export default function ClientDetailScreen() {
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" />
+          <BackButton color="#000000" backgroundColor="rgba(0,0,0,0.06)" onPress={() => router.replace('/(tabs)/clients')} />
           <Text style={styles.headerTitle}>Clients</Text>
           <TouchableOpacity style={styles.actionsButton}>
             <MoreVertical size={20} color="#ffffff" />
@@ -413,6 +416,67 @@ export default function ClientDetailScreen() {
             </View>
             <Text style={styles.clientName}>{client.name}</Text>
             <Text style={styles.clientEmail}>{client.email}</Text>
+          </View>
+
+          {/* Overview card – status, metrics, description, key details */}
+          <View style={styles.overviewCard}>
+            <View style={styles.overviewBadges}>
+              <View style={[styles.overviewBadge, { backgroundColor: '#ecfdf5' }]}>
+                <Globe size={14} color="#059669" />
+                <Text style={[styles.overviewBadgeText, { color: '#059669' }]}>Active</Text>
+              </View>
+              <View style={styles.overviewBadge}>
+                <FileText size={14} color="#1f2937" />
+                <Text style={styles.overviewBadgeText}>{crmStats.totalProposals} proposals</Text>
+              </View>
+              <View style={styles.overviewBadge}>
+                <Receipt size={14} color="#1f2937" />
+                <Text style={styles.overviewBadgeText}>{crmStats.totalInvoices} invoices</Text>
+              </View>
+              <View style={styles.overviewBadge}>
+                <Tag size={14} color="#1f2937" />
+                <Text style={styles.overviewBadgeText}>Client</Text>
+              </View>
+            </View>
+            <View style={styles.overviewCreator}>
+              <View style={styles.avatarSmall}>
+                <Text style={styles.avatarSmallText}>
+                  {client.name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()}
+                </Text>
+              </View>
+              <Text style={styles.overviewCreatorText}>Contact: {client.name}</Text>
+              <CheckCircle size={16} color="#059669" />
+            </View>
+            <Text style={styles.overviewDescription}>
+              Client since {new Date(client.created_at).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}.
+              {crmStats.approvedProposals > 0 && ` ${crmStats.approvedProposals} approved proposal${crmStats.approvedProposals !== 1 ? 's' : ''}.`}
+              {crmStats.totalRevenue > 0 && ` $${crmStats.totalRevenue.toLocaleString(undefined, { minimumFractionDigits: 0, maximumFractionDigits: 0 })} total revenue.`}
+            </Text>
+            <View style={styles.overviewKeyDetails}>
+              <Text style={styles.overviewKeyDetailsTitle}>Key details</Text>
+              <View style={styles.overviewBullet}>
+                <Text style={styles.overviewBulletArrow}>→</Text>
+                <Text style={styles.overviewBulletText}>Email: {client.email}</Text>
+              </View>
+              {client.phone ? (
+                <View style={styles.overviewBullet}>
+                  <Text style={styles.overviewBulletArrow}>→</Text>
+                  <Text style={styles.overviewBulletText}>Phone: {client.phone}</Text>
+                </View>
+              ) : null}
+              {client.address ? (
+                <View style={styles.overviewBullet}>
+                  <Text style={styles.overviewBulletArrow}>→</Text>
+                  <Text style={styles.overviewBulletText}>Address: {client.address}</Text>
+                </View>
+              ) : null}
+              <View style={styles.overviewBullet}>
+                <Text style={styles.overviewBulletArrow}>→</Text>
+                <Text style={styles.overviewBulletText}>
+                  Member since {new Date(client.created_at).toLocaleDateString()}
+                </Text>
+              </View>
+            </View>
           </View>
 
           {/* Quick Actions */}
@@ -793,6 +857,94 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#000000',
     textAlign: 'center',
+  },
+  overviewCard: {
+    marginBottom: 24,
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+    overflow: 'hidden',
+  },
+  overviewBadges: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  overviewBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#f3f4f6',
+    borderRadius: 20,
+  },
+  overviewBadgeText: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#374151',
+  },
+  overviewCreator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 12,
+  },
+  avatarSmall: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#e5e7eb',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  avatarSmallText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#374151',
+  },
+  overviewCreatorText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#1f2937',
+    flex: 1,
+  },
+  overviewDescription: {
+    fontSize: 14,
+    lineHeight: 22,
+    color: '#4b5563',
+    marginBottom: 16,
+  },
+  overviewKeyDetails: {
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+    paddingTop: 14,
+  },
+  overviewKeyDetailsTitle: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: '#6b7280',
+    letterSpacing: 0.5,
+    marginBottom: 10,
+  },
+  overviewBullet: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 8,
+    marginBottom: 6,
+  },
+  overviewBulletArrow: {
+    fontSize: 14,
+    color: '#059669',
+    fontWeight: '600',
+  },
+  overviewBulletText: {
+    fontSize: 14,
+    color: '#374151',
+    flex: 1,
   },
   quickActions: {
     flexDirection: 'row',
