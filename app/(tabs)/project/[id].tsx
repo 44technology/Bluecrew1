@@ -156,6 +156,8 @@ export default function ProjectDetailScreen() {
   const [showDeleteProjectModal, setShowDeleteProjectModal] = useState(false);
   const [showDeleteProjectSuccessModal, setShowDeleteProjectSuccessModal] = useState(false);
   const [showWorkTitlesListModal, setShowWorkTitlesListModal] = useState(false);
+  const [showApplyBudgetToAllModal, setShowApplyBudgetToAllModal] = useState(false);
+  const [applyBudgetToAllRate, setApplyBudgetToAllRate] = useState('');
   const [selectedPM, setSelectedPM] = useState('');
   const [selectedPMs, setSelectedPMs] = useState<string[]>([]); // Multiple PM selection
   const [selectedClient, setSelectedClient] = useState('');
@@ -689,6 +691,41 @@ export default function ProjectDetailScreen() {
       console.error('Error updating step:', err);
       Alert.alert('Error', 'Failed to update step');
     });
+  };
+
+  const handleOpenApplyBudgetToAll = () => {
+    const defaultRate = project?.gross_profit_rate ?? 29;
+    setApplyBudgetToAllRate(defaultRate.toString());
+    setShowApplyBudgetToAllModal(true);
+  };
+
+  const handleApplyBudgetToAll = () => {
+    if (userRole !== 'admin' || !project?.steps?.length) return;
+    const projectRate = project?.gross_profit_rate ?? 29;
+    const rateNum = applyBudgetToAllRate.trim() === '' ? projectRate : parseFloat(applyBudgetToAllRate);
+    if (isNaN(rateNum) || rateNum < 0 || rateNum > 100) {
+      Alert.alert('Invalid value', 'Please enter a budget % between 0 and 100.');
+      return;
+    }
+    const parentSteps = project.steps.filter(s => s.step_type === 'parent' || !s.parent_step_id);
+    if (parentSteps.length === 0) {
+      Alert.alert('No work titles', 'There are no work titles to update.');
+      return;
+    }
+    Promise.all(parentSteps.map(step => ProjectService.updateStep(step.id, { profit_rate: rateNum })))
+      .then(() => {
+        setProject(prev => ({
+          ...prev,
+          steps: prev?.steps?.map(step => ({ ...step, profit_rate: rateNum })) || [],
+        }));
+        setShowApplyBudgetToAllModal(false);
+        setApplyBudgetToAllRate('');
+        Alert.alert('Done', `Budget ${rateNum}% applied to all ${parentSteps.length} work title(s).`);
+      })
+      .catch((err) => {
+        console.error('Error applying budget to all:', err);
+        Alert.alert('Error', 'Failed to update some work titles.');
+      });
   };
 
   const handleUpdateChildStep = () => {
@@ -2216,12 +2253,21 @@ export default function ProjectDetailScreen() {
             <View style={styles.stepsSectionHeader}>
               <Text style={styles.sectionTitle}>Work Titles</Text>
               {userRole === 'admin' && (
-                <TouchableOpacity
-                  style={styles.addStepButton}
-                  onPress={() => setShowAddStepModal(true)}>
-                  <Plus size={16} color="#000000" />
-                  <Text style={styles.addStepText}>Add Work Title</Text>
-                </TouchableOpacity>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                  {project?.steps && project.steps.length > 0 && (
+                    <TouchableOpacity
+                      style={[styles.addStepButton, { backgroundColor: '#f3f4f6' }]}
+                      onPress={handleOpenApplyBudgetToAll}>
+                      <Text style={styles.addStepText}>Apply budget % to all</Text>
+                    </TouchableOpacity>
+                  )}
+                  <TouchableOpacity
+                    style={styles.addStepButton}
+                    onPress={() => setShowAddStepModal(true)}>
+                    <Plus size={16} color="#000000" />
+                    <Text style={styles.addStepText}>Add Work Title</Text>
+                  </TouchableOpacity>
+                </View>
               )}
             </View>
 
@@ -2826,6 +2872,39 @@ export default function ProjectDetailScreen() {
 
             <TouchableOpacity style={styles.submitButton} onPress={handleUpdateStep}>
               <Text style={styles.submitButtonText}>Update Step</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Apply budget % to all work titles */}
+      <Modal
+        visible={showApplyBudgetToAllModal}
+        animationType="slide"
+        presentationStyle="pageSheet">
+        <View style={styles.modalContainer}>
+          <View style={styles.modalHeader}>
+            <Text style={styles.modalTitle}>Apply budget % to all work titles</Text>
+            <TouchableOpacity onPress={() => { setShowApplyBudgetToAllModal(false); setApplyBudgetToAllRate(''); }}>
+              <X size={24} color="#000000" />
+            </TouchableOpacity>
+          </View>
+          <View style={styles.modalContent}>
+            <View style={styles.inputGroup}>
+              <Text style={styles.label}>Budget % (company profit rate)</Text>
+              <TextInput
+                style={styles.input}
+                value={applyBudgetToAllRate}
+                onChangeText={(text) => setApplyBudgetToAllRate(text.replace(/[^0-9.]/g, ''))}
+                placeholder="e.g. 29"
+                keyboardType="decimal-pad"
+              />
+              <Text style={[styles.stepPrice, { fontSize: 13, color: '#6b7280', marginTop: 8 }]}>
+                This will set the same profit rate for every work title. You can still change individual steps later.
+              </Text>
+            </View>
+            <TouchableOpacity style={styles.submitButton} onPress={handleApplyBudgetToAll}>
+              <Text style={styles.submitButtonText}>Apply to all work titles</Text>
             </TouchableOpacity>
           </View>
         </View>
