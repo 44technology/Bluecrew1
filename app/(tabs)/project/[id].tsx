@@ -120,7 +120,7 @@ export default function ProjectDetailScreen() {
   const [selectedChildStepForEdit, setSelectedChildStepForEdit] = useState<{step: ProjectStep, parentId: string} | null>(null);
   const [newStep, setNewStep] = useState({ name: '', description: '', price: '' });
   const [newChildStep, setNewChildStep] = useState({ name: '', description: '' });
-  const [editStep, setEditStep] = useState({ name: '', description: '', price: '' });
+  const [editStep, setEditStep] = useState({ name: '', description: '', price: '', profit_rate: '' });
   const [editChildStep, setEditChildStep] = useState({ name: '', description: '' });
   const [stepNotes, setStepNotes] = useState('');
   const [showWorkTitleSelectModal, setShowWorkTitleSelectModal] = useState(false);
@@ -625,10 +625,12 @@ export default function ProjectDetailScreen() {
 
   const handleEditStep = (step: ProjectStep) => {
     setSelectedStepForEdit(step);
+    const projectRate = project?.gross_profit_rate ?? 29;
     setEditStep({
       name: step.name,
       description: step.description || '',
       price: step.price?.toString() || '',
+      profit_rate: (step.profit_rate != null ? step.profit_rate : projectRate).toString(),
     });
     setShowEditStepModal(true);
   };
@@ -654,23 +656,39 @@ export default function ProjectDetailScreen() {
       return;
     }
 
-    setProject(prev => ({
-      ...prev,
-      steps: prev.steps?.map(step => 
-        step.id === selectedStepForEdit.id 
-          ? { 
-              ...step, 
-              name: editStep.name,
-              description: editStep.description,
-              price: parseFloat(editStep.price),
-            }
-          : step
-      ) || [],
-    }));
+    const priceNum = parseFloat(editStep.price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      Alert.alert('Error', 'Please enter a valid price');
+      return;
+    }
 
-    setShowEditStepModal(false);
-    setSelectedStepForEdit(null);
-    setEditStep({ name: '', description: '', price: '' });
+    const projectRate = project?.gross_profit_rate ?? 29;
+    const profitRateNum = editStep.profit_rate.trim() === '' ? projectRate : parseFloat(editStep.profit_rate);
+    const profitRate = (isNaN(profitRateNum) || profitRateNum < 0 || profitRateNum > 100) ? projectRate : profitRateNum;
+
+    const updates: Partial<ProjectStep> = {
+      name: editStep.name,
+      description: editStep.description || '',
+      price: priceNum,
+      profit_rate: profitRate,
+    };
+
+    ProjectService.updateStep(selectedStepForEdit.id, updates).then(() => {
+      setProject(prev => ({
+        ...prev,
+        steps: prev?.steps?.map(step =>
+          step.id === selectedStepForEdit.id
+            ? { ...step, name: editStep.name, description: editStep.description, price: priceNum, profit_rate: profitRate }
+            : step
+        ) || [],
+      }));
+      setShowEditStepModal(false);
+      setSelectedStepForEdit(null);
+      setEditStep({ name: '', description: '', price: '', profit_rate: '' });
+    }).catch((err) => {
+      console.error('Error updating step:', err);
+      Alert.alert('Error', 'Failed to update step');
+    });
   };
 
   const handleUpdateChildStep = () => {
@@ -1335,6 +1353,10 @@ export default function ProjectDetailScreen() {
       return sum + orderTotal;
     }, 0);
   const totalWithChanges = (project?.total_budget || 0) + approvedChangeOrdersTotal;
+  const stepBudgetsTotal = project?.steps
+    ?.filter(step => step.step_type === 'parent' && step.price)
+    ?.reduce((sum, step) => sum + (step.price || 0), 0) ?? 0;
+  const internalCostForMargin = (stepBudgetsTotal > 0 ? stepBudgetsTotal : (project?.total_budget || 0));
   const isOverdue = daysLeft < 0;
   const isDueSoon = daysLeft <= 7 && daysLeft >= 0;
 
@@ -1421,7 +1443,7 @@ export default function ProjectDetailScreen() {
       const generalConditions = ((workTitlesTotal + supervisionFee) * generalConditionsPercentage) / 100;
       
       const discount = parseFloat(editProjectForm.discount) || 0;
-      const totalBudget = workTitlesTotal + generalConditions + supervisionFee - discount;
+      const totalBudget = workTitlesTotal + supervisionFee - discount;
 
       // Build project update data
       const updateData: Partial<Project> = {
@@ -1441,6 +1463,7 @@ export default function ProjectDetailScreen() {
         project_zip: editProjectForm.project_zip,
         total_budget: totalBudget,
         project_description: editProjectForm.project_description || '',
+        general_conditions: generalConditions,
         general_conditions_percentage: editProjectForm.general_conditions_percentage.trim() || '18.5',
         supervision_type: editProjectForm.supervision_type,
         supervision_weeks: editProjectForm.supervision_weeks,
@@ -1599,8 +1622,19 @@ export default function ProjectDetailScreen() {
               <Text style={[styles.stepName, isChild && styles.childStepName]}>{step.name}</Text>
               <View style={styles.stepBudgetInfo}>
                 {/* Show price to PMs, Admins, and Clients */}
-                {!isChild && (userRole === 'pm' || userRole === 'admin' || userRole === 'client') && step.price && (
-                  <Text style={styles.stepPrice}>${step.price.toLocaleString()}</Text>
+                {!isChild && (userRole === 'pm' || userRole === 'admin' || userRole === 'client') && step.price !== undefined && step.price > 0 && (
+                  <>
+                    <Text style={styles.stepPrice}>${step.price.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</Text>
+                    {userRole === 'admin' && (() => {
+                      const rate = step.profit_rate ?? project?.gross_profit_rate ?? 29;
+                      const budgetFee = (step.price * (100 - rate)) / 100;
+                      return (
+                        <Text style={[styles.stepPrice, { fontSize: 12, color: '#6b7280', marginTop: 2 }]}>
+                          Budget ({rate}%): ${budgetFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </Text>
+                      );
+                    })()}
+                  </>
                 )}
               </View>
             </View>
@@ -2055,20 +2089,44 @@ export default function ProjectDetailScreen() {
                 ) : (
                   // Admin and Office see full project budget
                   <>
-                    {/* Admin only: Show Client Price vs Internal Budget */}
-                    {userRole === 'admin' && project?.client_budget && (
+                    {/* Admin and Office: Show Client Price and Company Profit (margin + general conditions) when client_budget exists */}
+                    {(userRole === 'admin' || userRole === 'office') && project?.client_budget != null && (
                       <>
                         <Text style={styles.budgetLabel}>Client Price:</Text>
-                        <Text style={[styles.budgetAmount, { color: '#059669' }]}>
-                          ${(project?.client_budget || 0).toLocaleString()}
-                        </Text>
-                        <View style={[styles.stepBudgetBreakdown, { backgroundColor: '#ecfdf5', padding: 8, borderRadius: 6, marginTop: 4, marginBottom: 8 }]}>
-                          <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '600' }]}>Profit Margin:</Text>
-                          <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '700' }]}>
-                            ${((project?.client_budget || 0) - (project?.total_budget || 0)).toLocaleString()}
+                        <View style={[styles.budgetAmount, { color: '#059669' }]}>
+                          <Text style={{ color: '#059669', fontSize: 18, fontWeight: '700' }}>
+                            ${(project?.client_budget || 0).toLocaleString()}
                           </Text>
                         </View>
+                        <View style={[styles.stepBudgetBreakdown, { backgroundColor: '#ecfdf5', padding: 10, borderRadius: 8, marginTop: 6, marginBottom: 8 }]}>
+                          <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '700', marginBottom: 6 }]}>Company Profit</Text>
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
+                            <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '600' }]}>Profit margin (Client − Step budgets):</Text>
+                            <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '600' }]}>
+                              ${((project?.client_budget || 0) - internalCostForMargin).toLocaleString()}
+                            </Text>
+                          </View>
+                          {(project?.general_conditions != null && project.general_conditions > 0) && (
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                              <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '600' }]}>General Conditions ({project?.general_conditions_percentage ?? '18.5'}%):</Text>
+                              <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '600' }]}>
+                                ${(project?.general_conditions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                              </Text>
+                            </View>
+                          )}
+                        </View>
                       </>
+                    )}
+                    {(userRole === 'admin' || userRole === 'office') && project?.client_budget == null && (project?.general_conditions != null && project.general_conditions > 0) && (
+                      <View style={[styles.stepBudgetBreakdown, { backgroundColor: '#ecfdf5', padding: 10, borderRadius: 8, marginBottom: 8 }]}>
+                        <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '700', marginBottom: 6 }]}>Company Profit</Text>
+                        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '600' }]}>General Conditions ({project?.general_conditions_percentage ?? '18.5'}%):</Text>
+                          <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '600' }]}>
+                            ${(project?.general_conditions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Text>
+                        </View>
+                      </View>
                     )}
                     <Text style={styles.budgetLabel}>Total with Approved Changes:</Text>
                     <Text style={styles.budgetAmount}>
@@ -2705,7 +2763,7 @@ export default function ProjectDetailScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Edit Step</Text>
-            <TouchableOpacity onPress={() => setShowEditStepModal(false)}>
+            <TouchableOpacity onPress={() => { setShowEditStepModal(false); setSelectedStepForEdit(null); setEditStep({ name: '', description: '', price: '', profit_rate: '' }); }}>
               <X size={24} color="#000000" />
             </TouchableOpacity>
           </View>
@@ -2742,6 +2800,28 @@ export default function ProjectDetailScreen() {
                 placeholder="e.g. 50000"
                 keyboardType="numeric"
               />
+              {userRole === 'admin' && (
+                <>
+                  <Text style={[styles.label, { marginTop: 12 }]}>Budget % (company profit rate)</Text>
+                  <TextInput
+                    style={styles.input}
+                    value={editStep.profit_rate}
+                    onChangeText={(text) => setEditStep(prev => ({ ...prev, profit_rate: text.replace(/[^0-9.]/g, '') }))}
+                    placeholder="e.g. 29 (default)"
+                    keyboardType="decimal-pad"
+                  />
+                  {(() => {
+                    const priceNum = parseFloat(editStep.price) || 0;
+                    const rate = editStep.profit_rate.trim() === '' ? (project?.gross_profit_rate ?? 29) : (parseFloat(editStep.profit_rate) || project?.gross_profit_rate ?? 29);
+                    const budgetFee = (priceNum * (100 - rate)) / 100;
+                    return priceNum > 0 ? (
+                      <Text style={[styles.stepPrice, { fontSize: 13, color: '#6b7280', marginTop: 8 }]}>
+                        Budget ({rate}%): ${budgetFee.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </Text>
+                    ) : null;
+                  })()}
+                </>
+              )}
             </View>
 
             <TouchableOpacity style={styles.submitButton} onPress={handleUpdateStep}>
@@ -3821,7 +3901,7 @@ export default function ProjectDetailScreen() {
                 const generalConditionsPercentage = generalConditionsPercentageInput === '' ? 18.5 : (isNaN(parseFloat(generalConditionsPercentageInput)) ? 18.5 : parseFloat(generalConditionsPercentageInput));
                 const generalConditions = ((totalWorkTitles + supervisionFee) * generalConditionsPercentage) / 100;
                 const discount = parseFloat(editProjectForm.discount) || 0;
-                const totalBudget = totalWorkTitles + generalConditions + supervisionFee - discount;
+                const totalBudget = totalWorkTitles + supervisionFee - discount;
                 return (
                   <>
                     <View style={styles.calculatedAmount}>
@@ -3831,7 +3911,7 @@ export default function ProjectDetailScreen() {
                       </Text>
                     </View>
                     <View style={styles.calculatedAmount}>
-                      <Text style={styles.calculatedAmountLabel}>Calculated Total:</Text>
+                      <Text style={styles.calculatedAmountLabel}>Base Budget (excl. GC):</Text>
                       <Text style={styles.calculatedAmountValue}>
                         ${totalBudget > 0 ? totalBudget.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '0.00'}
                       </Text>

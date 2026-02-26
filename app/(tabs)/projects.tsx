@@ -182,7 +182,7 @@ export default function ProjectsScreen() {
     const generalConditionsPercentage = generalConditionsPercentageInput === '' ? 18.5 : (isNaN(parseFloat(generalConditionsPercentageInput)) ? 18.5 : parseFloat(generalConditionsPercentageInput));
     const generalConditions = ((workTitlesTotal + supervisionFee) * generalConditionsPercentage) / 100;
     const discount = parseFloat(newProject.discount) || 0;
-    const total = workTitlesTotal + generalConditions + supervisionFee - discount;
+    const total = workTitlesTotal + supervisionFee - discount;
     setNewProject(prev => ({ ...prev, total_budget: total > 0 ? total.toString() : '', general_conditions: generalConditions.toString(), supervision_fee: supervisionFee.toString() }));
   }, [workTitles, newWorkTitle.descriptions, newProject.general_conditions_percentage, newProject.supervision_fee, newProject.supervision_type, newProject.supervision_weeks, newProject.discount]);
 
@@ -1031,7 +1031,7 @@ export default function ProjectsScreen() {
       const generalConditionsPercentage = parseFloat(newProject.general_conditions_percentage) || 18.5;
       const generalConditions = ((workTitlesTotal + supervisionFee) * generalConditionsPercentage) / 100;
       const projectDiscount = parseFloat(newProject.discount) || 0;
-      const internalBudget = workTitlesTotal + generalConditions + supervisionFee - projectDiscount;
+      const internalBudget = workTitlesTotal + supervisionFee - projectDiscount;
       
       // Client budget from proposal (if exists), otherwise use internal budget
       const clientBudgetValue = clientBudget ? parseFloat(clientBudget) : internalBudget;
@@ -1056,6 +1056,8 @@ export default function ProjectsScreen() {
         is_job: false,
         total_budget: internalBudget, // Internal budget (real costs)
         client_budget: clientBudgetValue, // Client-facing budget (from proposal)
+        general_conditions: generalConditions,
+        general_conditions_percentage: newProject.general_conditions_percentage || '18.5',
         project_address: fullAddress, // Full address for backward compatibility
         project_street: newProject.project_street,
         project_city: newProject.project_city,
@@ -1389,8 +1391,8 @@ export default function ProjectsScreen() {
         <View style={styles.modalContainer}>
           <View style={styles.modalHeader}>
             <Text style={styles.modalTitle}>Create New Project</Text>
-            <TouchableOpacity onPress={handleCloseCreateModal}>
-              <X size={24} color="#000000" />
+            <TouchableOpacity onPress={handleCloseCreateModal} hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }} accessibilityLabel="Close">
+              <X size={26} color="#ffffff" />
             </TouchableOpacity>
           </View>
 

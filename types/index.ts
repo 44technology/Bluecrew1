@@ -291,6 +291,8 @@ export interface Project {
   project_description?: string; // Additional project description/notes
   /** General conditions percentage (e.g. 18.5). Used for edit project and budget calc. */
   general_conditions_percentage?: string;
+  /** General conditions amount (stored for display on project details). */
+  general_conditions?: number;
   /** Supervision: full-time ($1450/wk), part-time ($725/wk), none, or custom. */
   supervision_type?: 'full-time' | 'part-time' | 'none' | 'custom';
   /** Number of weeks for supervision fee. */
