@@ -1410,6 +1410,8 @@ export default function ProjectDetailScreen() {
   const clientTotalFromSteps = hasStepTotals ? stepBudgetsTotal + (project?.general_conditions || 0) : (project?.client_budget ?? 0);
   const profitMarginFromSteps = hasStepTotals ? stepBudgetsTotal - internalBudgetFromSteps : ((project?.client_budget || 0) - (project?.total_budget || 0));
   const baseBudgetDisplay = hasStepTotals ? internalBudgetFromSteps : (project?.total_budget || 0);
+  const totalCompanyProfit = profitMarginFromSteps + (project?.general_conditions || 0);
+  const profitPctDisplay = baseBudgetDisplay > 0 ? (totalCompanyProfit / baseBudgetDisplay * 100) : 0;
   const totalWithChanges = baseBudgetDisplay + approvedChangeOrdersTotal;
   const isOverdue = daysLeft < 0;
   const isDueSoon = daysLeft <= 7 && daysLeft >= 0;
@@ -2151,17 +2153,27 @@ export default function ProjectDetailScreen() {
                 ) : (
                   // Admin and Office see full project budget
                   <>
-                    {/* Admin and Office: Client total = Step total + GC; Budget = step total minus profit %; Profit = margin + GC */}
+                    {/* Admin and Office: Builder cost + Profit (%) = Total price; Company profit breakdown with total */}
                     {(userRole === 'admin' || userRole === 'office') && (hasStepTotals || project?.client_budget != null) && (
                       <>
-                        <Text style={styles.budgetLabel}>Client Price:</Text>
-                        <View style={[styles.budgetAmount, { color: '#059669' }]}>
-                          <Text style={{ color: '#059669', fontSize: 18, fontWeight: '700' }}>
+                        <View style={[styles.stepBudgetBreakdown, { backgroundColor: '#f8fafc', padding: 12, borderRadius: 8, marginBottom: 8 }]}>
+                          <Text style={styles.stepBudgetLabel}>Builder cost</Text>
+                          <Text style={[styles.stepBudgetAmount, { fontSize: 18, fontWeight: '700', marginBottom: 12 }]}>
+                            ${baseBudgetDisplay.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Text>
+                          <Text style={[styles.stepBudgetLabel, { marginBottom: 2 }]}>+</Text>
+                          <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '600' }]}>Profit ({profitPctDisplay.toFixed(2)}%)</Text>
+                          <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '600', marginBottom: 12 }]}>
+                            ${totalCompanyProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                          </Text>
+                          <Text style={[styles.stepBudgetLabel, { marginBottom: 2 }]}>=</Text>
+                          <Text style={[styles.stepBudgetLabel, { fontWeight: '700' }]}>Total price</Text>
+                          <Text style={[styles.stepBudgetAmount, { fontSize: 18, fontWeight: '700', color: '#059669' }]}>
                             ${clientTotalFromSteps.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </Text>
                         </View>
-                        <View style={[styles.stepBudgetBreakdown, { backgroundColor: '#ecfdf5', padding: 10, borderRadius: 8, marginTop: 6, marginBottom: 8 }]}>
-                          <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '700', marginBottom: 6 }]}>Company Profit</Text>
+                        <View style={[styles.stepBudgetBreakdown, { backgroundColor: '#ecfdf5', padding: 10, borderRadius: 8, marginBottom: 8 }]}>
+                          <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '700', marginBottom: 6 }]}>Company Profit (breakdown)</Text>
                           <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                             <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '600' }]}>Profit margin (Step total − Budget):</Text>
                             <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '600' }]}>
@@ -2169,13 +2181,19 @@ export default function ProjectDetailScreen() {
                             </Text>
                           </View>
                           {(project?.general_conditions != null && project.general_conditions > 0) && (
-                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 4 }}>
                               <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '600' }]}>General Conditions ({project?.general_conditions_percentage ?? '18.5'}%):</Text>
                               <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '600' }]}>
                                 ${(project?.general_conditions || 0).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                               </Text>
                             </View>
                           )}
+                          <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, paddingTop: 6, borderTopWidth: 1, borderTopColor: '#a7f3d0' }}>
+                            <Text style={[styles.stepBudgetLabel, { color: '#059669', fontWeight: '700' }]}>Total</Text>
+                            <Text style={[styles.stepBudgetAmount, { color: '#059669', fontWeight: '700' }]}>
+                              ${totalCompanyProfit.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </Text>
+                          </View>
                         </View>
                       </>
                     )}
@@ -2203,25 +2221,12 @@ export default function ProjectDetailScreen() {
                   </>
                 )}
                 {userRole !== 'pm' && (
-                  <>
-                    <View style={styles.stepBudgetBreakdown}>
-                      <Text style={styles.stepBudgetLabel}>Approved Change Orders Total:</Text>
-                      <Text style={styles.stepBudgetAmount}>
-                        ${approvedChangeOrdersTotal.toLocaleString()}
-                      </Text>
-                    </View>
-                    {project?.steps && project.steps.length > 0 && (
-                      <View style={styles.stepBudgetBreakdown}>
-                        <Text style={styles.stepBudgetLabel}>Step Budgets Total:</Text>
-                        <Text style={styles.stepBudgetAmount}>
-                          ${project?.steps
-                            ?.filter(step => step.step_type === 'parent' && step.price)
-                            ?.reduce((sum, step) => sum + (step.price || 0), 0)
-                            ?.toLocaleString() || '0'}
-                        </Text>
-                      </View>
-                    )}
-                  </>
+                  <View style={styles.stepBudgetBreakdown}>
+                    <Text style={styles.stepBudgetLabel}>Approved Change Orders Total:</Text>
+                    <Text style={styles.stepBudgetAmount}>
+                      ${approvedChangeOrdersTotal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                    </Text>
+                  </View>
                 )}
                   </>
                 )}
